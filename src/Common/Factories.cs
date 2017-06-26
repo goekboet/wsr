@@ -9,6 +9,15 @@ using WSr.Interfaces;
 
 namespace WSr.Factories
 {
+    internal class DefaultSchedulers : ISchedulerFactory
+    {
+        public IScheduler CurrentThread => Scheduler.CurrentThread;
+
+        public IScheduler Immediate => Scheduler.Immediate;
+
+        public IScheduler Default => Scheduler.Default;
+    }
+    
     internal class TcpSocket : IListener
     {
         private class TcpClient : IClient
@@ -58,12 +67,14 @@ namespace WSr.Factories
 
         public static IObservable<IClient> ToObservable(
             this IListener listener, 
-            IScheduler scheduler)
+            ISchedulerFactory schedulers)
         {
             return Observable.Create<IClient>(o => new CompositeDisposable(
                 Observable
                     .Defer(() => Observable.FromAsync(() => listener.Listen()))
                     .Repeat()
+                    .ObserveOn(schedulers.Default)
+                    .SubscribeOn(schedulers.Default)
                     .Subscribe(o),
                 listener
             ));

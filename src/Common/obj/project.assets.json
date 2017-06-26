@@ -4306,16 +4306,16 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/erikgook/Developer/DotNetCore/ReactiveWebsocketServer/src/Common/Common.csproj",
+      "projectUniqueName": "/Users/erikgook/Developer/DotNetCore/WSr/src/Common/Common.csproj",
       "projectName": "Common",
-      "projectPath": "/Users/erikgook/Developer/DotNetCore/ReactiveWebsocketServer/src/Common/Common.csproj",
-      "outputPath": "/Users/erikgook/Developer/DotNetCore/ReactiveWebsocketServer/src/Common/obj/",
+      "projectPath": "/Users/erikgook/Developer/DotNetCore/WSr/src/Common/Common.csproj",
+      "outputPath": "/Users/erikgook/Developer/DotNetCore/WSr/src/Common/obj/",
       "projectStyle": "PackageReference",
       "originalTargetFrameworks": [
         "netstandard1.4"
       ],
       "files": {
-        "lib/netstandard1.4/Common.dll": "/Users/erikgook/Developer/DotNetCore/ReactiveWebsocketServer/src/Common/bin/placeholder/netstandard1.4/Common.dll"
+        "lib/netstandard1.4/Common.dll": "/Users/erikgook/Developer/DotNetCore/WSr/src/Common/bin/placeholder/netstandard1.4/Common.dll"
       },
       "frameworks": {
         "netstandard1.4": {
