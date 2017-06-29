@@ -34,6 +34,11 @@ namespace WSr.Factories
             {
                 _client.Dispose();
             }
+
+            public override string ToString()
+            {
+                return Address;
+            }
         }
 
         private readonly TcpListener _listener;
@@ -46,35 +51,48 @@ namespace WSr.Factories
 
         public async Task<IClient> Listen()
         {
-            var client = await _listener.AcceptTcpClientAsync();
-            return new TcpClient(client);
+            return new TcpClient(await _listener.AcceptTcpClientAsync());
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             _listener.Stop();
         }
     }
 
-
-
-    public static class Factories
+    internal class DebugTcpSocket : TcpSocket
     {
-        public static IListener TcpSocketListener(string ip, int port)
+        public DebugTcpSocket(string ip, int port) : base(ip, port) {}
+        
+        public override void Dispose()
+        {
+            Console.WriteLine("Stopping Listener");
+            base.Dispose();
+        }
+    }
+
+
+
+    public static class Fns
+    {
+        public static IListener TcpListener(string ip, int port)
         {
             return new TcpSocket(ip, port);            
         }
 
+        public static IListener DebugTcpListener(string ip, int port)
+        {
+            return new DebugTcpSocket(ip, port);
+        }
+
         public static IObservable<IClient> ToObservable(
-            this IListener listener, 
-            ISchedulerFactory schedulers)
+            this IListener listener,
+            IScheduler scheduler)
         {
             return Observable.Create<IClient>(o => new CompositeDisposable(
                 Observable
-                    .Defer(() => Observable.FromAsync(() => listener.Listen()))
+                    .Defer(() => Observable.FromAsync(() => listener.Listen(), scheduler))
                     .Repeat()
-                    .ObserveOn(schedulers.Default)
-                    .SubscribeOn(schedulers.Default)
                     .Subscribe(o),
                 listener
             ));
