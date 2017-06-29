@@ -11,12 +11,12 @@ namespace WSr.Interfaces
         IScheduler Default { get; }
     }
 
-    public interface IListener : IDisposable
+    public interface IServer : IDisposable
     {
-        Task<IClient> Listen();
+        IObservable<IChannel> Serve(IScheduler on);
     }
 
-    public interface IClient : IDisposable
+    public interface IChannel : IDisposable
     {
         string Address { get;}
     }
