@@ -6,6 +6,9 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using WSr.Interfaces;
 using static WSr.Factories.Fns;
+using static System.Console;
+using Microsoft.Reactive.Testing;
+using Moq;
 
 namespace WSr.Test.Integration.Listener
 {
@@ -27,6 +30,9 @@ namespace WSr.Test.Integration.Listener
                         case "Listener":
                             RunListener();
                             break;
+                        case "TestScheduler":
+                            TestScheduler();
+                            break;
                         default:
                             RunUnrecognized(run);
                             break;
@@ -36,7 +42,7 @@ namespace WSr.Test.Integration.Listener
 
         static void RunUnrecognized(string run)
         {
-            Console.WriteLine($"Unrecognized Run '{run}'. Exiting Program");
+            WriteLine($"Unrecognized Run '{run}'. Exiting Program");
         }
 
         static Func<IServer> ServerFactory(string host, int port)
@@ -57,20 +63,56 @@ namespace WSr.Test.Integration.Listener
                     observableFactory: s => s.AcceptConnections(Scheduler.Default))
                 .TakeUntil(terminator)
                 .Subscribe(
-                    onNext:(Console.WriteLine),
-                    onError:(Console.WriteLine),
-                    onCompleted: () => Console.WriteLine("Complete."));  
+                    onNext:(WriteLine),
+                    onError:(WriteLine),
+                    onCompleted: () => WriteLine("Complete."));  
                     
-            Console.WriteLine("Terminating client observable");
+            WriteLine("Terminating client observable");
             Console.ReadKey();
             // lyssnares dispose kör efter complete;
             terminator.OnNext(Unit.Default);
             
-            Console.WriteLine("Disposing subscription");
+            WriteLine("Disposing subscription");
             operation.Dispose();
             Console.ReadKey();
             
-            Console.WriteLine("Exiting program");
+            WriteLine("Exiting program");
+        }
+
+        static TestScheduler scheduler;
+
+        static IObservable<IChannel> ChannelWithAddress(string address, long ticks)
+        {
+            var channel = new Mock<IChannel>();
+            channel.Setup(x => x.Address).Returns(address).Callback(() => WriteLine(address));
+            
+            return Observable
+                .Timer(TimeSpan.FromTicks(ticks), scheduler)
+                .Select(_ => channel.Object);
+        }
+
+        
+        static void TestScheduler()
+        {
+            scheduler = new TestScheduler();
+
+            var socket = scheduler.CreateHotObservable(
+                new Recorded<Notification<string>> (time: 0,   value: Notification.CreateOnNext("0")),
+                new Recorded<Notification<string>> (time: 100, value: Notification.CreateOnNext("1")),
+                new Recorded<Notification<string>> (time: 200, value: Notification.CreateOnNext("2")),
+                new Recorded<Notification<string>> (time: 300, value: Notification.CreateOnNext("3")),
+                new Recorded<Notification<string>> (time: 400, value: Notification.CreateOnNext("4")));
+
+            var window = scheduler.Start(
+                create: () => socket,
+                created: 50,
+                subscribed: 150,
+                disposed: 350);
+
+            WriteLine("Messages");
+            WriteLine(string.Join(Environment.NewLine, window.Messages));
+            WriteLine("Subscriptions");
+            WriteLine(string.Join(Environment.NewLine, socket.Subscriptions));
         }
     }
 }
