@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Reactive.Concurrency;
 using System.Threading.Tasks;
 
@@ -18,6 +19,8 @@ namespace WSr.Interfaces
 
     public interface IChannel : IDisposable
     {
-        string Address { get;}
+        string Address { get; }
+
+        Stream Stream { get; }
     }
 }
