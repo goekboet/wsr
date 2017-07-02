@@ -9,6 +9,8 @@ using static WSr.Factories.Fns;
 using static System.Console;
 using Microsoft.Reactive.Testing;
 using Moq;
+using System.Linq;
+using System.Text;
 
 namespace WSr.Test.Integration.Listener
 {
@@ -32,6 +34,9 @@ namespace WSr.Test.Integration.Listener
                             break;
                         case "TestScheduler":
                             TestScheduler();
+                            break;
+                        case "ReadIncoming":
+                            ReadIncoming();
                             break;
                         default:
                             RunUnrecognized(run);
@@ -113,6 +118,53 @@ namespace WSr.Test.Integration.Listener
             WriteLine(string.Join(Environment.NewLine, window.Messages));
             WriteLine("Subscriptions");
             WriteLine(string.Join(Environment.NewLine, socket.Subscriptions));
+        }
+
+        static void ReadIncoming()
+        {
+            var host = "127.0.0.1";
+            var port = 2323;
+            var server = ServerFactory(host, port);
+            
+            var terminator = new Subject<Unit>();
+            var connections = Observable
+                .Using(
+                    resourceFactory: server,
+                    observableFactory: s => s.AcceptConnections(Scheduler.Default))
+                .TakeUntil(terminator)
+                .Publish();
+            
+            WriteLine("Publish incoming connections.");
+            ReadKey();
+            var run = connections.Connect();
+            WriteLine("Reading incoming...");
+
+            connections
+                .SelectMany(c => 
+                {
+                    var bufferSize = 10;
+                    var buffer = new byte[bufferSize];
+                    var read = c.Stream.CreateReader(bufferSize);
+
+                    return Observable.Defer(() => read(Scheduler.Default, buffer))
+                        .Select(r => buffer.Take(r).ToArray());
+                })
+                .Select(b => Encoding.ASCII.GetString(b))
+                .Subscribe(
+                    onNext:(WriteLine),
+                    onError:(WriteLine),
+                    onCompleted: () => WriteLine("Complete."));
+
+            WriteLine("Terminating client observable");
+            Console.ReadKey();
+            // lyssnares dispose kör efter complete;
+            terminator.OnNext(Unit.Default);
+            
+            WriteLine("Disposing subscription");
+            run.Dispose();
+            Console.ReadKey();
+            
+            WriteLine("Exiting program");
         }
     }
 }

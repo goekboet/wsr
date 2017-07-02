@@ -33,6 +33,8 @@ namespace WSr.Factories
                 _connectedSocket.Dispose();
             }
 
+            
+
             public override string ToString()
             {
                 return Address;
@@ -52,7 +54,7 @@ namespace WSr.Factories
             _listeningSocket.Stop();
         }
 
-        public IObservable<IChannel> Serve(IScheduler scheduler)
+        public virtual IObservable<IChannel> Serve(IScheduler scheduler)
         {
             return Defer(() => 
                 FromAsync(() => _listeningSocket.AcceptTcpClientAsync(), scheduler))
@@ -68,6 +70,12 @@ namespace WSr.Factories
         {
             Console.WriteLine("Stopping Listener");
             base.Dispose();
+        }
+
+        public override IObservable<IChannel> Serve(IScheduler scheduler)
+        {
+            Console.WriteLine("Serving...");
+            return base.Serve(scheduler);
         }
     }
 
@@ -90,51 +98,59 @@ namespace WSr.Factories
             return server.Serve(scheduler).Repeat();
         }
 
-        public static IObservable<byte[]> AsObservable(
-            this Stream source,
-            int bufferSize,
-            IScheduler scheduler)
-        {
-            var bytes = Observable.Create<byte[]>(o =>
+        public static Func<IScheduler, byte[], IObservable<int>> CreateReader(
+            this Stream stream,
+            int bufferSize)
             {
-                var initialState = new StreamReaderState(source, bufferSize);
-                Action<StreamReaderState, Action<StreamReaderState>> iterator;
-                iterator = (state, self) => {
-                    state.Read(scheduler)
-                    .Subscribe(read => 
-                    {
-                        o.OnNext(state.Buffer.Clone() as byte[]);
-                        self(state);
-                    });
-                };
-                return scheduler.Schedule(initialState, iterator);
-            });
-
-            return Observable.Using(() => source, _ => bytes);
-        }
-
-        private sealed class StreamReaderState
-        {
-            private readonly int _buffersize;
-            private readonly Func<IScheduler, byte[], int, int, IObservable<int>> _factory;
-
-            public StreamReaderState(
-                Stream stream, 
-                int buffersize)
-            {
-                _buffersize = buffersize;
-                _factory = (scheduler, buffer, offset, length) => 
-                    Observable.FromAsync(() => stream.ReadAsync(buffer, offset, length), scheduler);
-                Buffer = new byte[buffersize];
+                return (scheduler, buffer) => Observable
+                .FromAsync(() => stream.ReadAsync(buffer, 0, bufferSize), scheduler);
             }
 
-            public IObservable<int> Read(IScheduler scheduler)
-            {
-                return _factory(scheduler, Buffer, 0, _buffersize);
-            }
+        // public static IObservable<byte[]> AsObservable(
+        //     this Stream source,
+        //     int bufferSize,
+        //     IScheduler scheduler)
+        // {
+        //     var bytes = Observable.Create<byte[]>(o =>
+        //     {
+        //         var initialState = new StreamReaderState(source, bufferSize);
+        //         Action<StreamReaderState, Action<StreamReaderState>> iterator;
+        //         iterator = (state, self) => {
+        //             state.Read(scheduler)
+        //             .Subscribe(read => 
+        //             {
+        //                 o.OnNext(state.Buffer.Clone() as byte[]);
+        //                 self(state);
+        //             });
+        //         };
+        //         return scheduler.Schedule(initialState, iterator);
+        //     });
+            
+        //     return Observable.Using(() => source, _ => bytes);
+        // }
 
-            public byte[] Buffer { get; set; }
-        }
+        // private sealed class StreamReaderState
+        // {
+        //     private readonly int _buffersize;
+        //     private readonly Func<IScheduler, byte[], int, int, IObservable<int>> _factory;
+
+        //     public StreamReaderState(
+        //         Stream stream, 
+        //         int buffersize)
+        //     {
+        //         _buffersize = buffersize;
+        //         _factory = (scheduler, buffer, offset, length) => 
+        //             Observable.FromAsync(() => stream.ReadAsync(buffer, offset, length), scheduler);
+        //         Buffer = new byte[buffersize];
+        //     }
+
+        //     public IObservable<int> Read(IScheduler scheduler)
+        //     {
+        //         return _factory(scheduler, Buffer, 0, _buffersize);
+        //     }
+
+        //     public byte[] Buffer { get; set; }
+        // }
     }
 
 }
