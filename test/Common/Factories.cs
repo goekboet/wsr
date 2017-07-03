@@ -78,9 +78,11 @@ namespace WSr.Tests.Factories
                 .Returns<IScheduler>(s => socket.Take(1, s));
 
             var actual = run.Start(
-                create: () => server.Object
-                    .AcceptConnections(run)
-                    .Select(x => x.Address),
+                create: () => Observable
+                    .Using(
+                        () => server.Object, 
+                        s => s.AcceptConnections(run)
+                                .Select(x => x.Address)),
                 created: 50,
                 subscribed: 150,
                 disposed: 250
@@ -90,6 +92,8 @@ namespace WSr.Tests.Factories
                 expected: expected.Messages,
                 actual: actual.Messages,
                 message: $"{Environment.NewLine} expected: {string.Join(", ", expected.Messages)} {Environment.NewLine} actual: {string.Join(", ", actual.Messages)}");
+            
+            server.Verify(x => x.Dispose(), Times.Exactly(1));
         }
 
         private IEnumerable<byte> Nulls() { while (true) yield return (byte)'\0'; }
