@@ -38,6 +38,9 @@ namespace WSr.Test.Integration.Listener
                         case "ReadIncoming":
                             ReadIncoming();
                             break;
+                        case "ReadIncomingCont":
+                            ReadIncomingCont();
+                            break;
                         default:
                             RunUnrecognized(run);
                             break;
@@ -149,6 +152,47 @@ namespace WSr.Test.Integration.Listener
                     return Observable.Defer(() => read(Scheduler.Default, buffer))
                         .Select(r => buffer.Take(r).ToArray());
                 })
+                .Select(b => Encoding.ASCII.GetString(b))
+                .Subscribe(
+                    onNext:(WriteLine),
+                    onError:(WriteLine),
+                    onCompleted: () => WriteLine("Complete."));
+
+            WriteLine("Terminating client observable");
+            Console.ReadKey();
+            // lyssnares dispose kör efter complete;
+            terminator.OnNext(Unit.Default);
+            
+            WriteLine("Disposing subscription");
+            run.Dispose();
+            Console.ReadKey();
+            
+            WriteLine("Exiting program");
+        }
+
+        static void ReadIncomingCont()
+        {
+            var host = "127.0.0.1";
+            var port = 2323;
+            var bufferSize = 10;
+
+            var server = ServerFactory(host, port);
+            
+            var terminator = new Subject<Unit>();
+            var connections = Observable
+                .Using(
+                    resourceFactory: server,
+                    observableFactory: s => s.AcceptConnections(Scheduler.Default))
+                .TakeUntil(terminator)
+                .Publish();
+            
+            WriteLine("Publish incoming connections.");
+            ReadKey();
+            var run = connections.Connect();
+            WriteLine("Reading incoming...");
+
+            connections
+                .SelectMany(c => c.IncomingData(bufferSize))
                 .Select(b => Encoding.ASCII.GetString(b))
                 .Subscribe(
                     onNext:(WriteLine),
