@@ -30,6 +30,11 @@ namespace WSr.Tests.Factories
             throw new NotImplementedException();
         }
 
+        public Func<IScheduler, byte[], IObservable<Unit>> CreateWriter()
+        {
+            throw new NotImplementedException();
+        }
+
         public void Dispose()
         {
             return;
@@ -67,7 +72,7 @@ namespace WSr.Tests.Factories
             var actual = run.Start(
                 create: () => Observable
                     .Using(
-                        () => server.Object, 
+                        () => server.Object,
                         s => s.AcceptConnections(run)
                                 .Select(x => x.Address)),
                 created: 50,
@@ -79,7 +84,7 @@ namespace WSr.Tests.Factories
                 expected: expected.Messages,
                 actual: actual.Messages,
                 message: $"{Environment.NewLine} expected: {string.Join(", ", expected.Messages)} {Environment.NewLine} actual: {string.Join(", ", actual.Messages)}");
-            
+
             server.Verify(x => x.Dispose(), Times.Exactly(1));
         }
 
@@ -125,12 +130,22 @@ namespace WSr.Tests.Factories
             return $"{Environment.NewLine} expected: {string.Join(", ", expected)} {Environment.NewLine} actual: {string.Join(", ", actual)}";
         }
 
-        private byte[] BytesFrom(Encoding enc, string str, int byteCount)
+        private IEnumerable<byte> BytesFrom(Encoding enc, string str)
         {
             IEnumerable<string> Forever(string s) { while (true) yield return s; }
-            
-            return Forever(str).SelectMany(s => enc.GetBytes(s)).Take(byteCount).ToArray();
+
+            return Forever(str).SelectMany(s => enc.GetBytes(s));
         }
+
+        private byte[] BytesFrom(Encoding enc, string str, int byteCount) =>
+        BytesFrom(enc, str)
+            .Take(byteCount)
+            .ToArray();
+
+        public byte[] BytesFromAscii(string str) =>
+        BytesFrom(Encoding.ASCII, str)
+            .Take(Encoding.ASCII.GetByteCount(str))
+            .ToArray();
 
         private byte[] From42Ascii(int count) => BytesFrom(Encoding.ASCII, "42", count);
 
@@ -151,11 +166,11 @@ namespace WSr.Tests.Factories
                 OnNext(21, 20),
                 OnNext(22, 10)
             );
-            
+
             var seq = From42Ascii(writesSize);
             var times = 0;
             socket.Setup(s => s.CreateReader(It.Is<int>(a => a == bufferSize)))
-                .Returns((sch, buf) => 
+                .Returns((sch, buf) =>
                 {
                     seq
                         .Skip((times % 3) * bufferSize)
@@ -180,7 +195,7 @@ namespace WSr.Tests.Factories
             var sut = socket.Object;
 
             var actual = run.Start(
-                create: () => sut.Read(bufferSize, run).Select(show),
+                create: () => sut.ReadToEnd(bufferSize, run).Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 100
@@ -191,6 +206,8 @@ namespace WSr.Tests.Factories
                 actual: actual.Messages,
                 message: debugElementsEqual(expected.Messages, actual.Messages)
             );
+
+            socket.Verify(x => x.Dispose(), Times.Exactly(1));
         }
     }
 }

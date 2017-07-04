@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using WSr.Interfaces;
 using System.IO;
 using System.Linq;
+using System.Reactive;
 
 namespace WSr.Factories
 {
@@ -33,6 +34,11 @@ namespace WSr.Factories
             {
                 return (scheduler, buffer) => Observable
                     .FromAsync(() => Stream.ReadAsync(buffer, 0, bufferSize), scheduler);
+            }
+
+            public Func<IScheduler, byte[], IObservable<Unit>> CreateWriter()
+            {
+                return (scheduler, buffer) => FromAsync(() => Stream.WriteAsync(buffer, 0, buffer.Length), scheduler);
             }
 
             public void Dispose()
@@ -113,19 +119,22 @@ namespace WSr.Factories
             .FromAsync(() => stream.ReadAsync(buffer, 0, bufferSize), scheduler);
         }
 
-        public static IObservable<byte[]> Read(
+        public static IObservable<byte[]> ReadToEnd(
             this ISocket socket,
             int bufferSize,
             IScheduler scheduler = null)
         {
             if (scheduler == null) scheduler = Scheduler.Default;
-            
+
             var buffer = new byte[bufferSize];
-            var reader = socket.CreateReader(bufferSize);
-            
-            return reader(scheduler, buffer)
-                        .Repeat()
-                        .Select(r => buffer.Take(r).ToArray());
+            //var reader = socket.CreateReader(bufferSize);
+
+            return Using(
+                () => socket,
+                s =>
+                s.CreateReader(bufferSize)(scheduler, buffer)
+                    .Repeat()
+                    .Select(r => buffer.Take(r).ToArray()));
         }
     }
 }
