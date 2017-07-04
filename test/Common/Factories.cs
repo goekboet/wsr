@@ -17,19 +17,9 @@ using static WSr.Factories.Fns;
 
 namespace WSr.Tests.Factories
 {
-    internal class TestSchedulers : ISchedulerFactory
+    internal struct TestSocket : ISocket
     {
-        private readonly IScheduler _default = new TestScheduler();
-        public IScheduler CurrentThread => new TestScheduler();
-
-        public IScheduler Immediate => new TestScheduler();
-
-        public IScheduler Default => _default;
-    }
-
-    internal struct TestChannel : IChannel
-    {
-        public TestChannel(string address)
+        public TestSocket(string address)
         {
             Address = address;
         }
@@ -53,8 +43,7 @@ namespace WSr.Tests.Factories
     [TestClass]
     public class Factories : ReactiveTest
     {
-        private IChannel WithAddress(string s) => new TestChannel(s);
-        public ISchedulerFactory schedulers { get; } = new TestSchedulers();
+        private ISocket WithAddress(string s) => new TestSocket(s);
 
         [TestMethod]
         public void GenerateClientObservable()
@@ -178,13 +167,13 @@ namespace WSr.Tests.Factories
                 OnNext(21, show(seq.Skip(bufferSize * 2).Take(bufferSize)))
             );
 
-            var socket = new Mock<IChannel>();
+            var socket = new Mock<ISocket>();
             socket.Setup(x => x.Stream).Returns(stream);
 
             var sut = socket.Object;
 
             var actual = run.Start(
-                create: () => sut.IncomingData(bufferSize, run).Select(show),
+                create: () => sut.Read(bufferSize, run).Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 100

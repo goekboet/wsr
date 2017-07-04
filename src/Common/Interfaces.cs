@@ -5,22 +5,17 @@ using System.Threading.Tasks;
 
 namespace WSr.Interfaces
 {
-    public interface ISchedulerFactory
-    {
-        IScheduler CurrentThread {get ; }
-        IScheduler Immediate { get; }
-        IScheduler Default { get; }
-    }
-
     public interface IServer : IDisposable
     {
-        IObservable<IChannel> Serve(IScheduler on);
+        IObservable<ISocket> Serve(IScheduler on);
     }
 
-    public interface IChannel : IDisposable
+    public interface ISocket : IDisposable
     {
         string Address { get; }
 
-        Stream Stream { get; }
+        //Stream Stream { get; }
+
+        Func<IScheduler, byte[], IObservable<int>> CreateReader(int bufferSize);
     }
 }

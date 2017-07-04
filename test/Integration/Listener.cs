@@ -89,9 +89,9 @@ namespace WSr.Test.Integration.Listener
 
         static TestScheduler scheduler;
 
-        static IObservable<IChannel> ChannelWithAddress(string address, long ticks)
+        static IObservable<ISocket> ChannelWithAddress(string address, long ticks)
         {
-            var channel = new Mock<IChannel>();
+            var channel = new Mock<ISocket>();
             channel.Setup(x => x.Address).Returns(address).Callback(() => WriteLine(address));
             
             return Observable
@@ -192,7 +192,7 @@ namespace WSr.Test.Integration.Listener
             WriteLine("Reading incoming...");
 
             connections
-                .SelectMany(c => c.IncomingData(bufferSize))
+                .SelectMany(c => c.Read(bufferSize))
                 .Select(b => Encoding.ASCII.GetString(b))
                 .Subscribe(
                     onNext:(WriteLine),
