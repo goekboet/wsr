@@ -25,16 +25,14 @@ namespace WSr.Tests.Factories
         }
         public string Address { get; }
 
-        public Stream Stream => throw new NotImplementedException();
+        public Func<IScheduler, byte[], IObservable<int>> CreateReader(int bufferSize)
+        {
+            throw new NotImplementedException();
+        }
 
         public void Dispose()
         {
             return;
-        }
-
-        public Func<IScheduler, byte[], IObservable<int>> Read(int bufferSize)
-        {
-            throw new NotImplementedException();
         }
     }
 
@@ -143,32 +141,41 @@ namespace WSr.Tests.Factories
             var writesSize = 50;
 
             var run = new TestScheduler();
-            var stream = new MemoryStream();
-            var writes = run.CreateColdObservable(
-                OnNext(10, Unit.Default),
-                OnNext(20, Unit.Default)
+            var socket = new Mock<ISocket>();
+
+            var reads = run.CreateHotObservable(
+                OnNext(10, 20),
+                OnNext(11, 20),
+                OnNext(12, 10),
+                OnNext(20, 20),
+                OnNext(21, 20),
+                OnNext(22, 10)
             );
+            
             var seq = From42Ascii(writesSize);
-            writes.Subscribe(
-                onNext: _ => 
+            var times = 0;
+            socket.Setup(s => s.CreateReader(It.Is<int>(a => a == bufferSize)))
+                .Returns((sch, buf) => 
                 {
-                    stream.Write(seq, 0, writesSize);
-                }
-            );
+                    seq
+                        .Skip((times % 3) * bufferSize)
+                        .Take(bufferSize)
+                        .ToArray()
+                        .CopyTo(buf, 0);
+
+                    return reads.Take(1, sch);
+                });
 
             Func<IEnumerable<byte>, string> show = s => Encoding.ASCII.GetString(s.ToArray());
 
             var expected = run.CreateColdObservable(
                 OnNext(10, show(seq.Skip(bufferSize * 0).Take(bufferSize))),
                 OnNext(11, show(seq.Skip(bufferSize * 1).Take(bufferSize))),
-                OnNext(11, show(seq.Skip(bufferSize * 2).Take(bufferSize))),
+                OnNext(12, show(seq.Skip(bufferSize * 2).Take(bufferSize))),
                 OnNext(20, show(seq.Skip(bufferSize * 0).Take(bufferSize))),
                 OnNext(21, show(seq.Skip(bufferSize * 1).Take(bufferSize))),
-                OnNext(21, show(seq.Skip(bufferSize * 2).Take(bufferSize)))
+                OnNext(22, show(seq.Skip(bufferSize * 2).Take(bufferSize)))
             );
-
-            var socket = new Mock<ISocket>();
-            socket.Setup(x => x.Stream).Returns(stream);
 
             var sut = socket.Object;
 
