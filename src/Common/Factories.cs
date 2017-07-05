@@ -13,11 +13,7 @@ using System.Reactive;
 
 namespace WSr.Factories
 {
-    internal class TcpSocket : IServer
-    {
-
-
-        private class ConnectedSocket : ISocket
+    internal class ConnectedSocket : ISocket
         {
             private readonly TcpClient _socket;
 
@@ -41,19 +37,19 @@ namespace WSr.Factories
                 return (scheduler, buffer) => FromAsync(() => Stream.WriteAsync(buffer, 0, buffer.Length), scheduler);
             }
 
-            public void Dispose()
+            public virtual void Dispose()
             {
+                Console.WriteLine("Disposing connected socket");
                 _socket.Dispose();
             }
-
-
 
             public override string ToString()
             {
                 return Address;
             }
         }
-
+    internal class TcpSocket : IServer
+    {
         private readonly TcpListener _listeningSocket;
 
         internal TcpSocket(string ip, int port)
@@ -81,7 +77,7 @@ namespace WSr.Factories
 
         public override void Dispose()
         {
-            Console.WriteLine("Stopping Listener");
+            Console.WriteLine("Disposing listener socket");
             base.Dispose();
         }
 
@@ -89,6 +85,19 @@ namespace WSr.Factories
         {
             Console.WriteLine("Serving...");
             return base.Serve(scheduler);
+        }
+    }
+
+    internal class DebugConnectedSocket : ConnectedSocket
+    {
+        public DebugConnectedSocket(TcpClient connectedSocket) : base(connectedSocket)
+        {
+        }
+
+        public override void Dispose()
+        {
+            Console.WriteLine($"Disposing connected socket: {Address}");
+            base.Dispose();
         }
     }
 
@@ -119,6 +128,21 @@ namespace WSr.Factories
             .FromAsync(() => stream.ReadAsync(buffer, 0, bufferSize), scheduler);
         }
 
+        public static IObservable<byte[]> Read(
+            this ISocket socket,
+            int bufferSize,
+            IScheduler scheduler = null)
+        {
+            if (scheduler == null) scheduler = Scheduler.Default;
+
+            var buffer = new byte[bufferSize];
+            var reader = socket.CreateReader(bufferSize);
+            
+            return reader(scheduler, buffer)
+                .Repeat()
+                .Select(r => buffer.Take(r).ToArray());
+        }
+
         public static IObservable<byte[]> ReadToEnd(
             this ISocket socket,
             int bufferSize,
@@ -127,14 +151,11 @@ namespace WSr.Factories
             if (scheduler == null) scheduler = Scheduler.Default;
 
             var buffer = new byte[bufferSize];
-            //var reader = socket.CreateReader(bufferSize);
-
+            
             return Using(
                 () => socket,
                 s =>
-                s.CreateReader(bufferSize)(scheduler, buffer)
-                    .Repeat()
-                    .Select(r => buffer.Take(r).ToArray()));
+                s.Read(bufferSize, scheduler));
         }
     }
 }

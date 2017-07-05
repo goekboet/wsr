@@ -41,6 +41,9 @@ namespace WSr.Test.Integration.Listener
                         case "ReadIncomingCont":
                             ReadIncomingCont();
                             break;
+                        case "Welcome":
+                            Welcome();
+                            break;
                         default:
                             RunUnrecognized(run);
                             break;
@@ -170,7 +173,7 @@ namespace WSr.Test.Integration.Listener
             WriteLine("Exiting program");
         }
 
-        private static IObservable<ISocket> Connections()
+        private static IConnectableObservable<ISocket> Connections()
         {
             var host = "127.0.0.1";
             var port = 2323;
@@ -180,40 +183,65 @@ namespace WSr.Test.Integration.Listener
             return Observable
                 .Using(
                     resourceFactory: server,
-                    observableFactory: s => s.AcceptConnections(Scheduler.Default))
-                .Publish()
-                .RefCount();
+                    observableFactory: s => s
+                    .AcceptConnections(Scheduler.Default)
+                    .Do(WriteLine))
+                    .Publish();
         }
 
         static void ReadIncomingCont()
         {
             var bufferSize = 10;
-            var terminator = new Subject<Unit>();
+            var serverterminator = new Subject<Unit>();
+            var connectionsterminator = new Subject<Unit>();
             var connections = Connections();
 
-            WriteLine("Publish incoming connections.");
-            ReadKey();
-            WriteLine("Reading incoming...");
+            var incoming = connections
+                .SelectMany(c => c
+                    .ReadToEnd(bufferSize)
+                    .Select(Encoding.ASCII.GetString))
+                .TakeUntil(serverterminator)
+                .Publish();
 
-            var run = connections
-                .SelectMany(c => c.ReadToEnd(bufferSize))
-                .Select(b => Encoding.ASCII.GetString(b))
-                .TakeUntil(terminator)
-                .Subscribe(
+            var run = incoming.Subscribe(
                     onNext: (WriteLine),
                     onError: (WriteLine),
                     onCompleted: () => WriteLine("Complete."));
 
-            WriteLine("Terminating client observable");
+            WriteLine("Any key to Publish incoming connections.");
+            ReadKey();
+            var connectedSockets = connections.Connect();
+
+            WriteLine("Any key to Publish incoming bytes.");
+            ReadKey();
+            var incomingBytes = incoming.Connect();
+
+            WriteLine("Any key to terminate incoming bytes observable");
             Console.ReadKey();
             // lyssnares dispose kör efter complete;
-            terminator.OnNext(Unit.Default);
+            connectionsterminator.OnNext(Unit.Default);
 
-            WriteLine("Disposing subscription");
-            run.Dispose();
+            WriteLine("Any key to terminate incoming connections observable");
             Console.ReadKey();
+            // lyssnares dispose kör efter complete;
+            serverterminator.OnNext(Unit.Default);
 
+            WriteLine("Any key to dispose:");
+            Console.ReadKey();
+            WriteLine("subscription");
+            run.Dispose();
+            WriteLine("disconnect incomingbytes:");
+            incomingBytes.Dispose();
+            WriteLine("disconnect socket connections");
+            connectedSockets.Dispose();
+            
             WriteLine("Exiting program");
+            Console.ReadKey();
+        }
+
+        static void Welcome()
+        {
+
         }
     }
 
