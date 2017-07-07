@@ -8,6 +8,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -208,6 +209,90 @@ namespace WSr.Tests.Factories
             );
 
             socket.Verify(x => x.Dispose(), Times.Exactly(1));
+        }
+
+        string Show(IObservable<byte[]> bytes) => string.Join(", ", bytes.Select(Encoding.ASCII.GetString).ToEnumerable());
+
+        [TestMethod]
+        public void TransformToLines()
+        {
+            // var cr = 0x0d;
+            // var nl = 0x0a;
+            // Func<byte, bool> notCR = b => !(b == cr);
+            // Func<byte, bool> notNL = b => !(b == nl);
+
+            var scheduler = new TestScheduler();
+
+            var input = "one\r\ntwo\r\nthree\r\n\r\n"
+                .Select(x => Convert.ToByte(x))
+                .ToArray();
+
+            var byteBuffer = Observable.Return(input);
+
+            
+            IObservable<string> toLines(byte[] buffer)
+            {
+                return Observable.Create<string>(obs =>
+                {
+                    try
+                    {
+                        var pattern = @"^(?:([^\r\n]+)\r\n)+\r\n";
+                        var regex = new Regex(pattern, RegexOptions.Compiled);
+                        var request = new string(buffer.Select(Convert.ToChar).ToArray());
+
+                        var match = regex.Match(request);
+                        if (!match.Success) obs.OnError(new FormatException());
+
+                        foreach (var line in match.Groups[1].Captures)
+                        {
+                            obs.OnNext(line.ToString());
+                        }
+                    }
+                    catch (System.Exception e)
+                    {
+                        obs.OnError(e);                        
+                    }
+                    
+                    obs.OnCompleted();
+
+                    // var separator = new[] { '\r', '\n' };
+                    // var separator = "\r\n".ToArray();
+                    // try
+                    // {
+                    //     new string(buffer.Select(Convert.ToChar).ToArray())
+                    //         .Split(separator)
+                    //         .ToList()
+                    //         .ForEach(obs.OnNext);
+                    // }
+                    // catch (Exception e)
+                    // {
+                    //     obs.OnError(e);
+                    // }
+
+                    // obs.OnCompleted();
+
+                    return Disposable.Empty;
+                });
+            }
+
+            var expected = scheduler.CreateColdObservable(
+                OnNext(1, "one"),
+                OnNext(1, "two"),
+                OnNext(1, "three"),
+                OnCompleted<string>(1)
+            );
+
+            var actual = scheduler.Start(
+                create: () => byteBuffer.SelectMany(toLines),
+                created: 0,
+                subscribed: 0,
+                disposed: 10
+            );
+
+            ReactiveAssert.AreElementsEqual(
+                expected.Messages, 
+                actual.Messages, 
+                debugElementsEqual(expected.Messages, actual.Messages));
         }
     }
 }
