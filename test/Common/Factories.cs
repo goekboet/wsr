@@ -223,30 +223,51 @@ namespace WSr.Tests.Factories
 
             var scheduler = new TestScheduler();
 
-            var input = "one\r\ntwo\r\nthree\r\n\r\n"
+            var input = 
+                ("GET /chat HTTP/1.1\r\n" +
+                "Host: 127.1.1.1:80\r\n" +
+                "Upgrade: websocket\r\n" +
+                "Connection: Upgrade\r\n" +
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+                "Sec-WebSocket-Version: 13\r\n" +
+                "\r\n")
                 .Select(x => Convert.ToByte(x))
                 .ToArray();
 
             var byteBuffer = Observable.Return(input);
 
             
-            IObservable<string> toLines(byte[] buffer)
+            IObservable<HandShakeRequest> toLines(byte[] buffer)
             {
-                return Observable.Create<string>(obs =>
+                return Observable.Create<HandShakeRequest>(obs =>
                 {
+                    var nextLine = @"([^\r\n]*)\r\n";
+                    var parseRequestLine = @"^GET\s(/\S*)\sHTTP/1\.1$";
+                    var parseHeaderLine = @"^(\S*):\s(\S*)$";
+
                     try
                     {
-                        var pattern = @"^(?:([^\r\n]+)\r\n)+\r\n";
-                        var regex = new Regex(pattern, RegexOptions.Compiled);
                         var request = new string(buffer.Select(Convert.ToChar).ToArray());
+                        var lines = Regex.Matches(request, nextLine);
 
-                        var match = regex.Match(request);
-                        if (!match.Success) obs.OnError(new FormatException());
-
-                        foreach (var line in match.Groups[1].Captures)
+                        var requestline = lines[0].Groups[1].Value;
+                        var url = Regex.Matches(requestline, parseRequestLine)[0].Groups[1].Value;
+                        bool complete = false;
+                        var headers = new Dictionary<string, string>();
+                        for(int i = 1; i < lines.Count - 1; i++)
                         {
-                            obs.OnNext(line.ToString());
+                            var line = lines[i].Groups[1].Value;
+                            var kvp = Regex.Matches(line, parseHeaderLine)[0].Groups;
+                            headers.Add(kvp[1].Value, kvp[2].Value);
+
                         }
+                        complete = lines[lines.Count - 1].Groups[1].Value.Equals("");
+                        
+                        var emit = complete 
+                            ? new HandShakeRequest(url, headers)
+                            : HandShakeRequest.Default;
+
+                        obs.OnNext(emit);
                     }
                     catch (System.Exception e)
                     {
@@ -255,35 +276,29 @@ namespace WSr.Tests.Factories
                     
                     obs.OnCompleted();
 
-                    // var separator = new[] { '\r', '\n' };
-                    // var separator = "\r\n".ToArray();
-                    // try
-                    // {
-                    //     new string(buffer.Select(Convert.ToChar).ToArray())
-                    //         .Split(separator)
-                    //         .ToList()
-                    //         .ForEach(obs.OnNext);
-                    // }
-                    // catch (Exception e)
-                    // {
-                    //     obs.OnError(e);
-                    // }
-
-                    // obs.OnCompleted();
-
                     return Disposable.Empty;
                 });
             }
 
+            var expectedRequest = new HandShakeRequest(
+                url: "/chat",
+                headers: new Dictionary<string, string>()
+                {
+                    ["Host"] = "127.1.1.1:80",
+                    ["Upgrade"] = "websocket",
+                    ["Connection"] = "Upgrade",
+                    ["Sec-WebSocket-Key"] = "dGhlIHNhbXBsZSBub25jZQ==",
+                    ["Sec-WebSocket-Version"] = "13"
+                }
+            ).ToString();
+
             var expected = scheduler.CreateColdObservable(
-                OnNext(1, "one"),
-                OnNext(1, "two"),
-                OnNext(1, "three"),
+                OnNext(1, expectedRequest),
                 OnCompleted<string>(1)
             );
 
             var actual = scheduler.Start(
-                create: () => byteBuffer.SelectMany(toLines),
+                create: () => byteBuffer.SelectMany(toLines).Select(x => x.ToString()),
                 created: 0,
                 subscribed: 0,
                 disposed: 10
