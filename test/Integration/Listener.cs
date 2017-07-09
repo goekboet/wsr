@@ -11,6 +11,7 @@ using Microsoft.Reactive.Testing;
 using Moq;
 using System.Linq;
 using System.Text;
+using WSr.Termination;
 
 namespace WSr.Test.Integration.Listener
 {
@@ -44,11 +45,29 @@ namespace WSr.Test.Integration.Listener
                         case "Welcome":
                             Welcome();
                             break;
+                        case "Sigterm":
+                            Sigterm();
+                            break;
                         default:
                             RunUnrecognized(run);
                             break;
                     }
                 });
+        }
+
+        private static void Sigterm()
+        {
+            var termination = Terminations.SigInt();
+
+            Console.WriteLine("will subscribe to termination");
+            termination.Take(1).Subscribe(
+                onNext: _ => Console.WriteLine("terminated")
+            );
+            Console.ReadKey();
+            Console.WriteLine("Waiting for cancellation");
+            Console.ReadKey();
+
+
         }
 
         static void RunUnrecognized(string run)

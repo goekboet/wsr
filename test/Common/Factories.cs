@@ -14,7 +14,9 @@ using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using WSr.Interfaces;
+using WSr.Handshake;
 using static WSr.Factories.Fns;
+using static WSr.Handshake.Parse;
 
 namespace WSr.Tests.Factories
 {
@@ -213,101 +215,5 @@ namespace WSr.Tests.Factories
 
         string Show(IObservable<byte[]> bytes) => string.Join(", ", bytes.Select(Encoding.ASCII.GetString).ToEnumerable());
 
-        [TestMethod]
-        public void TransformToLines()
-        {
-            // var cr = 0x0d;
-            // var nl = 0x0a;
-            // Func<byte, bool> notCR = b => !(b == cr);
-            // Func<byte, bool> notNL = b => !(b == nl);
-
-            var scheduler = new TestScheduler();
-
-            var input = 
-                ("GET /chat HTTP/1.1\r\n" +
-                "Host: 127.1.1.1:80\r\n" +
-                "Upgrade: websocket\r\n" +
-                "Connection: Upgrade\r\n" +
-                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
-                "Sec-WebSocket-Version: 13\r\n" +
-                "\r\n")
-                .Select(x => Convert.ToByte(x))
-                .ToArray();
-
-            var byteBuffer = Observable.Return(input);
-
-            
-            IObservable<HandShakeRequest> toLines(byte[] buffer)
-            {
-                return Observable.Create<HandShakeRequest>(obs =>
-                {
-                    var nextLine = @"([^\r\n]*)\r\n";
-                    var parseRequestLine = @"^GET\s(/\S*)\sHTTP/1\.1$";
-                    var parseHeaderLine = @"^(\S*):\s(\S*)$";
-
-                    try
-                    {
-                        var request = new string(buffer.Select(Convert.ToChar).ToArray());
-                        var lines = Regex.Matches(request, nextLine);
-
-                        var requestline = lines[0].Groups[1].Value;
-                        var url = Regex.Matches(requestline, parseRequestLine)[0].Groups[1].Value;
-                        bool complete = false;
-                        var headers = new Dictionary<string, string>();
-                        for(int i = 1; i < lines.Count - 1; i++)
-                        {
-                            var line = lines[i].Groups[1].Value;
-                            var kvp = Regex.Matches(line, parseHeaderLine)[0].Groups;
-                            headers.Add(kvp[1].Value, kvp[2].Value);
-
-                        }
-                        complete = lines[lines.Count - 1].Groups[1].Value.Equals("");
-                        
-                        var emit = complete 
-                            ? new HandShakeRequest(url, headers)
-                            : HandShakeRequest.Default;
-
-                        obs.OnNext(emit);
-                    }
-                    catch (System.Exception e)
-                    {
-                        obs.OnError(e);                        
-                    }
-                    
-                    obs.OnCompleted();
-
-                    return Disposable.Empty;
-                });
-            }
-
-            var expectedRequest = new HandShakeRequest(
-                url: "/chat",
-                headers: new Dictionary<string, string>()
-                {
-                    ["Host"] = "127.1.1.1:80",
-                    ["Upgrade"] = "websocket",
-                    ["Connection"] = "Upgrade",
-                    ["Sec-WebSocket-Key"] = "dGhlIHNhbXBsZSBub25jZQ==",
-                    ["Sec-WebSocket-Version"] = "13"
-                }
-            ).ToString();
-
-            var expected = scheduler.CreateColdObservable(
-                OnNext(1, expectedRequest),
-                OnCompleted<string>(1)
-            );
-
-            var actual = scheduler.Start(
-                create: () => byteBuffer.SelectMany(toLines).Select(x => x.ToString()),
-                created: 0,
-                subscribed: 0,
-                disposed: 10
-            );
-
-            ReactiveAssert.AreElementsEqual(
-                expected.Messages, 
-                actual.Messages, 
-                debugElementsEqual(expected.Messages, actual.Messages));
-        }
     }
 }
