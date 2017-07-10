@@ -82,5 +82,16 @@ namespace WSr.Tests.Handshake
 
             Assert.AreEqual(expected, actual);
         }
+
+        [TestMethod]
+        public void CanGenerateResponseKey()
+        {
+            var clientKey = "dGhlIHNhbXBsZSBub25jZQ==";
+            var expected = "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=";
+
+            var actual = ResponseKey(clientKey);
+
+            Assert.AreEqual(expected, actual);
+        }
     }
 }

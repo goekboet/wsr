@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace WSr.Handshake
 {
@@ -40,7 +42,7 @@ namespace WSr.Handshake
                 var requestline = lines[0].Groups[1].Value;
                 var url = Regex.Matches(requestline, parseRequestLine)[0].Groups[1].Value;
                 bool complete = false;
-                
+
                 var headers = new Dictionary<string, string>();
                 for (int i = 1; i < lines.Count - 1; i++)
                 {
@@ -49,7 +51,7 @@ namespace WSr.Handshake
                     headers.Add(kvp[1].Value, kvp[2].Value);
 
                 }
-                
+
                 complete = lines[lines.Count - 1].Groups[1].Value.Equals("");
 
                 return complete
@@ -63,7 +65,8 @@ namespace WSr.Handshake
             }
         }
 
-        private static HashSet<string> RequiredHeaders = new HashSet<string>(new [] 
+
+        private static HashSet<string> RequiredHeaders = new HashSet<string>(new[]
         {
             "Host",
             "Upgrade",
@@ -75,6 +78,15 @@ namespace WSr.Handshake
         public static bool Validate(Request request)
         {
             return RequiredHeaders.IsSubsetOf(new HashSet<string>(request.Headers.Keys));
+        }
+
+        private static string ws = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+        private static SHA1 _sha1 = SHA1.Create();
+        private static byte[] hash(string s) => _sha1.ComputeHash(Encoding.UTF8.GetBytes(s));
+
+        public static string ResponseKey(string requestKey)
+        {
+            return Convert.ToBase64String(hash(requestKey + ws));
         }
     }
 }
