@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Text;
+using WSr.Interfaces;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 
 namespace WSr.Handshake
 {
@@ -87,6 +90,23 @@ namespace WSr.Handshake
         public static string ResponseKey(string requestKey)
         {
             return Convert.ToBase64String(hash(requestKey + ws));
+        }
+
+        public static byte[] Respond(Request request)
+        {
+
+        }
+
+        public static IObservable<IProtocol> Handshake(ISocket socket, IScheduler scheduler)
+        {
+            // var bufferSize = 8192;
+            // var buffer = new byte[bufferSize];
+            // var reader = socket.CreateReader(bufferSize);
+
+            // var read = reader(scheduler, buffer)
+            //     .Select(x => buffer.Take(x))
+            //     .Select(ToHandshakeRequest);
+                
         }
     }
 }

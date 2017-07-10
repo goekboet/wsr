@@ -16,5 +16,11 @@ namespace WSr.Interfaces
         Func<IScheduler, byte[], IObservable<Unit>> CreateWriter();
 
         Func<IScheduler, byte[], IObservable<int>> CreateReader(int bufferSize);
+
+    }
+
+    public interface IProtocol : IDisposable
+    {
+        IObservable<Unit> ConnectionLost();
     }
 }
