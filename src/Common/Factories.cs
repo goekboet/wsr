@@ -13,41 +13,52 @@ using System.Reactive;
 
 namespace WSr.Factories
 {
-    internal class ConnectedSocket : ISocket
-        {
-            private readonly TcpClient _socket;
-
-            internal ConnectedSocket(TcpClient connectedSocket)
-            {
-                _socket = connectedSocket;
-            }
-
-            public string Address => _socket.Client.RemoteEndPoint.ToString();
-
-            private Stream Stream => _socket.GetStream();
-
-            public Func<IScheduler, byte[], IObservable<int>> CreateReader(int bufferSize)
-            {
-                return (scheduler, buffer) => Observable
-                    .FromAsync(() => Stream.ReadAsync(buffer, 0, bufferSize), scheduler);
-            }
-
-            public Func<IScheduler, byte[], IObservable<Unit>> CreateWriter()
-            {
-                return (scheduler, buffer) => FromAsync(() => Stream.WriteAsync(buffer, 0, buffer.Length), scheduler);
-            }
-
-            public virtual void Dispose()
-            {
-                Console.WriteLine("Disposing connected socket");
-                _socket.Dispose();
-            }
-
-            public override string ToString()
-            {
-                return Address;
-            }
+    public class TestSocket : ConnectedSocket
+    {
+        public TestSocket(Stream teststream) : base() 
+        { 
+            Stream = teststream;
         }
+
+        public override Stream Stream { get; }
+    }
+    public class ConnectedSocket : ISocket
+    {
+        private readonly TcpClient _socket;
+
+        protected ConnectedSocket() {}
+
+        internal ConnectedSocket(TcpClient connectedSocket)
+        {
+            _socket = connectedSocket;
+        }
+
+        public string Address => _socket.Client.RemoteEndPoint.ToString();
+
+        public virtual Stream Stream => _socket.GetStream();
+
+        public Func<IScheduler, byte[], IObservable<int>> CreateReader(int bufferSize)
+        {
+            return (scheduler, buffer) => Observable
+                .FromAsync(() => Stream.ReadAsync(buffer, 0, bufferSize), scheduler);
+        }
+
+        public Func<IScheduler, byte[], IObservable<Unit>> CreateWriter()
+        {
+            return (scheduler, buffer) => FromAsync(() => Stream.WriteAsync(buffer, 0, buffer.Length), scheduler);
+        }
+
+        public virtual void Dispose()
+        {
+            Console.WriteLine("Disposing connected socket");
+            _socket.Dispose();
+        }
+
+        public override string ToString()
+        {
+            return Address;
+        }
+    }
     internal class TcpSocket : IServer
     {
         private readonly TcpListener _listeningSocket;
@@ -137,7 +148,7 @@ namespace WSr.Factories
 
             var buffer = new byte[bufferSize];
             var reader = socket.CreateReader(bufferSize);
-            
+
             return reader(scheduler, buffer)
                 .Repeat()
                 .Select(r => buffer.Take(r).ToArray());
@@ -151,7 +162,7 @@ namespace WSr.Factories
             if (scheduler == null) scheduler = Scheduler.Default;
 
             var buffer = new byte[bufferSize];
-            
+
             return Using(
                 () => socket,
                 s =>

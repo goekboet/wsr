@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Reactive;
 using System.Reactive.Concurrency;
 
@@ -21,6 +22,7 @@ namespace WSr.Interfaces
 
     public interface IProtocol : IDisposable
     {
-        IObservable<Unit> ConnectionLost();
+        IObservable<Unit> Process(IScheduler sceduler);
+        IObservable<Unit> ConnectionLost(IScheduler scheduler);
     }
 }
