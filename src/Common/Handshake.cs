@@ -7,6 +7,7 @@ using System.Text;
 using WSr.Interfaces;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using WSr.Protocol;
 
 namespace WSr.Handshake
 {
@@ -92,21 +93,31 @@ namespace WSr.Handshake
             return Convert.ToBase64String(hash(requestKey + ws));
         }
 
+        private static string _response = 
+                "HTTP/1.1 101 Switching Protocols\r\n" +
+                "Upgrade: websocket\r\n" +
+                "Connection: Upgrade\r\n" +
+                "Sec-WebSocket-Accept: {0}\r\n\r\n";
+
         public static byte[] Respond(Request request)
         {
-
+            var requestKey = request.Headers["Sec-WebSocket-Key"]; 
+            return string.Format(_response, ResponseKey(requestKey))
+                .Select(Convert.ToByte)
+                .ToArray();
         }
 
-        public static IObservable<IProtocol> Handshake(ISocket socket, IScheduler scheduler)
+        public static IObservable<IProtocol> OpenHandshake(ISocket socket, IScheduler scheduler)
         {
-            // var bufferSize = 8192;
-            // var buffer = new byte[bufferSize];
-            // var reader = socket.CreateReader(bufferSize);
+            var bufferSize = 8192;
+            var buffer = new byte[bufferSize];
+            var reader = socket.CreateReader(bufferSize);
 
-            // var read = reader(scheduler, buffer)
-            //     .Select(x => buffer.Take(x))
-            //     .Select(ToHandshakeRequest);
-                
+            return reader(scheduler, buffer)
+                .Select(x => buffer.Take(x).ToArray())
+                .Select(ToHandshakeRequest)
+                .Select(x => new PingPongProtocol(socket, x) as IProtocol)
+                .Catch<IProtocol, FormatException>(e => Observable.Return(new FailedHandshake(socket, 400) as IProtocol));
         }
     }
 }

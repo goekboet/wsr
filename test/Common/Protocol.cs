@@ -30,12 +30,13 @@ namespace WSr.Tests.Protocol
             var sut = new FailedHandshake(socket, 400);
 
             var expected = run.CreateHotObservable(
+                OnNext(2, Unit.Default),
                 OnCompleted<Unit>(2)
             );
 
             var actual = run.Start(
                 create: () => sut.Process(run)
-                    .TakeUntil(sut.ConnectionLost(run)),
+                    .Take(1),
                     created: 0,
                     subscribed: 0,
                     disposed: 10

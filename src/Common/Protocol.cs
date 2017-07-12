@@ -4,6 +4,7 @@ using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Text;
+using WSr.Handshake;
 using WSr.Interfaces;
 
 namespace WSr.Protocol
@@ -11,16 +12,16 @@ namespace WSr.Protocol
     public class PingPongProtocol : IProtocol
     {
         private ISocket _socket;
-        private byte[] handshakeresponse;
+        private Request _request;
 
         private IObservable<Unit> SendResponse(IScheduler scheduler)
         {
             var writer = _socket.CreateWriter();
 
-            return writer(scheduler, handshakeresponse);
+            return writer(scheduler, Parse.Respond(_request));
         }
 
-        public PingPongProtocol(ISocket socket, byte[] handshakeresponse)
+        public PingPongProtocol(ISocket socket, Request request)
         {
             _socket = socket;
         }
@@ -75,5 +76,7 @@ namespace WSr.Protocol
         {
             _socket.Dispose();
         }
+
+        public override string ToString() => $"Failed handshake with {_socket.ToString()}";
     }
 }

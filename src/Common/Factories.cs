@@ -15,12 +15,17 @@ namespace WSr.Factories
 {
     public class TestSocket : ConnectedSocket
     {
-        public TestSocket(Stream teststream) : base() 
+        private string _testIdentifier = null;
+        public TestSocket(Stream teststream, string testidentifier = "") 
+            : base() 
         { 
             Stream = teststream;
+            _testIdentifier = testidentifier;
         }
 
         public override Stream Stream { get; }
+
+        public override string ToString() => _testIdentifier;
     }
     public class ConnectedSocket : ISocket
     {
