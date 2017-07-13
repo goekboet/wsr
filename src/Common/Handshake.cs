@@ -116,7 +116,7 @@ namespace WSr.Handshake
             return reader(scheduler, buffer)
                 .Select(x => buffer.Take(x).ToArray())
                 .Select(ToHandshakeRequest)
-                .Select(x => new PingPongProtocol(socket, x) as IProtocol)
+                .Select(x => new OpCodes(socket, x) as IProtocol)
                 .Catch<IProtocol, FormatException>(e => Observable.Return(new FailedHandshake(socket, 400) as IProtocol));
         }
     }

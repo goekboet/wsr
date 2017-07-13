@@ -9,7 +9,7 @@ using WSr.Interfaces;
 
 namespace WSr.Protocol
 {
-    public class PingPongProtocol : IProtocol
+    public class OpCodes : IProtocol
     {
         private ISocket _socket;
         private Request _request;
@@ -21,9 +21,10 @@ namespace WSr.Protocol
             return writer(scheduler, Parse.Respond(_request));
         }
 
-        public PingPongProtocol(ISocket socket, Request request)
+        public OpCodes(ISocket socket, Request request)
         {
             _socket = socket;
+            _request = request;
         }
 
         public IObservable<Unit> Process(IScheduler scheduler)
@@ -40,6 +41,8 @@ namespace WSr.Protocol
         {
             _socket.Dispose();
         }
+
+        public override string ToString() => $"Processing opcodes for {_socket.ToString()}";
     }
 
     public class FailedHandshake : IProtocol
