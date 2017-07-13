@@ -7,7 +7,7 @@ using System.Reactive.Linq;
 using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using WSr.Factories;
+using WSr.ConnectedSocket;
 using WSr.Handshake;
 using WSr.Interfaces;
 using WSr.Protocol;

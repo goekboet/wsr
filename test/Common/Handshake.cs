@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using WSr.Factories;
+using WSr.ConnectedSocket;
 using WSr.Handshake;
 using WSr.Interfaces;
 using WSr.Protocol;
@@ -140,7 +140,7 @@ namespace WSr.Tests.Handshake
                .ToArray());
             var identifier = "testsocket";
 
-            var socket = new TestSocket(input, identifier) as ISocket;
+            var socket = new TestSocket(input, identifier) as IConnectedSocket;
             var incomingSocket = Observable.Return(socket);
 
             var protocol = new FailedHandshake(socket, 400) as IProtocol;
@@ -182,7 +182,7 @@ namespace WSr.Tests.Handshake
                 .ToArray());
             var identifier = "testsocket";
 
-            var socket = new TestSocket(input, identifier) as ISocket;
+            var socket = new TestSocket(input, identifier) as IConnectedSocket;
             var incomingSocket = Observable.Return(socket);
 
             var protocol = new FailedHandshake(socket, 400) as IProtocol;

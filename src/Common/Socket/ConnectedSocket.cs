@@ -11,9 +11,9 @@ using System.IO;
 using System.Linq;
 using System.Reactive;
 
-namespace WSr.Factories
+namespace WSr.ConnectedSocket
 {
-    public class TestSocket : ConnectedSocket
+    public class TestSocket : TcpConnection
     {
         private string _testIdentifier = null;
         public TestSocket(Stream teststream, string testidentifier = "") 
@@ -27,13 +27,13 @@ namespace WSr.Factories
 
         public override string ToString() => _testIdentifier;
     }
-    public class ConnectedSocket : ISocket
+    public class TcpConnection : IConnectedSocket
     {
         private readonly TcpClient _socket;
 
-        protected ConnectedSocket() {}
+        protected TcpConnection() {}
 
-        internal ConnectedSocket(TcpClient connectedSocket)
+        internal TcpConnection(TcpClient connectedSocket)
         {
             _socket = connectedSocket;
         }
@@ -64,78 +64,9 @@ namespace WSr.Factories
             return Address;
         }
     }
-    internal class TcpSocket : IServer
-    {
-        private readonly TcpListener _listeningSocket;
-
-        internal TcpSocket(string ip, int port)
-        {
-            _listeningSocket = new TcpListener(IPAddress.Parse(ip), port);
-            _listeningSocket.Start();
-        }
-
-        public virtual void Dispose()
-        {
-            _listeningSocket.Stop();
-        }
-
-        public virtual IObservable<ISocket> Serve(IScheduler scheduler)
-        {
-            return Defer(() =>
-                FromAsync(() => _listeningSocket.AcceptTcpClientAsync(), scheduler))
-                .Select(c => new ConnectedSocket(c));
-        }
-    }
-
-    internal class DebugTcpSocket : TcpSocket
-    {
-        public DebugTcpSocket(string ip, int port) : base(ip, port) { }
-
-        public override void Dispose()
-        {
-            Console.WriteLine("Disposing listener socket");
-            base.Dispose();
-        }
-
-        public override IObservable<ISocket> Serve(IScheduler scheduler)
-        {
-            Console.WriteLine("Serving...");
-            return base.Serve(scheduler);
-        }
-    }
-
-    internal class DebugConnectedSocket : ConnectedSocket
-    {
-        public DebugConnectedSocket(TcpClient connectedSocket) : base(connectedSocket)
-        {
-        }
-
-        public override void Dispose()
-        {
-            Console.WriteLine($"Disposing connected socket: {Address}");
-            base.Dispose();
-        }
-    }
 
     public static class Fns
     {
-        public static IServer ListenTo(string ip, int port)
-        {
-            return new TcpSocket(ip, port);
-        }
-
-        public static IServer AcceptAndDebug(string ip, int port)
-        {
-            return new DebugTcpSocket(ip, port);
-        }
-
-        public static IObservable<ISocket> AcceptConnections(
-            this IServer server,
-            IScheduler scheduler)
-        {
-            return server.Serve(scheduler).Repeat();
-        }
-
         public static Func<IScheduler, byte[], IObservable<int>> CreateReader(
             this Stream stream,
             int bufferSize)
@@ -145,7 +76,7 @@ namespace WSr.Factories
         }
 
         public static IObservable<byte[]> Read(
-            this ISocket socket,
+            this IConnectedSocket socket,
             int bufferSize,
             IScheduler scheduler = null)
         {
@@ -160,7 +91,7 @@ namespace WSr.Factories
         }
 
         public static IObservable<byte[]> ReadToEnd(
-            this ISocket socket,
+            this IConnectedSocket socket,
             int bufferSize,
             IScheduler scheduler = null)
         {

@@ -5,13 +5,15 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using WSr.Interfaces;
-using static WSr.Factories.Fns;
 using static System.Console;
 using Microsoft.Reactive.Testing;
 using Moq;
 using System.Linq;
 using System.Text;
 using WSr.Termination;
+using WSr.ConnectedSocket;
+
+using static WSr.ListeningSocket.Fns;
 
 namespace WSr.Test.Integration.Listener
 {
@@ -75,7 +77,7 @@ namespace WSr.Test.Integration.Listener
             WriteLine($"Unrecognized Run '{run}'. Exiting Program");
         }
 
-        static Func<IServer> ServerFactory(string host, int port)
+        static Func<IListeningSocket> ServerFactory(string host, int port)
         {
             return () => AcceptAndDebug(host, port);
         }
@@ -111,9 +113,9 @@ namespace WSr.Test.Integration.Listener
 
         static TestScheduler scheduler;
 
-        static IObservable<ISocket> ChannelWithAddress(string address, long ticks)
+        static IObservable<IConnectedSocket> ChannelWithAddress(string address, long ticks)
         {
-            var channel = new Mock<ISocket>();
+            var channel = new Mock<IConnectedSocket>();
             channel.Setup(x => x.Address).Returns(address).Callback(() => WriteLine(address));
 
             return Observable
@@ -192,7 +194,7 @@ namespace WSr.Test.Integration.Listener
             WriteLine("Exiting program");
         }
 
-        private static IConnectableObservable<ISocket> Connections()
+        private static IConnectableObservable<IConnectedSocket> Connections()
         {
             var host = "127.0.0.1";
             var port = 2323;

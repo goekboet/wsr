@@ -2,71 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using WSr.Interfaces;
-using WSr.Handshake;
-using static WSr.Factories.Fns;
-using static WSr.Handshake.Parse;
+using WSr.ConnectedSocket;
 
-namespace WSr.Tests.Factories
+using static WSr.Tests.Functions.ListConstruction;
+using static WSr.Tests.Functions.StringEncoding;
+using static WSr.Tests.Functions.Debug;
+
+namespace WSr.Tests.ConnectedSocket
 {
-    public class Factories : ReactiveTest
+    public class ConnectedSocket : ReactiveTest
     {
-        // private ISocket WithAddress(string s) => new TestSocket(s);
-
-        // [TestMethod]
-        // public void GenerateClientObservable()
-        // {
-        //     var run = new TestScheduler();
-
-        //     var socket = run.CreateHotObservable(
-        //         OnNext(0, WithAddress("0")),
-        //         OnNext(100, WithAddress("1")),
-        //         OnNext(200, WithAddress("2")),
-        //         OnNext(300, WithAddress("3"))
-        //     );
-
-        //     var expected = run.CreateHotObservable(
-        //         OnNext(200, "2")
-        //     );
-
-        //     var server = new Mock<IServer>();
-        //     server
-        //         .Setup(x => x.Serve(It.IsAny<IScheduler>()))
-        //         .Returns<IScheduler>(s => socket.Take(1, s));
-
-        //     var actual = run.Start(
-        //         create: () => Observable
-        //             .Using(
-        //                 () => server.Object,
-        //                 s => s.AcceptConnections(run)
-        //                         .Select(x => x.Address)),
-        //         created: 50,
-        //         subscribed: 150,
-        //         disposed: 250
-        //     );
-
-        //     ReactiveAssert.AreElementsEqual(
-        //         expected: expected.Messages,
-        //         actual: actual.Messages,
-        //         message: $"{Environment.NewLine} expected: {string.Join(", ", expected.Messages)} {Environment.NewLine} actual: {string.Join(", ", actual.Messages)}");
-
-        //     server.Verify(x => x.Dispose(), Times.Exactly(1));
-        // }
-
-        private IEnumerable<byte> Nulls() { while (true) yield return (byte)'\0'; }
-
-
         [TestMethod]
         [DataRow(10, 20)]
         [DataRow(20, 10)]
@@ -100,29 +51,6 @@ namespace WSr.Tests.Factories
                actual: actual.Messages,
                message: $"{Environment.NewLine} expected: {string.Join(", ", expected.Messages)} {Environment.NewLine} actual: {string.Join(", ", actual.Messages)}");
         }
-
-        private string debugElementsEqual<T>(IList<Recorded<Notification<T>>> expected, IList<Recorded<Notification<T>>> actual)
-        {
-            return $"{Environment.NewLine} expected: {string.Join(", ", expected)} {Environment.NewLine} actual: {string.Join(", ", actual)}";
-        }
-
-        private IEnumerable<byte> BytesFrom(Encoding enc, string str)
-        {
-            IEnumerable<string> Forever(string s) { while (true) yield return s; }
-
-            return Forever(str).SelectMany(s => enc.GetBytes(s));
-        }
-
-        private byte[] BytesFrom(Encoding enc, string str, int byteCount) =>
-        BytesFrom(enc, str)
-            .Take(byteCount)
-            .ToArray();
-
-        public byte[] BytesFromAscii(string str) =>
-        BytesFrom(Encoding.ASCII, str)
-            .Take(Encoding.ASCII.GetByteCount(str))
-            .ToArray();
-
         private byte[] From42Ascii(int count) => BytesFrom(Encoding.ASCII, "42", count);
 
         [TestMethod]
@@ -132,7 +60,7 @@ namespace WSr.Tests.Factories
             var writesSize = 50;
 
             var run = new TestScheduler();
-            var socket = new Mock<ISocket>();
+            var socket = new Mock<IConnectedSocket>();
 
             var reads = run.CreateHotObservable(
                 OnNext(10, 20),

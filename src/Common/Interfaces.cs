@@ -5,12 +5,12 @@ using System.Reactive.Concurrency;
 
 namespace WSr.Interfaces
 {
-    public interface IServer : IDisposable
+    public interface IListeningSocket : IDisposable
     {
-        IObservable<ISocket> Serve(IScheduler on);
+        IObservable<IConnectedSocket> Connect(IScheduler on);
     }
 
-    public interface ISocket : IDisposable
+    public interface IConnectedSocket : IDisposable
     {
         string Address { get; }
 

@@ -107,7 +107,7 @@ namespace WSr.Handshake
                 .ToArray();
         }
 
-        public static IObservable<IProtocol> OpenHandshake(ISocket socket, IScheduler scheduler)
+        public static IObservable<IProtocol> OpenHandshake(IConnectedSocket socket, IScheduler scheduler)
         {
             var bufferSize = 8192;
             var buffer = new byte[bufferSize];

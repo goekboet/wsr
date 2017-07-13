@@ -11,7 +11,7 @@ namespace WSr.Protocol
 {
     public class OpCodes : IProtocol
     {
-        private ISocket _socket;
+        private IConnectedSocket _socket;
         private Request _request;
 
         private IObservable<Unit> SendResponse(IScheduler scheduler)
@@ -21,7 +21,7 @@ namespace WSr.Protocol
             return writer(scheduler, Parse.Respond(_request));
         }
 
-        public OpCodes(ISocket socket, Request request)
+        public OpCodes(IConnectedSocket socket, Request request)
         {
             _socket = socket;
             _request = request;
@@ -52,7 +52,7 @@ namespace WSr.Protocol
             [400] = "400 Bad Request"
         };
         
-        private ISocket _socket;
+        private IConnectedSocket _socket;
         private int _code;
 
         private IObservable<Unit> SendResponse(IScheduler scheduler)
@@ -62,7 +62,7 @@ namespace WSr.Protocol
             return writer(scheduler, Encoding.ASCII.GetBytes(Response[_code]));
         }
 
-        public FailedHandshake(ISocket socket, int code)
+        public FailedHandshake(IConnectedSocket socket, int code)
         {
             _socket = socket;
             _code = code;
