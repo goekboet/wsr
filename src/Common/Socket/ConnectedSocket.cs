@@ -65,8 +65,18 @@ namespace WSr.ConnectedSocket
         }
     }
 
-    public static class Fns
+    public static class Extensions
     {
+        public static IObservable<Unit> Write(
+            this IConnectedSocket socket,
+            byte[] bytes,
+            IScheduler scheduler)
+        {
+            var writer = socket.CreateWriter();
+
+            return writer(scheduler, bytes);
+        }
+
         public static Func<IScheduler, byte[], IObservable<int>> CreateReader(
             this Stream stream,
             int bufferSize)
@@ -78,10 +88,8 @@ namespace WSr.ConnectedSocket
         public static IObservable<byte[]> Read(
             this IConnectedSocket socket,
             int bufferSize,
-            IScheduler scheduler = null)
+            IScheduler scheduler)
         {
-            if (scheduler == null) scheduler = Scheduler.Default;
-
             var buffer = new byte[bufferSize];
             var reader = socket.CreateReader(bufferSize);
 
@@ -101,8 +109,7 @@ namespace WSr.ConnectedSocket
 
             return Using(
                 () => socket,
-                s =>
-                s.Read(bufferSize, scheduler));
+                s => s.Read(bufferSize, scheduler));
         }
     }
 }

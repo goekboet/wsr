@@ -22,7 +22,7 @@ namespace WSr.Interfaces
 
     public interface IProtocol : IDisposable
     {
-        IObservable<Unit> Process(IScheduler sceduler);
-        IObservable<Unit> ConnectionLost(IScheduler scheduler);
+        IObservable<Unit> Process(IScheduler sceduler = null);
+        IObservable<Unit> ConnectionLost(IScheduler scheduler = null);
     }
 }

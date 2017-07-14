@@ -4,6 +4,7 @@ using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Text;
+using WSr.ConnectedSocket;
 using WSr.Handshake;
 using WSr.Interfaces;
 
@@ -16,9 +17,7 @@ namespace WSr.Protocol
 
         private IObservable<Unit> SendResponse(IScheduler scheduler)
         {
-            var writer = _socket.CreateWriter();
-
-            return writer(scheduler, Parse.Respond(_request));
+            return _socket.Write(Parse.Respond(_request), scheduler);
         }
 
         public OpCodes(IConnectedSocket socket, Request request)
@@ -29,11 +28,15 @@ namespace WSr.Protocol
 
         public IObservable<Unit> Process(IScheduler scheduler)
         {
+            if (scheduler == null) scheduler = Scheduler.Default;
+
             return SendResponse(scheduler).Concat(Observable.Never<Unit>());
         }
 
         public IObservable<Unit> ConnectionLost(IScheduler scheduler)
         {
+            if (scheduler == null) scheduler = Scheduler.Default;
+
             return Observable.Never<Unit>();
         }
 
