@@ -103,13 +103,24 @@ namespace WSr.ConnectedSocket
             int bufferSize,
             IScheduler scheduler = null)
         {
-            if (scheduler == null) scheduler = Scheduler.Default;
-
             var buffer = new byte[bufferSize];
 
             return Using(
                 () => socket,
                 s => s.Read(bufferSize, scheduler));
+        }
+
+        public static IObservable<byte> ToBytes(byte[] buffer, IScheduler scheduler = null)
+        {
+             if (scheduler == null) scheduler = Scheduler.Default;
+
+            return Observable.Create<byte>(o => {
+                foreach (var b in buffer)
+                {
+                    o.OnNext(b);
+                }
+                return Disposable.Empty;
+            });
         }
     }
 }
