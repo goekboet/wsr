@@ -3,17 +3,26 @@ using System.Collections.Generic;
 
 namespace WSr.Frame
 {
+    public static class Opcode
+    {
+        public static int Continuation = 0;
+        public static int Text = 1;
+        public static int Binary = 2;
+        public static int Ping = 9;
+        public static int Pong = 10;
+    }
+    
     public class Frame
     {
         public bool Fin { get; }
-        public byte Opcode { get; }
+        public int Opcode { get; }
         public bool Mask { get; }
         public uint Lenght { get; }
         public byte[] Payload { get; }
 
         public Frame(
             bool fin,
-            byte opcode,
+            int opcode,
             bool mask,
             uint lenght,
             byte[] payload)
