@@ -116,40 +116,7 @@ namespace WSr.Tests.ConnectedSocket
             socket.Verify(x => x.Dispose(), Times.Exactly(1));
         }
 
-        [TestMethod]
-        public void MakeByteObservableFromBuffer()
-        {
-            var run = new TestScheduler();
-            var buffers = run.CreateHotObservable(
-                OnNext(10, new byte[] { 0x00, 0x01, 0x02}),
-                OnNext(11, new byte[] { 0x03, 0x04, 0x05}),
-                OnNext(12, new byte[] { 0x06, 0x07, 0x08})
-            );
-
-            var expected = run.CreateHotObservable(
-                OnNext(10, (byte)0x00),
-                OnNext(10, (byte)0x01),
-                OnNext(10, (byte)0x02),
-                OnNext(11, (byte)0x03),
-                OnNext(11, (byte)0x04),
-                OnNext(11, (byte)0x05),
-                OnNext(12, (byte)0x06),
-                OnNext(12, (byte)0x07),
-                OnNext(12, (byte)0x08));
-
-            var actual = run.Start(
-                create: () => buffers.SelectMany(x => ToBytes(x, run)).Publish().RefCount(),
-                created: 0,
-                subscribed: 0,
-                disposed: 40
-            );
-
-            ReactiveAssert.AreElementsEqual(
-                expected: expected.Messages,
-                actual: actual.Messages,
-                message: debugElementsEqual(expected.Messages, actual.Messages)
-            );
-        }
+        
 
         string Show(IObservable<byte[]> bytes) => string.Join(", ", bytes.Select(Encoding.ASCII.GetString).ToEnumerable());
 
