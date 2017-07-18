@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Linq;
 using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using WSr.Frame;
 using static WSr.Tests.Functions.Debug;
 
@@ -44,6 +46,44 @@ namespace WSr.Tests.Frame
             var expected = (mask, length1);
 
             Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void TakeBytesPOC()
+        {
+            var run = new TestScheduler();
+            
+            var actual = new byte[3];
+            var done = false;
+            var step = 0;
+            
+            var state = new Mock<IParserState<Unit>>();
+            Func<byte, IParserState<Unit>> next = b => 
+            {
+                done = Parse.ReadByte(actual, step++, b);
+                return state.Object;
+            };
+
+            state.Setup(s => s.Next)
+                .Returns(next);
+
+            var data = run.CreateHotObservable(
+                OnNext(10, (byte)2),
+                OnNext(20, (byte)4),
+                OnNext(30, (byte)2)
+            );
+            var expected = new byte[] {2, 4, 2};
+
+            run.Start(
+                create: () => data.Scan(state.Object, (s, b) => s.Next(b)),
+                created: 0,
+                subscribed: 0,
+                disposed: 40
+            );
+
+            Assert.IsTrue(expected.SequenceEqual(actual),
+                $"expected: {string.Join(", ", expected.Select(x => x.ToString()))}\n" + 
+                $"actual: {string.Join(", ", actual.Select(x => x.ToString()))}");
         }
     }
 }

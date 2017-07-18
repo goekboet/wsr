@@ -19,6 +19,14 @@ namespace WSr.Frame
 
             return (maskbit == 1, length1);
         }
+
+        public static bool ReadByte(byte[] bs, int i, byte b)
+        {
+            bs[i] = b;
+
+            return i < bs.Length - 1 ? true : false;
+        }
+
     }
 
     public class FrameBuilderState : IFrameBuilder<Frame>
