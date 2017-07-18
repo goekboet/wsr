@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 namespace WSr.Frame
 {
-    public interface IFrameBuilder<T>
+    public interface IParserState<T>
     {
         bool Complete { get; }
         T Payload { get; }
-        Func<byte, IFrameBuilder<T>> Next { get; }
+        Func<byte, IParserState<T>> Next { get; }
     }
 }

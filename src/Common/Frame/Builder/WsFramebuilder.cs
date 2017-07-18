@@ -29,7 +29,7 @@ namespace WSr.Frame
 
     }
 
-    public class FrameBuilderState : IFrameBuilder<Frame>
+    public class FrameBuilderState : IParserState<Frame>
     {
         private bool fin;
         int opCode;
