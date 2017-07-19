@@ -49,18 +49,28 @@ namespace WSr.Tests.Frame
         }
 
         [TestMethod]
+        public void HandleLength1()
+        {
+            ulong expected = 126;
+            var bytes = Parse.ToBytes(expected);
+            var actual = BitConverter.ToUInt64(bytes, 0);
+
+            Assert.Equals(expected, actual);
+        }
+
+        [TestMethod]
         public void TakeBytesPOC()
         {
             var run = new TestScheduler();
             
             var actual = new byte[3];
             var done = false;
-            var step = 0;
             
             var state = new Mock<IParserState<Unit>>();
+            var read = Parse.MakeReader(actual);
             Func<byte, IParserState<Unit>> next = b => 
             {
-                done = Parse.ReadByte(actual, step++, b);
+                done = read(b);
                 return state.Object;
             };
 
