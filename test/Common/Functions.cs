@@ -6,7 +6,7 @@ using System.Reactive;
 using System.Text;
 using Microsoft.Reactive.Testing;
 
-using static WSr.Tests.Functions.ListConstruction;
+using static WSr.Functions.ListConstruction;
 
 namespace WSr.Tests.Functions
 {
@@ -36,12 +36,11 @@ namespace WSr.Tests.Functions
         {
             return $"{Environment.NewLine} expected: {string.Join(", ", expected)} {Environment.NewLine} actual: {string.Join(", ", actual)}";
         }
-    }
 
-    public static class ListConstruction
-    {
-        public static IEnumerable<string> Forever(string s) { while (true) yield return s; }
-        public static IEnumerable<byte> Nulls() { while (true) yield return (byte)'\0'; }
+        public static string Showlist<T>(IEnumerable<T> list) 
+        {
+            return string.Join(", ", list.Select(x => x.ToString()));
+        }
     }
 
     public static class StreamConstruction

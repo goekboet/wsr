@@ -27,11 +27,20 @@ namespace WSr.Frame
             return b => ReadByte(bs, i++, b);
         }
 
-        public static bool ReadByte(byte[] bs, int i, byte b)
+        public static Func<byte, bool> MakeReader(byte[] bs,int to)
+        {
+            var i = 0;
+
+            return b => ReadBytesTo(bs, i++, b, to);
+        }
+
+        public static bool ReadByte(byte[] bs, int i, byte b) => ReadBytesTo(bs, i, b, bs.Length - 1);
+
+        public static bool ReadBytesTo(byte[] bs, int i, byte b,int to)
         {
             bs[i] = b;
 
-            return i < bs.Length - 1 ? true : false;
+            return i < to ? true : false;
         }
 
         public static byte[] ToBytes(ulong n)

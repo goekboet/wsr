@@ -49,16 +49,6 @@ namespace WSr.Tests.Frame
         }
 
         [TestMethod]
-        public void HandleLength1()
-        {
-            ulong expected = 126;
-            var bytes = Parse.ToBytes(expected);
-            var actual = BitConverter.ToUInt64(bytes, 0);
-
-            Assert.Equals(expected, actual);
-        }
-
-        [TestMethod]
         public void TakeBytesPOC()
         {
             var run = new TestScheduler();

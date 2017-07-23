@@ -11,7 +11,7 @@ using WSr.Interfaces;
 using WSr.ConnectedSocket;
 
 using static WSr.ConnectedSocket.Extensions;
-using static WSr.Tests.Functions.ListConstruction;
+using static WSr.Functions.ListConstruction;
 using static WSr.Tests.Functions.StringEncoding;
 using static WSr.Tests.Functions.Debug;
 
@@ -45,8 +45,8 @@ namespace WSr.Tests.ConnectedSocket
                 disposed: 110
             );
 
-            Assert.IsTrue(buffer.SequenceEqual(bytes.Concat(Nulls()).Take(bufferSize)),
-                $"Expected: {Encoding.ASCII.GetString(bytes.Concat(Nulls()).Take(bufferSize).ToArray())} Actual: {Encoding.ASCII.GetString(buffer)}");
+            Assert.IsTrue(buffer.SequenceEqual(bytes.Concat(ZeroBytes()).Take(bufferSize)),
+                $"Expected: {Encoding.ASCII.GetString(bytes.Concat(ZeroBytes()).Take(bufferSize).ToArray())} Actual: {Encoding.ASCII.GetString(buffer)}");
 
             ReactiveAssert.AreElementsEqual(
                expected: expected.Messages,
