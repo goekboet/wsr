@@ -25,17 +25,17 @@ namespace WSr.Frame
             Next = ReadBitfield(false);
         }
 
-        private byte[] _bitfield;
+        private byte[] _bitfield = new byte[2];
         private byte[] _lengthbytes;
         private byte[] _maskbytes;
         private byte[] _payload;
 
         private void Initialize()
         {
-            _bitfield = new byte[2];
             _lengthbytes = new byte[8];
             _maskbytes = new byte[4];
             _payload = new byte[0];
+            Complete = false;
         }
 
         private Func<byte, IFrameReaderState<WebSocketFrame>> ReadBitfield(bool c)
@@ -45,7 +45,7 @@ namespace WSr.Frame
 
             return b =>
             {
-                Complete = false;
+                if (Complete) Initialize();
 
                 var hasNext = read(b);
                 if (!hasNext)

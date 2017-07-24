@@ -7,11 +7,49 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using WSr.Frame;
 using static WSr.Tests.Functions.Debug;
 
+using static WSr.Functions.ListConstruction;
+
 namespace WSr.Tests.Frame
 {
     [TestClass]
     public class Frame : ReactiveTest
     {
+        [TestMethod]
+        public void chunkEnumerableLengthNotDivisibleBySize()
+        {
+            var data = Forever('x').Take(9);
+            var chunked = Chunked(data, 4);
+
+            var expected = new[] { 4, 4, 1 };
+            var actual = chunked.Select(x => x.Count());
+
+            Assert.IsTrue(expected.SequenceEqual(actual));
+        }
+
+        [TestMethod]
+        public void chunkEnumerableLengthDivisibleBySize()
+        {
+            var data = Forever('x').Take(9);
+            var chunked = Chunked(data, 3);
+
+            var expected = new[] { 3, 3, 3 };
+            var actual = chunked.Select(x => x.Count());
+
+            Assert.IsTrue(expected.SequenceEqual(actual));
+        }
+
+        [TestMethod]
+        public void MakeSpecifiedNumberOfChunks()
+        {
+            var data = Forever('x').Take(9);
+            var chunked = Chunk(data, 2);
+
+            var expected = new[] { 5, 4 };
+            var actual = chunked.Select(x => x.Count());
+
+            Assert.IsTrue(expected.SequenceEqual(actual));
+        }
+
         [TestMethod]
         public void MakeByteObservableFromBuffer()
         {
@@ -47,7 +85,7 @@ namespace WSr.Tests.Frame
             );
         }
 
-        
+
 
         [TestMethod]
         public void ReadWithEncodedLength()
@@ -60,12 +98,12 @@ namespace WSr.Tests.Frame
             var bytes = testdata.ToObservable(run);
 
             var expected = run.CreateColdObservable(
-                OnNext(3,"a"),
-                OnNext(6,"bb"),
-                OnNext(10,"ccc"),
+                OnNext(3, "a"),
+                OnNext(6, "bb"),
+                OnNext(10, "ccc"),
                 OnCompleted<string>(11)
             );
-            
+
             var actual = run.Start(
                 create: () => bytes
                     .Scan(FirstByteIsLength.Init, (builder, b) => builder.Next(b))
