@@ -3,22 +3,26 @@ using System.Collections.Generic;
 
 namespace WSr.Frame
 {
-    public class FirstByteIsLength : IParserState<IList<byte>>
+    /// <summary>
+    /// This class is a proof of concept of the FrameReaderstate approach 
+    /// to parse bytes comming off the connected socket.
+    /// </summary>
+    public class FirstByteIsLength : IFrameReaderState<IList<byte>>
     {
-        public static IParserState<IList<byte>> Init => new FirstByteIsLength();
+        public static IFrameReaderState<IList<byte>> Init => new FirstByteIsLength();
         public bool Complete => _needs == 0;
         public IList<byte> Payload { get; } = new List<byte>();
-        public Func<byte, IParserState<IList<byte>>> Next { get; private set; }
+        public Func<byte, IFrameReaderState<IList<byte>>> Next { get; private set; }
         int _needs = -1;
 
-        private IParserState<IList<byte>> ReadLength(byte b)
+        private IFrameReaderState<IList<byte>> ReadLength(byte b)
         {
             _needs = (int)b;
             Payload.Clear();
             Next = BuildPayload;
             return this;
         }
-        private IParserState<IList<byte>> BuildPayload(byte b)
+        private IFrameReaderState<IList<byte>> BuildPayload(byte b)
         {
             Payload.Add(b);
             _needs--;
