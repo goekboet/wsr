@@ -2,7 +2,7 @@ using System;
 using System.Reactive;
 using System.Reactive.Linq;
 
-namespace WSr.Termination
+namespace App.WSr
 {
     public static class Terminations
     {
