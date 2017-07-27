@@ -107,6 +107,15 @@ namespace WSr.Handshake
                 .ToArray();
         }
 
+        public static IObservable<IProtocol> Handshake(
+            this IConnectedSocket socket,
+            IScheduler scheduler = null)
+        {
+            if (scheduler == null) scheduler = Scheduler.Default;
+
+            return OpenHandshake(socket, scheduler);
+        }
+
         public static IObservable<IProtocol> OpenHandshake(IConnectedSocket socket, IScheduler scheduler)
         {
             var bufferSize = 8192;
@@ -115,6 +124,7 @@ namespace WSr.Handshake
 
             return reader(scheduler, buffer)
                 .Select(x => buffer.Take(x).ToArray())
+                .Do(b => Console.WriteLine(new string(b.Select(Convert.ToChar).ToArray())))
                 .Select(ToHandshakeRequest)
                 .Select(x => new OpCodes(socket, x) as IProtocol)
                 .Catch<IProtocol, FormatException>(e => Observable.Return(new FailedHandshake(socket, 400) as IProtocol));
