@@ -126,7 +126,7 @@ namespace WSr.Handshake
                 .Select(x => buffer.Take(x).ToArray())
                 .Do(b => Console.WriteLine(new string(b.Select(Convert.ToChar).ToArray())))
                 .Select(ToHandshakeRequest)
-                .Select(x => new OpCodes(socket, x) as IProtocol)
+                .Select(x => new SuccessfulHandshake(socket, x) as IProtocol)
                 .Catch<IProtocol, FormatException>(e => Observable.Return(new FailedHandshake(socket, 400) as IProtocol));
         }
     }

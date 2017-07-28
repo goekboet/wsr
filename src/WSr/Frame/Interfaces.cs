@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using static WSr.Functions.ListConstruction;
+
 namespace WSr.Frame
 {
     /// <summary>
@@ -30,16 +32,16 @@ namespace WSr.Frame
     /// <summary>
     /// Represents a websocket frame according to specification.
     /// </summary>
-    public class WebSocketFrame : IEquatable<WebSocketFrame>
+    public class RawFrame : IEquatable<RawFrame>
     {
-        public static WebSocketFrame Empty { get; } =
-            new WebSocketFrame(
+        public static RawFrame Empty { get; } =
+            new RawFrame(
                 bitfield: new byte[2],
                 length: new byte[8],
                 mask: new byte[4],
                 payload: new byte[0]);
 
-        public WebSocketFrame(
+        public RawFrame(
             byte[] bitfield,
             byte[] length,
             byte[] mask,
@@ -64,7 +66,7 @@ namespace WSr.Frame
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
-        public bool Equals(WebSocketFrame other)
+        public bool Equals(RawFrame other)
         {
             return this.Payload.SequenceEqual(other.Payload) &&
                 this.Mask.SequenceEqual(other.Mask) &&
@@ -74,7 +76,7 @@ namespace WSr.Frame
 
         public override bool Equals(object obj)
         {
-            var other = obj as WebSocketFrame;
+            var other = obj as RawFrame;
 
             return obj == null ? false : this.Equals(other);
         }
@@ -84,5 +86,28 @@ namespace WSr.Frame
         /// </summary>
         /// <returns>Always 0</returns>
         public override int GetHashCode() => 0;
+    }
+
+    public class InterpretedFrame
+    {
+        private RawFrame _frame;
+        public InterpretedFrame(RawFrame frame)
+        {
+            _frame = frame;
+        }
+
+        public bool Fin => (_frame.Bitfield.ElementAt(0) & 0x80) != 0;
+        public bool Rsv1 => (_frame.Bitfield.ElementAt(0) & 0x40) != 0;
+        public bool Rsv2 => (_frame.Bitfield.ElementAt(0) & 0x20) != 0;
+        public bool Rsv3 => (_frame.Bitfield.ElementAt(0) & 0x10) != 0;
+        public int OpCode => _frame.Bitfield.ElementAt(0) & 0x0F;
+
+        public bool Masked => (_frame.Bitfield.ElementAt(1) & 0x80) != 0;
+        public ulong PayloadLength => BitConverter.ToUInt64(_frame.Length.ToArray(), 0);
+
+        public IEnumerable<byte> Mask => _frame.Mask;
+        public IEnumerable<byte> Payload => Masked
+            ? _frame.Payload.Zip(Forever(_frame.Mask).SelectMany(x => x), (p, m) => (byte)(p ^ m))
+            : _frame.Payload;
     }
 }

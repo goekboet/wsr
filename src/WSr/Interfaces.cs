@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reactive;
 using System.Reactive.Concurrency;
@@ -20,9 +21,20 @@ namespace WSr.Interfaces
 
     }
 
+    public abstract class Message
+    {
+        public IEnumerable<string> To { get; }
+
+        public bool IsText { get; }
+
+        public byte[] Payload { get; }
+    }
+
     public interface IProtocol : IDisposable
     {
-        IObservable<Unit> Process(IScheduler sceduler = null);
-        IObservable<Unit> ConnectionLost(IScheduler scheduler = null);
+        IObservable<Message> Messages { get; }
+        IObservable<Unit> Process(
+            IObservable<Message> messagebus,
+            IScheduler sceduler = null);
     }
 }

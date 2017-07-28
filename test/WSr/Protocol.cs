@@ -43,7 +43,7 @@ namespace WSr.Tests.Protocol
 
             var socket = new TestSocket(new MemoryStream(written));
 
-            var sut = new OpCodes(socket, request);
+            var sut = new SuccessfulHandshake(socket, request);
 
             var expected = run.CreateHotObservable(
                 OnNext(2, Unit.Default),
@@ -51,7 +51,7 @@ namespace WSr.Tests.Protocol
             );
 
             var actual = run.Start(
-                create: () => sut.Process(run)
+                create: () => sut.Process(Observable.Never<Message>(), run)
                     .Take(1),
                     created: 0,
                     subscribed: 0,
@@ -85,7 +85,7 @@ namespace WSr.Tests.Protocol
             );
 
             var actual = run.Start(
-                create: () => sut.Process(run)
+                create: () => sut.Process(Observable.Never<Message>(), run)
                     .Take(1),
                     created: 0,
                     subscribed: 0,

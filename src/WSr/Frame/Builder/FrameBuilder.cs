@@ -4,20 +4,20 @@ using static WSr.Frame.Functions;
 
 namespace WSr.Frame
 {
-    public class FrameBuilder : IFrameReaderState<WebSocketFrame>
+    public class FrameBuilder : IFrameReaderState<RawFrame>
     {
-        public static IFrameReaderState<WebSocketFrame> Init => new FrameBuilder();
+        public static IFrameReaderState<RawFrame> Init => new FrameBuilder();
         
         public bool Complete { get; private set; }
 
-        public WebSocketFrame Payload => new WebSocketFrame(
+        public RawFrame Payload => new RawFrame(
             bitfield: _bitfield,
             length: _lengthbytes,
             mask: _maskbytes,
             payload: _payload
         );
 
-        public Func<byte, IFrameReaderState<WebSocketFrame>> Next { get; private set; }
+        public Func<byte, IFrameReaderState<RawFrame>> Next { get; private set; }
 
         public FrameBuilder()
         {
@@ -38,7 +38,7 @@ namespace WSr.Frame
             Complete = false;
         }
 
-        private Func<byte, IFrameReaderState<WebSocketFrame>> ReadBitfield(bool c)
+        private Func<byte, IFrameReaderState<RawFrame>> ReadBitfield(bool c)
         {
             Complete = c;
             var read = MakeReader(_bitfield);
@@ -69,7 +69,7 @@ namespace WSr.Frame
                 return this;
             };
         }
-        private Func<byte, IFrameReaderState<WebSocketFrame>> ReadLengthBytes(int count, bool masked)
+        private Func<byte, IFrameReaderState<RawFrame>> ReadLengthBytes(int count, bool masked)
         {
             var read = MakeReader(_lengthbytes, count - 1);
 
@@ -87,7 +87,7 @@ namespace WSr.Frame
             };
         }
 
-        private Func<byte, IFrameReaderState<WebSocketFrame>> ReadMaskBytes()
+        private Func<byte, IFrameReaderState<RawFrame>> ReadMaskBytes()
         {
             var read = MakeReader(_maskbytes);
 
@@ -100,7 +100,7 @@ namespace WSr.Frame
             };
         }
 
-        private Func<byte, IFrameReaderState<WebSocketFrame>> ReadPayloadBytes(ulong count)
+        private Func<byte, IFrameReaderState<RawFrame>> ReadPayloadBytes(ulong count)
         {
             _payload = new byte[count];
             var read = MakeReader(_payload);

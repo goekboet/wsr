@@ -197,7 +197,7 @@ namespace WSr.Tests.WebsocketFrame
         public void ByteSequencesDoNotMutate()
         {
             var arr = new byte[] { 2, 4, 2 };
-            var sut = new WebSocketFrame(
+            var sut = new RawFrame(
                 bitfield: arr,
                 length: new byte[0],
                 mask: new byte[0],
