@@ -34,12 +34,12 @@ namespace WSr.Tests.WebsocketFrame
 
             var expected = new []
             {
-                Frames.L128Masked,
-                Frames.L128UMasked,
-                Frames.L28Masked,
-                Frames.L28UMasked,
-                Frames.L65536Masked,
-                Frames.L65536UMasked
+                LengthAndMask.L128Masked,
+                LengthAndMask.L128UMasked,
+                LengthAndMask.L28Masked,
+                LengthAndMask.L28UMasked,
+                LengthAndMask.L65536Masked,
+                LengthAndMask.L65536UMasked
             };
 
             var actual = await bytes
@@ -52,19 +52,6 @@ namespace WSr.Tests.WebsocketFrame
                 .FirstAsync();
 
             Assert.IsTrue(expected.SequenceEqual(actual));
-            // var actual = run.Start(
-            //     create: () => buffers
-            //         .Select(x => x.ToObservable(run))
-            //         .Concat()
-            //         .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
-            //         .Where(x => x.Complete)
-            //         .Select(x => x.Payload),
-            //     created: 0,
-            //     subscribed: 0,
-            //     disposed: 800000
-            // );
-
-            //Assert.IsTrue(actual.Messages.Count == 6);
         }
 
         [TestMethod]
@@ -96,7 +83,7 @@ namespace WSr.Tests.WebsocketFrame
         {
             var run = new TestScheduler();
             var bytes = Bytes.L28Masked;
-            var expected = Frames.L28Masked;
+            var expected = LengthAndMask.L28Masked;
 
             var actual = await bytes
                 .ToObservable()
@@ -113,7 +100,7 @@ namespace WSr.Tests.WebsocketFrame
         {
             var run = new TestScheduler();
             var bytes = Bytes.L28UMasked;
-            var expected = Frames.L28UMasked;
+            var expected = LengthAndMask.L28UMasked;
 
             var actual = await bytes
                 .ToObservable()
@@ -130,7 +117,7 @@ namespace WSr.Tests.WebsocketFrame
         {
             var run = new TestScheduler();
             var bytes = Bytes.L128Masked.ToArray();
-            var expected = Frames.L128Masked;
+            var expected = LengthAndMask.L128Masked;
 
             var actual = await bytes
                 .ToObservable()
@@ -147,7 +134,7 @@ namespace WSr.Tests.WebsocketFrame
         {
             var run = new TestScheduler();
             var bytes = Bytes.L128UMasked.ToArray();
-            var expected = Frames.L128UMasked;
+            var expected = LengthAndMask.L128UMasked;
 
             var actual = await bytes
                 .ToObservable()
@@ -164,7 +151,7 @@ namespace WSr.Tests.WebsocketFrame
         {
             var run = new TestScheduler();
             var bytes = Bytes.L65536Masked.ToArray();
-            var expected = Frames.L65536Masked;
+            var expected = LengthAndMask.L65536Masked;
 
             var actual = await bytes
                 .ToObservable()
@@ -181,7 +168,28 @@ namespace WSr.Tests.WebsocketFrame
         {
             var run = new TestScheduler();
             var bytes = Bytes.L65536UMasked.ToArray();
-            var expected = Frames.L65536UMasked;
+            var expected = LengthAndMask.L65536UMasked;
+
+            var actual = await bytes
+                .ToObservable()
+                .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
+                .Where(x => x.Complete)
+                .Select(x => x.Payload)
+                .FirstAsync();
+
+            Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public async Task ReadEmptyTextFrame()
+        {
+            var run = new TestScheduler();
+            var bytes = new byte[] {0x81, 0x80, 0xe2, 0x0f, 0x69, 0x34};
+            var expected = new RawFrame(
+                bitfield: new byte[] { 0x81, 0x80 },
+                length: new byte[8],
+                mask: new byte[] { 0xe2, 0x0f, 0x69, 0x34 },
+                payload: new byte[0]);
 
             var actual = await bytes
                 .ToObservable()

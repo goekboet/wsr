@@ -58,7 +58,7 @@ namespace WSr.Frame
                         if (masked)
                             Next = ReadMaskBytes();
                         else
-                            Next = ReadPayloadBytes((ulong)l);
+                            Next = l == 0 ? ReadBitfield(true) : ReadPayloadBytes((ulong)l);
                     }
                     else if (l == 126)
                         Next = ReadLengthBytes(2, masked);
@@ -94,7 +94,10 @@ namespace WSr.Frame
             return b =>
             {
                 var hasNext = read(b);
-                if (!hasNext) Next = ReadPayloadBytes(BitConverter.ToUInt64(_lengthbytes, 0));
+                if (!hasNext) 
+                    Next = BitFieldLength(_bitfield) == 0 
+                        ? ReadBitfield(true) 
+                        : ReadPayloadBytes(BitConverter.ToUInt64(_lengthbytes, 0));
 
                 return this;
             };

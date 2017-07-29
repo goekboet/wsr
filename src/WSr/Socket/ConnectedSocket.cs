@@ -10,8 +10,9 @@ using WSr.Interfaces;
 using System.IO;
 using System.Linq;
 using System.Reactive;
+using System.Collections.Generic;
 
-namespace WSr.ConnectedSocket
+namespace WSr.Socket
 {
     public class TestSocket : TcpConnection
     {
@@ -42,13 +43,13 @@ namespace WSr.ConnectedSocket
 
         public virtual Stream Stream => _socket.GetStream();
 
-        public Func<IScheduler, byte[], IObservable<int>> CreateReader(int bufferSize)
+        private Func<IScheduler, byte[], IObservable<int>> CreateReader(int bufferSize)
         {
             return (scheduler, buffer) => Observable
                 .FromAsync(() => Stream.ReadAsync(buffer, 0, bufferSize), scheduler);
         }
 
-        public Func<IScheduler, byte[], IObservable<Unit>> CreateWriter()
+        private Func<IScheduler, byte[], IObservable<Unit>> CreateWriter()
         {
             return (scheduler, buffer) => FromAsync(() => Stream.WriteAsync(buffer, 0, buffer.Length), scheduler);
         }
@@ -63,51 +64,68 @@ namespace WSr.ConnectedSocket
         {
             return Address;
         }
-    }
 
-    public static class Extensions
-    {
-        public static IObservable<Unit> Write(
-            this IConnectedSocket socket,
-            byte[] bytes,
+        public IObservable<Unit> Send(
+            IEnumerable<byte> buffer, 
             IScheduler scheduler)
         {
-            var writer = socket.CreateWriter();
+            var writer = CreateWriter();
 
-            return writer(scheduler, bytes);
+            return writer(scheduler, buffer.ToArray());
         }
 
-        public static Func<IScheduler, byte[], IObservable<int>> CreateReader(
-            this Stream stream,
-            int bufferSize)
+        public IObservable<IEnumerable<byte>> Receive(byte[] buffer, IScheduler scheduler)
         {
-            return (scheduler, buffer) => Observable
-            .FromAsync(() => stream.ReadAsync(buffer, 0, bufferSize), scheduler);
-        }
-
-        public static IObservable<byte[]> Read(
-            this IConnectedSocket socket,
-            int bufferSize,
-            IScheduler scheduler)
-        {
-            var buffer = new byte[bufferSize];
-            var reader = socket.CreateReader(bufferSize);
+            var reader = CreateReader(buffer.Length);
 
             return reader(scheduler, buffer)
                 .Repeat()
                 .Select(r => buffer.Take(r).ToArray());
         }
+    }
 
-        public static IObservable<byte[]> ReadToEnd(
-            this IConnectedSocket socket,
-            int bufferSize,
-            IScheduler scheduler = null)
-        {
-            var buffer = new byte[bufferSize];
+    public static class Extensions
+    {
+        // public static IObservable<Unit> Write(
+        //     this IConnectedSocket socket,
+        //     byte[] bytes,
+        //     IScheduler scheduler)
+        // {
+        //     var writer = socket.CreateWriter();
 
-            return Using(
-                () => socket,
-                s => s.Read(bufferSize, scheduler));
-        }
+        //     return writer(scheduler, bytes);
+        // }
+
+        // public static Func<IScheduler, byte[], IObservable<int>> CreateReader(
+        //     this Stream stream,
+        //     int bufferSize)
+        // {
+        //     return (scheduler, buffer) => Observable
+        //         .FromAsync(() => stream.ReadAsync(buffer, 0, bufferSize), scheduler);
+        // }
+
+        // public static IObservable<byte[]> Read(
+        //     this IConnectedSocket socket,
+        //     int bufferSize,
+        //     IScheduler scheduler)
+        // {
+        //     var buffer = new byte[bufferSize];
+        //     var reader = socket.CreateReader(bufferSize);
+        //     return reader(scheduler, buffer)
+        //         .Repeat()
+        //         .Select(r => buffer.Take(r).ToArray());
+        // }
+
+        // public static IObservable<byte[]> ReadToEnd(
+        //     this IConnectedSocket socket,
+        //     int bufferSize,
+        //     IScheduler scheduler = null)
+        // {
+        //     var buffer = new byte[bufferSize];
+
+        //     return Using(
+        //         () => socket,
+        //         s => s.Read(bufferSize, scheduler));
+        // }
     }
 }

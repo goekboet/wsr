@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Text;
-using WSr.Interfaces;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using WSr.Protocol;
+using WSr.Socket;
+using WSr.Interfaces;
 
 namespace WSr.Handshake
 {
@@ -36,7 +37,7 @@ namespace WSr.Handshake
         private static string parseHeaderLine = @"^(\S*):\s(\S*)$";
 
         public static Request ToHandshakeRequest(
-            byte[] buffer)
+            IEnumerable<byte> buffer)
         {
             try
             {
@@ -116,15 +117,18 @@ namespace WSr.Handshake
             return OpenHandshake(socket, scheduler);
         }
 
-        public static IObservable<IProtocol> OpenHandshake(IConnectedSocket socket, IScheduler scheduler)
+        public static IObservable<IProtocol> OpenHandshake(
+            IConnectedSocket socket, 
+            IScheduler scheduler)
         {
             var bufferSize = 8192;
             var buffer = new byte[bufferSize];
-            var reader = socket.CreateReader(bufferSize);
+            //var reader = socket.CreateReader(bufferSize);
 
-            return reader(scheduler, buffer)
-                .Select(x => buffer.Take(x).ToArray())
-                .Do(b => Console.WriteLine(new string(b.Select(Convert.ToChar).ToArray())))
+            return socket
+                .Receive(buffer, scheduler)
+                .Take(1)
+                //.Select(x => buffer.Take(x).ToArray())
                 .Select(ToHandshakeRequest)
                 .Select(x => new SuccessfulHandshake(socket, x) as IProtocol)
                 .Catch<IProtocol, FormatException>(e => Observable.Return(new FailedHandshake(socket, 400) as IProtocol));

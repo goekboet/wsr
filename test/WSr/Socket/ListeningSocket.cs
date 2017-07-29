@@ -1,29 +1,14 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reactive;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using WSr.Interfaces;
-using WSr.Handshake;
-using static WSr.Handshake.Parse;
-using WSr.ConnectedSocket;
-
-using static WSr.Tests.Functions.StringEncoding;
-using static WSr.Tests.Functions.Debug;
+using WSr.Socket;
 using static WSr.Tests.Functions.StreamConstruction;
-using WSr.ListeningSocket;
 
-namespace WSr.Tests.ListeningSocket
+namespace WSr.Tests.Socket
 {
     public class ListeningSocket : ReactiveTest
     {

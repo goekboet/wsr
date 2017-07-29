@@ -109,5 +109,7 @@ namespace WSr.Frame
         public IEnumerable<byte> Payload => Masked
             ? _frame.Payload.Zip(Forever(_frame.Mask).SelectMany(x => x), (p, m) => (byte)(p ^ m))
             : _frame.Payload;
+
+        public RawFrame GetRaw => _frame;
     }
 }
