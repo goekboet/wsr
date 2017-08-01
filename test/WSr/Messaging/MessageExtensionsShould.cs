@@ -1,30 +1,40 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using WSr.Frame;
-
+using WSr.Messaging;
 using static WSr.Messaging.Functions;
 
 namespace WSr.Tests.Messaging
 {
     [TestClass]
-    public class MessageExtensionsShould
+    public class MessageFunctionsShould
     {
         [TestMethod]
-        public void MakeEchoFrame()
+        public void TransformRawFrameToTextMessage()
         {
-            var message = new Mock<WSr.Messaging.Message>();
-            message.Setup(x => x.IsText).Returns(true);
-            message.Setup(x => x.Payload).Returns(new byte[0]);
+            var origin = "test";
+            var transformFrame = ToMessageWithOrigin(origin);
 
-            var expected = new RawFrame(
-                bitfield: new byte[] { 0x81, 0x00 },
-                length: new byte[8],
-                mask: new byte[4],
-                payload: new byte[0]);
+            var frame = SpecExamples.SingleFrameMaskedTextFrame;
+            var expected = new TextMessage(origin, "Hello");
 
-            var actual = EchoFrame(message.Object);
+            var result = transformFrame(frame);
+            
+            Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
+        }
 
-            Assert.AreEqual(expected, actual);
+        [TestMethod]
+        public void TransformRawFrameToCloseMessage()
+        {
+            var origin = "test";
+            var transformFrame = ToMessageWithOrigin(origin);
+
+            var frame = SpecExamples.MaskedGoingAwayCloseFrame;
+            var expected = new Close(origin, 1001, "Going Away");
+
+            var result = transformFrame(frame);
+            
+            Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
         }
     }
 }

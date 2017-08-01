@@ -20,17 +20,16 @@ namespace WSr.Tests.WebsocketFrame
                 payload: new byte[] {0x48, 0x65, 0x6c, 0x6c, 0x6f}
             );
 
-            var intpd1 = new InterpretedFrame(raw);
 
-            Assert.AreEqual(true, intpd1.Fin, $"Fin - expected: true, actual {intpd1.Fin}");
-            Assert.AreEqual(false, intpd1.Rsv1, $"Rsv1 - expected: false, actual {intpd1.Rsv1}");
-            Assert.AreEqual(false, intpd1.Rsv2, $"Rsv2 - expected: false, actual {intpd1.Rsv2}");
-            Assert.AreEqual(false, intpd1.Rsv3, $"Rsv3 - expected: false, actual {intpd1.Rsv3}");
-            Assert.AreEqual(1, intpd1.OpCode, $"OpCode - expected: 1, actual {intpd1.OpCode}");
-            Assert.AreEqual(false, intpd1.Masked, $"Masked - expected: false, actual {intpd1.Masked}");
-            Assert.AreEqual((ulong)5, intpd1.PayloadLength, $"Length - expected: 5, actual {intpd1.PayloadLength}");
-            Assert.IsTrue(new byte[4].SequenceEqual(intpd1.Mask), $"Mask - expected: {Showlist(new byte[4])}, actual {Showlist(intpd1.Mask)}");
-            Assert.AreEqual("Hello", Encoding.UTF8.GetString(intpd1.Payload.ToArray()), $"Payload - expected: Hello, actual {intpd1.Rsv3}");
+            Assert.AreEqual(true, raw.Fin(), $"Fin - expected: true, actual {raw.Fin()}");
+            Assert.AreEqual(false, raw.Rsv1(), $"Rsv1 - expected: false, actual {raw.Rsv1()}");
+            Assert.AreEqual(false, raw.Rsv2(), $"Rsv2 - expected: false, actual {raw.Rsv2()}");
+            Assert.AreEqual(false, raw.Rsv3(), $"Rsv3 - expected: false, actual {raw.Rsv3()}");
+            Assert.AreEqual(1, raw.OpCode(), $"OpCode - expected: 1, actual {raw.OpCode()}");
+            Assert.AreEqual(false, raw.Masked(), $"Masked - expected: false, actual {raw.Masked()}");
+            Assert.AreEqual((ulong)5, raw.PayloadLength(), $"Length - expected: 5, actual {raw.PayloadLength()}");
+            Assert.IsTrue(new byte[4].SequenceEqual(raw.Mask), $"Mask - expected: {Showlist(new byte[4])}, actual {Showlist(raw.Mask)}");
+            Assert.AreEqual("Hello", Encoding.UTF8.GetString(raw.Payload.ToArray()), $"Payload - expected: Hello, actual {raw.UnMaskedPayload()}");
         }
 
         [TestMethod]
@@ -43,17 +42,14 @@ namespace WSr.Tests.WebsocketFrame
                 payload: new byte[] {0x7f, 0x9f, 0x4d, 0x51, 0x58}
             );
 
-            var intpd1 = new InterpretedFrame(raw);
-
-            Assert.AreEqual(true, intpd1.Fin, $"Fin - expected: true, actual {intpd1.Fin}");
-            Assert.AreEqual(false, intpd1.Rsv1, $"Rsv1 - expected: false, actual {intpd1.Rsv1}");
-            Assert.AreEqual(false, intpd1.Rsv2, $"Rsv2 - expected: false, actual {intpd1.Rsv2}");
-            Assert.AreEqual(false, intpd1.Rsv3, $"Rsv3 - expected: false, actual {intpd1.Rsv3}");
-            Assert.AreEqual(1, intpd1.OpCode, $"OpCode - expected: 1, actual {intpd1.OpCode}");
-            Assert.AreEqual((ulong)5, intpd1.PayloadLength, $"Length - expected: 5, actual {intpd1.PayloadLength}");
-            Assert.AreEqual(true, intpd1.Masked, $"Masked - expected: true, actual {intpd1.Masked}");
-            Assert.IsTrue(new byte[] {0x37, 0xfa, 0x21, 0x3d}.SequenceEqual(intpd1.Mask), $"Mask - expected: {Showlist(new byte[] {0x37, 0xfa, 0x21, 0x3d})}, actual {Showlist(intpd1.Mask)}");
-            Assert.AreEqual("Hello", Encoding.UTF8.GetString(intpd1.Payload.ToArray()), $"Payload - expected: Hello, actual {Encoding.UTF8.GetString(intpd1.Payload.ToArray())}");
+            Assert.AreEqual(true, raw.Fin(), $"Fin - expected: true, actual {raw.Fin()}");
+            Assert.AreEqual(false, raw.Rsv1(), $"Rsv1 - expected: false, actual {raw.Rsv1()}");
+            Assert.AreEqual(false, raw.Rsv2(), $"Rsv2 - expected: false, actual {raw.Rsv2()}");
+            Assert.AreEqual(false, raw.Rsv3(), $"Rsv3 - expected: false, actual {raw.Rsv3()}");
+            Assert.AreEqual(1, raw.OpCode(), $"OpCode - expected: 1, actual {raw.OpCode()}");
+            Assert.AreEqual((ulong)5, raw.PayloadLength(), $"Length - expected: 5, actual {raw.PayloadLength()}");
+            Assert.AreEqual(true, raw.Masked(), $"Masked - expected: true, actual {raw.Masked()}");
+            Assert.AreEqual("Hello", Encoding.UTF8.GetString(raw.UnMaskedPayload().ToArray()), $"Payload - expected: Hello, actual {Encoding.UTF8.GetString(raw.Payload.ToArray())}");
         }
 
         [TestMethod]
@@ -73,28 +69,23 @@ namespace WSr.Tests.WebsocketFrame
                 payload: new byte[] {0x6c, 0x6f}
             );
 
-            var intpd1 = new InterpretedFrame(raw1);
-            var intpd2 = new InterpretedFrame(raw2);
+            Assert.AreEqual(false, raw1.Fin(), $"Fin - expected: false, actual {raw1.Fin()}");
+            Assert.AreEqual(false, raw1.Rsv1(), $"Rsv1 - expected: false, actual {raw1.Rsv1()}");
+            Assert.AreEqual(false, raw1.Rsv2(), $"Rsv2 - expected: false, actual {raw1.Rsv2()}");
+            Assert.AreEqual(false, raw1.Rsv3(), $"Rsv3 - expected: false, actual {raw1.Rsv3()}");
+            Assert.AreEqual(1, raw1.OpCode(), $"OpCode - expected: 1, actual {raw1.OpCode()}");
+            Assert.AreEqual((ulong)3, raw1.PayloadLength(), $"Length - expected: 3, actual {raw1.PayloadLength()}");
+            Assert.AreEqual(false, raw1.Masked(), $"Masked - expected: false, actual {raw1.Masked()}");
+            Assert.AreEqual("Hel", Encoding.UTF8.GetString(raw1.UnMaskedPayload().ToArray()), $"Payload - expected: Hel, actual {Encoding.UTF8.GetString(raw1.Payload.ToArray())}");
 
-            Assert.AreEqual(false, intpd1.Fin, $"Fin - expected: false, actual {intpd1.Fin}");
-            Assert.AreEqual(false, intpd1.Rsv1, $"Rsv1 - expected: false, actual {intpd1.Rsv1}");
-            Assert.AreEqual(false, intpd1.Rsv2, $"Rsv2 - expected: false, actual {intpd1.Rsv2}");
-            Assert.AreEqual(false, intpd1.Rsv3, $"Rsv3 - expected: false, actual {intpd1.Rsv3}");
-            Assert.AreEqual(1, intpd1.OpCode, $"OpCode - expected: 1, actual {intpd1.OpCode}");
-            Assert.AreEqual((ulong)3, intpd1.PayloadLength, $"Length - expected: 3, actual {intpd1.PayloadLength}");
-            Assert.AreEqual(false, intpd1.Masked, $"Masked - expected: false, actual {intpd1.Masked}");
-            Assert.IsTrue(new byte[4].SequenceEqual(intpd1.Mask), $"Mask - expected: {Showlist(new byte[] {0x37, 0xfa, 0x21, 0x3d})}, actual {Showlist(intpd1.Mask)}");
-            Assert.AreEqual("Hel", Encoding.UTF8.GetString(intpd1.Payload.ToArray()), $"Payload - expected: Hel, actual {Encoding.UTF8.GetString(intpd1.Payload.ToArray())}");
-
-            Assert.AreEqual(true, intpd2.Fin, $"Fin - expected: true, actual {intpd2.Fin}");
-            Assert.AreEqual(false, intpd2.Rsv1, $"Rsv1 - expected: false, actual {intpd2.Rsv1}");
-            Assert.AreEqual(false, intpd2.Rsv2, $"Rsv2 - expected: false, actual {intpd2.Rsv2}");
-            Assert.AreEqual(false, intpd2.Rsv3, $"Rsv3 - expected: false, actual {intpd2.Rsv3}");
-            Assert.AreEqual(0, intpd2.OpCode, $"OpCode - expected: 0, actual {intpd2.OpCode}");
-            Assert.AreEqual((ulong)2, intpd2.PayloadLength, $"Length - expected: 2, actual {intpd2.PayloadLength}");
-            Assert.AreEqual(false, intpd2.Masked, $"Masked - expected: true, actual {intpd2.Masked}");
-            Assert.IsTrue(new byte[4].SequenceEqual(intpd2.Mask), $"Mask - expected: {Showlist(new byte[] {0x37, 0xfa, 0x21, 0x3d})}, actual {Showlist(intpd2.Mask)}");
-            Assert.AreEqual("lo", Encoding.UTF8.GetString(intpd2.Payload.ToArray()), $"Payload - expected: lo, actual {Encoding.UTF8.GetString(intpd2.Payload.ToArray())}");
+            Assert.AreEqual(true, raw2.Fin(), $"Fin - expected: true, actual {raw2.Fin()}");
+            Assert.AreEqual(false, raw2.Rsv1(), $"Rsv1 - expected: false, actual {raw2.Rsv1()}");
+            Assert.AreEqual(false, raw2.Rsv2(), $"Rsv2 - expected: false, actual {raw2.Rsv2()}");
+            Assert.AreEqual(false, raw2.Rsv3(), $"Rsv3 - expected: false, actual {raw2.Rsv3()}");
+            Assert.AreEqual(0, raw2.OpCode(), $"OpCode - expected: 0, actual {raw2.OpCode()}");
+            Assert.AreEqual((ulong)2, raw2.PayloadLength(), $"Length - expected: 2, actual {raw2.PayloadLength()}");
+            Assert.AreEqual(false, raw2.Masked(), $"Masked - expected: true, actual {raw2.Masked()}");
+            Assert.AreEqual("lo", Encoding.UTF8.GetString(raw2.UnMaskedPayload().ToArray()), $"Payload - expected: lo, actual {Encoding.UTF8.GetString(raw2.Payload.ToArray())}");
         }
     } 
 }

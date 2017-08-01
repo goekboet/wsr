@@ -41,11 +41,16 @@ namespace WSr.Tests.Protocol
                 "Connection: Upgrade\r\n" +
                 "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n");
 
-            var written = new byte[expectedWrite.Length];
+            var writes = new List<string>();
+            var socket = new Mock<IConnectedSocket>();
+            socket.Setup(x => x.Address).Returns("me");
+            socket.Setup(x => x.Receive(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+                .Returns(Observable.Never<IEnumerable<byte>>());
+            socket.Setup(x => x.Send(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+                .Returns(Observable.Return(Unit.Default, run))
+                .Callback<byte[], IScheduler>((b, s) => writes.Add(new string(b.Select(Convert.ToChar).ToArray())));
 
-            var socket = new TestSocket(new MemoryStream(written));
-
-            var sut = new SuccessfulHandshake(socket, upgrade);
+            var sut = new SuccessfulHandshake(socket.Object, upgrade);
 
             var expected = run.CreateHotObservable(
                 OnNext(2, Unit.Default),
@@ -64,14 +69,13 @@ namespace WSr.Tests.Protocol
                actual: actual.Messages,
                message: $"{Environment.NewLine} expected: {string.Join(", ", expected.Messages)} {Environment.NewLine} actual: {string.Join(", ", actual.Messages)}");
 
-            Assert.AreEqual(expectedWrite, new string(written.Select(Convert.ToChar).ToArray()));
+            Assert.AreEqual(expectedWrite, writes.Single());
         }
 
         [TestMethod]
         public void PublishIncomingTextMessages()
         {
             var run = new TestScheduler();
-            var incoming = new MemoryStream();
             var id = "test";
 
             var writes = run.CreateColdObservable(
@@ -132,6 +136,40 @@ namespace WSr.Tests.Protocol
                 disposed: 1000);
 
             Assert.AreEqual(2, actual.Messages.Count);
+        }
+
+        [TestMethod]
+        public void MakeCloseHandshake()
+        {
+            var run = new TestScheduler();
+
+            var incoming = run.CreateColdObservable(
+                OnNext(100, new byte[] {0x88, 0x8c, 0x81, 0x67, 0xca, 0x3a, 0x82, 0x8e, 0x8d, 0x55, 0xe8, 0x09, 0xad, 0x1a, 0xc0, 0x10, 0xab, 0x43})
+            );
+
+            var writes = new List<string>();
+            var socket = new Mock<IConnectedSocket>();
+            socket.Setup(x => x.Address).Returns("me");
+            socket.Setup(x => x.Receive(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+                .Returns(incoming);
+            socket.Setup(x => x.Send(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+                .Returns(Observable.Return(Unit.Default, run))
+                .Callback<byte[], IScheduler>((b, s) => writes.Add(new string(b.Select(Convert.ToChar).ToArray())));
+
+            var sut = new SuccessfulHandshake(socket.Object, upgrade);
+
+            var actual = run.Start(
+                create: () => {
+                    var bus = sut.Messages(run);
+
+                    return sut.Process(bus,run);
+                },
+                created: 0,
+                subscribed: 0,
+                disposed: 1000);
+
+            Assert.AreEqual(2, actual.Messages.Count);
+            //socket.Verify(x => x.Dispose(), Times.Once());
         }
     }
 }

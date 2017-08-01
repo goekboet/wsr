@@ -18,54 +18,26 @@ namespace WSr.Protocol
 {
     public class SuccessfulHandshake : IProtocol
     {
-        private class EchoMe : Message
-        {
-            public EchoMe(
-                string me,
-                bool isText,
-                IEnumerable<byte> message)
-            {
-                To = new[] { me };
-                IsText = isText;
-                Payload = message.ToArray();
-            }
-
-            public override IEnumerable<string> To { get; }
-
-            public override bool IsText { get; }
-
-            public override byte[] Payload { get; }
-        }
-
-        private IObservable<Unit> Close(IScheduler scheduler)
-        {
-            return Incoming(scheduler)
-                .Where(x => x.OpCode == 0x8)
-                .SelectMany(x => _socket.Send(x.GetRaw.ToBuffer(), scheduler));
-        }
-
         private IConnectedSocket _socket;
         private Request _request;
 
-        private IObservable<InterpretedFrame> Incoming(
+        private Func<RawFrame, Message> ToMessage => ToMessageWithOrigin(_socket.Address);
+
+        private IObservable<RawFrame> Incoming(
             IScheduler scheduler)
         {
             var buffer = new byte[8192];
 
             return _socket
                 .Receive(buffer, scheduler)
-                .ReadFrames()
-                .Publish()
-                .RefCount();
+                .ReadFrames();
         }
 
         public IObservable<Message> Messages(IScheduler scheduler = null)
         {
             if (scheduler == null) scheduler = Scheduler.Default;
 
-            return Incoming(scheduler)
-                .Where(x => x.OpCode == 1 || x.OpCode == 2)
-                .Select(x => new EchoMe(_socket.Address, x.OpCode == 1, x.Payload));
+            return Incoming(scheduler).Select(ToMessage);
         }
 
         private IObservable<Unit> SendResponse(IScheduler scheduler)
@@ -85,11 +57,8 @@ namespace WSr.Protocol
         {
             if (scheduler == null) scheduler = Scheduler.Default;
             
-            var echo = messageBus
-                    .Where(x => x.To.Contains(_socket.Address))
-                    .Select(x => EchoFrame(x).ToBuffer())
-                    .SelectMany(x => _socket.Send(x, scheduler));
-
+            var echo = Observable.Empty<Unit>();
+            
             return SendResponse(scheduler).Concat(echo);
         }
 

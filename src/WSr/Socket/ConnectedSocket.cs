@@ -80,52 +80,9 @@ namespace WSr.Socket
 
             return reader(scheduler, buffer)
                 .Repeat()
+                .TakeWhile(x => x > 0)
                 .Select(r => buffer.Take(r).ToArray());
         }
     }
 
-    public static class Extensions
-    {
-        // public static IObservable<Unit> Write(
-        //     this IConnectedSocket socket,
-        //     byte[] bytes,
-        //     IScheduler scheduler)
-        // {
-        //     var writer = socket.CreateWriter();
-
-        //     return writer(scheduler, bytes);
-        // }
-
-        // public static Func<IScheduler, byte[], IObservable<int>> CreateReader(
-        //     this Stream stream,
-        //     int bufferSize)
-        // {
-        //     return (scheduler, buffer) => Observable
-        //         .FromAsync(() => stream.ReadAsync(buffer, 0, bufferSize), scheduler);
-        // }
-
-        // public static IObservable<byte[]> Read(
-        //     this IConnectedSocket socket,
-        //     int bufferSize,
-        //     IScheduler scheduler)
-        // {
-        //     var buffer = new byte[bufferSize];
-        //     var reader = socket.CreateReader(bufferSize);
-        //     return reader(scheduler, buffer)
-        //         .Repeat()
-        //         .Select(r => buffer.Take(r).ToArray());
-        // }
-
-        // public static IObservable<byte[]> ReadToEnd(
-        //     this IConnectedSocket socket,
-        //     int bufferSize,
-        //     IScheduler scheduler = null)
-        // {
-        //     var buffer = new byte[bufferSize];
-
-        //     return Using(
-        //         () => socket,
-        //         s => s.Read(bufferSize, scheduler));
-        // }
-    }
 }

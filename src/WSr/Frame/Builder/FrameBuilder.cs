@@ -10,7 +10,7 @@ namespace WSr.Frame
         
         public bool Complete { get; private set; }
 
-        public RawFrame Payload => new RawFrame(
+        public RawFrame Reading => new RawFrame(
             bitfield: _bitfield,
             length: _lengthbytes,
             mask: _maskbytes,

@@ -34,18 +34,19 @@ namespace App.WSr
             var webSocketClients = connectedSockets
                 .SelectMany(c => c.Handshake());
 
-            var messageBus = webSocketClients
-                .SelectMany(c => c.Messages());
+            // var messageBus = webSocketClients
+            //     .Do(x => Console.WriteLine("main"))
+            //     .SelectMany(c => c.Messages());
 
             var processes = webSocketClients
                 .SelectMany(ws => Observable.Using(
                     resourceFactory: () => ws,
-                    observableFactory: c => c.Process(messageBus)
+                    observableFactory: c => c.Process(c.Messages())
                 ));
 
             //messageBus.Subscribe(x => Console.WriteLine($"Message: {Encoding.UTF8.GetString(x.Payload)}"));
                         
-            processes.Subscribe(
+            var run = processes.Subscribe(
                 onNext: _ => Console.WriteLine("Processed..."),
                 onError: e => Console.WriteLine($"error: {e.Message}")
             );
@@ -53,6 +54,7 @@ namespace App.WSr
             Console.WriteLine("Any key to quit");
             Console.ReadKey();
             listening.Dispose();
+            run.Dispose();
         }
     }
 }

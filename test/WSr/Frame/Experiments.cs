@@ -108,7 +108,7 @@ namespace WSr.Tests.Frame
                 create: () => bytes
                     .Scan(FirstByteIsLength.Init, (builder, b) => builder.Next(b))
                     .Where(m => m.Complete)
-                    .Select(m => new string(m.Payload.Select(Convert.ToChar).ToArray())),
+                    .Select(m => new string(m.Reading.Select(Convert.ToChar).ToArray())),
                 created: 0,
                 subscribed: 0,
                 disposed: 20

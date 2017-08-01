@@ -123,12 +123,10 @@ namespace WSr.Handshake
         {
             var bufferSize = 8192;
             var buffer = new byte[bufferSize];
-            //var reader = socket.CreateReader(bufferSize);
 
             return socket
                 .Receive(buffer, scheduler)
                 .Take(1)
-                //.Select(x => buffer.Take(x).ToArray())
                 .Select(ToHandshakeRequest)
                 .Select(x => new SuccessfulHandshake(socket, x) as IProtocol)
                 .Catch<IProtocol, FormatException>(e => Observable.Return(new FailedHandshake(socket, 400) as IProtocol));

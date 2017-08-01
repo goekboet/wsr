@@ -47,7 +47,7 @@ namespace WSr.Tests.WebsocketFrame
                 .Concat()
                 .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
                 .Where(x => x.Complete)
-                .Select(x => x.Payload)
+                .Select(x => x.Reading)
                 .ToArray()
                 .FirstAsync();
 
@@ -89,7 +89,7 @@ namespace WSr.Tests.WebsocketFrame
                 .ToObservable()
                 .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
                 .Where(x => x.Complete)
-                .Select(x => x.Payload)
+                .Select(x => x.Reading)
                 .FirstAsync();
 
             Assert.AreEqual(expected, actual);
@@ -106,7 +106,7 @@ namespace WSr.Tests.WebsocketFrame
                 .ToObservable()
                 .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
                 .Where(x => x.Complete)
-                .Select(x => x.Payload)
+                .Select(x => x.Reading)
                 .FirstAsync();
 
             Assert.AreEqual(expected, actual);
@@ -123,7 +123,7 @@ namespace WSr.Tests.WebsocketFrame
                 .ToObservable()
                 .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
                 .Where(x => x.Complete)
-                .Select(x => x.Payload)
+                .Select(x => x.Reading)
                 .FirstAsync();
 
             Assert.AreEqual(expected, actual);
@@ -140,7 +140,7 @@ namespace WSr.Tests.WebsocketFrame
                 .ToObservable()
                 .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
                 .Where(x => x.Complete)
-                .Select(x => x.Payload)
+                .Select(x => x.Reading)
                 .FirstAsync();
 
             Assert.AreEqual(expected, actual);
@@ -157,7 +157,7 @@ namespace WSr.Tests.WebsocketFrame
                 .ToObservable()
                 .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
                 .Where(x => x.Complete)
-                .Select(x => x.Payload)
+                .Select(x => x.Reading)
                 .FirstAsync();
 
             Assert.AreEqual(expected, actual);
@@ -174,7 +174,7 @@ namespace WSr.Tests.WebsocketFrame
                 .ToObservable()
                 .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
                 .Where(x => x.Complete)
-                .Select(x => x.Payload)
+                .Select(x => x.Reading)
                 .FirstAsync();
 
             Assert.AreEqual(expected, actual);
@@ -195,7 +195,7 @@ namespace WSr.Tests.WebsocketFrame
                 .ToObservable()
                 .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
                 .Where(x => x.Complete)
-                .Select(x => x.Payload)
+                .Select(x => x.Reading)
                 .FirstAsync();
 
             Assert.AreEqual(expected, actual);

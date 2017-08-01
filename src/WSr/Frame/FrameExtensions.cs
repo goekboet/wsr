@@ -2,36 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+
 using static WSr.Frame.Functions;
+using static WSr.Functions.ListConstruction;
 
 namespace WSr.Frame
 {
+    public static class Frames
+    {
+        public static byte[] NormalClose { get; } = new byte[] { 0x88, 0x02, 0x03, 0xe8 };
+    }
+
     public static class FrameExtensions
     {
-        public static byte[] ToBuffer(
-            this RawFrame frame)
-        {
-            var length = BitFieldLength(frame.Bitfield.ToArray());
-            IEnumerable<byte> lengthBytes;
-            if (length < 126)
-                lengthBytes = frame.Length.Take(0);
-            else if (length == 126)
-                lengthBytes = frame.Length.Take(2);
-            else
-                lengthBytes = frame.Length;
-            
-            return frame.Bitfield.Concat(lengthBytes).Concat(frame.Payload).ToArray();
-        }
+        public static bool Fin(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x80) != 0;
+        public static bool Rsv1(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x40) != 0;
+        public static bool Rsv2(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x20) != 0;
+        public static bool Rsv3(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x10) != 0;
+        public static int OpCode(this RawFrame frame) => frame.Bitfield.ElementAt(0) & 0x0F;
 
-        public static IObservable<InterpretedFrame> ReadFrames(
-            this IObservable<IEnumerable<byte>> buffers)
-        {
-            return buffers
-                .Select(x => x.ToObservable())
-                .Concat()
-                .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
-                .Where(x => x.Complete)
-                .Select(x => new InterpretedFrame(x.Payload));
-        }
+        public static bool Masked(this RawFrame frame) => (frame.Bitfield.ElementAt(1) & 0x80) != 0;
+        public static ulong PayloadLength(this RawFrame frame) => BitConverter.ToUInt64(frame.Length.ToArray(), 0);
+
+        public static IEnumerable<byte> UnMaskedPayload(this RawFrame frame) => frame.Masked()
+            ? frame.Payload.Zip(Forever(frame.Mask).SelectMany(x => x), (p, m) => (byte)(p ^ m))
+            : frame.Payload;
     }
 }
