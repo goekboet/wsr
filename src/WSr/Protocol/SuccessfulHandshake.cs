@@ -42,8 +42,10 @@ namespace WSr.Protocol
 
         private IObservable<ProcessResult> SendResponse(IScheduler scheduler)
         {
-            return _socket.Send(Parse.Respond(_request), scheduler)
-                .Select(x => new ProcessResult(_socket.Address, ResultType.SuccessfulOpeningHandshake));
+            return _socket
+                .Send(Parse.Respond(_request), scheduler)
+                .Timestamp()
+                .Select(x => new ProcessResult(x.Timestamp, _socket.Address, ResultType.SuccessfulOpeningHandshake));
         }
 
         public SuccessfulHandshake(IConnectedSocket socket, Request request)

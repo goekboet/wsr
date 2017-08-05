@@ -33,7 +33,7 @@ namespace WSr.Tests.Protocol
             var sut = new FailedHandshake(socket.Object, 400);
 
             var expected = run.CreateHotObservable(
-                OnNext(2, new ProcessResult("me", ResultType.UnSuccessfulOpeningHandshake)),
+                OnNext(2, new ProcessResult(run.Now, "me", ResultType.UnSuccessfulOpeningHandshake)),
                 OnCompleted<ProcessResult>(2)
             );
 

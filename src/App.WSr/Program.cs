@@ -10,6 +10,7 @@ namespace App.WSr
 {
     class Program
     {
+        static void WriteLine(object s) => Console.WriteLine($"{s.ToString()}{Environment.NewLine}");
         static Func<IListeningSocket> ServerFactory(string host, int port)
         {
             return () => ListenTo(host, port);
@@ -40,7 +41,7 @@ namespace App.WSr
                 ));
                         
             var run = processes.Subscribe(
-                onNext: _ => Console.WriteLine("Processed..."),
+                onNext: WriteLine,
                 onError: e => Console.WriteLine($"error: {e.Message}")
             );
 

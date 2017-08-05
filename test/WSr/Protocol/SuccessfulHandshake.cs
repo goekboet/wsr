@@ -54,7 +54,7 @@ namespace WSr.Tests.Protocol
             var sut = new SuccessfulHandshake(socket.Object, upgrade);
 
             var expected = run.CreateHotObservable(
-                OnNext(2, new ProcessResult("me", ResultType.SuccessfulOpeningHandshake)),
+                OnNext(2, new ProcessResult(run.Now, "me", ResultType.SuccessfulOpeningHandshake)),
                 OnCompleted<ProcessResult>(2)
             );
 

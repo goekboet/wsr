@@ -23,8 +23,10 @@ namespace WSr.Protocol
 
         private IObservable<ProcessResult> SendResponse(IScheduler scheduler)
         {
-            return _socket.Send(Encoding.ASCII.GetBytes(Response[_code]), scheduler)
-                .Select(_ => new ProcessResult(_socket.Address, ResultType.UnSuccessfulOpeningHandshake));
+            return _socket
+                .Send(Encoding.ASCII.GetBytes(Response[_code]), scheduler)
+                .Timestamp()
+                .Select(x => new ProcessResult(x.Timestamp, _socket.Address, ResultType.UnSuccessfulOpeningHandshake));
         }
 
         public FailedHandshake(IConnectedSocket socket, int code)

@@ -22,14 +22,18 @@ namespace WSr
                 switch (m)
                 {
                     case TextMessage t:
-                        return socket.Send(Echo(t), scheduler)
-                            .Select(_ => new ProcessResult(socket.Address, ResultType.TextMessageSent));
+                        return socket
+                            .Send(Echo(t), scheduler)
+                            .Timestamp(scheduler)
+                            .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.TextMessageSent));
                     case Close c:
-                        return socket.Send(NormalClose, scheduler)
-                            .Select(_ => new ProcessResult(socket.Address, ResultType.CloseHandshakeFinished))
-                            .Concat(Observable.Return(new ProcessResult(socket.Address, ResultType.CloseSocket), scheduler));
+                        return socket
+                            .Send(NormalClose, scheduler)
+                            .Timestamp(scheduler)
+                            .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.CloseHandshakeFinished))
+                            .Concat(Observable.Return(new ProcessResult(scheduler.Now, socket.Address, ResultType.CloseSocket), scheduler));
                     default:
-                        return Observable.Return(new ProcessResult(socket.Address, ResultType.NoOp));
+                        throw new ArgumentException($"{m.GetType().Name} not mapped to result.");
                 }
             });
         }

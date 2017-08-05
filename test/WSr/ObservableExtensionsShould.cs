@@ -13,6 +13,7 @@ using WSr.Socket;
 
 using static WSr.Tests.Functions.Debug;
 using static WSr.Protocol.Functions;
+using System;
 
 namespace WSr.Tests
 {
@@ -46,7 +47,7 @@ namespace WSr.Tests
             );
 
             var expected = run.CreateHotObservable(
-                OnNext(110, new ProcessResult(origin, ResultType.TextMessageSent))
+                OnNext(110, new ProcessResult(run.Now, origin, ResultType.TextMessageSent))
             );
 
             var actual = run.Start(
@@ -78,8 +79,8 @@ namespace WSr.Tests
             );
 
             var expected = run.CreateHotObservable(
-                OnNext(110, new ProcessResult(origin, ResultType.CloseHandshakeFinished)),
-                OnNext(111, new ProcessResult(origin, ResultType.CloseSocket))
+                OnNext(110, new ProcessResult(new DateTimeOffset(110, TimeSpan.MinValue), origin, ResultType.CloseHandshakeFinished)),
+                OnNext(111, new ProcessResult(new DateTimeOffset(110, TimeSpan.MinValue), origin, ResultType.CloseSocket))
             );
 
             var actual = run.Start(
