@@ -9,10 +9,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using WSr.Socket;
 using WSr.Handshake;
-using WSr.Interfaces;
 using WSr.Messaging;
 using WSr.Protocol;
 using System.Reactive.Concurrency;
+
+using static WSr.Tests.Functions.Debug;
 
 namespace WSr.Tests.Protocol
 {
@@ -53,8 +54,8 @@ namespace WSr.Tests.Protocol
             var sut = new SuccessfulHandshake(socket.Object, upgrade);
 
             var expected = run.CreateHotObservable(
-                OnNext(2, Unit.Default),
-                OnCompleted<Unit>(2)
+                OnNext(2, new ProcessResult("me", ResultType.SuccessfulOpeningHandshake)),
+                OnCompleted<ProcessResult>(2)
             );
 
             var actual = run.Start(
@@ -76,33 +77,45 @@ namespace WSr.Tests.Protocol
         public void PublishIncomingTextMessages()
         {
             var run = new TestScheduler();
-            var id = "test";
+            var testmsg = SpecExamples.SingleFrameMaskedTextMessage;
 
-            var writes = run.CreateColdObservable(
-                OnNext(10, SpecExamples.SingleFrameMaskedTextMessage),
-                OnNext(20, SpecExamples.MaskedPong),
-                OnNext(30, SpecExamples.SingleFrameMaskedTextMessage)
+            var fstSocket = new Mock<IConnectedSocket>();
+            var fstRead = run.CreateHotObservable(
+                OnNext(200, testmsg)
+            );
+            fstSocket.Setup(x => x.Address).Returns("fst");
+            fstSocket.Setup(x => x.Receive(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+                .Returns(fstRead);
+
+            var sndRead = run.CreateHotObservable(
+                OnNext(300, testmsg)
+            );
+            var sndSocket = new Mock<IConnectedSocket>();
+            sndSocket.Setup(x => x.Address).Returns("snd");
+            sndSocket.Setup(x => x.Receive(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+                .Returns(sndRead);
+            
+            var incoming = run.CreateHotObservable(
+                OnNext(100, new SuccessfulHandshake(fstSocket.Object, new Request())),
+                OnNext(200, new SuccessfulHandshake(sndSocket.Object, new Request()))
             );
 
-            var sut =  Enumerable.Range(1, 3)
-                .Select(i => 
-                {
-                    var socket = new Mock<IConnectedSocket>();
-                    socket.Setup(x => x.Receive(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
-                        .Returns(writes);
-                    socket.Setup(x => x.Address).Returns(id + "-" + i);
-
-                    return new SuccessfulHandshake(socket.Object, new Request());
-                }).ToObservable(run);
+            var expected = run.CreateHotObservable(
+                OnNext(200, new TextMessage("fst", "Hello") as Message),
+                OnNext(300, new TextMessage("snd", "Hello") as Message)
+            );
 
             var actual = run.Start(
-                create: () => sut.SelectMany(x => x.Messages(run)),
+                create: () => incoming.SelectMany(x => x.Messages(run)),
                 created: 0,
                 subscribed: 0,
-                disposed: 100
+                disposed: 1000
             );
 
-            Assert.AreEqual(6, actual.Messages.Count);
+            ReactiveAssert.AreElementsEqual(
+               expected: expected.Messages,
+               actual: actual.Messages,
+               message: debugElementsEqual(expected.Messages, actual.Messages));
         }
 
         [TestMethod]
@@ -138,38 +151,38 @@ namespace WSr.Tests.Protocol
             Assert.AreEqual(2, actual.Messages.Count);
         }
 
-        [TestMethod]
-        public void MakeCloseHandshake()
-        {
-            var run = new TestScheduler();
+        // [TestMethod]
+        // public void MakeCloseHandshake()
+        // {
+        //     var run = new TestScheduler();
 
-            var incoming = run.CreateColdObservable(
-                OnNext(100, new byte[] {0x88, 0x8c, 0x81, 0x67, 0xca, 0x3a, 0x82, 0x8e, 0x8d, 0x55, 0xe8, 0x09, 0xad, 0x1a, 0xc0, 0x10, 0xab, 0x43})
-            );
+        //     var incoming = run.CreateColdObservable(
+        //         OnNext(100, new byte[] {0x88, 0x8c, 0x81, 0x67, 0xca, 0x3a, 0x82, 0x8e, 0x8d, 0x55, 0xe8, 0x09, 0xad, 0x1a, 0xc0, 0x10, 0xab, 0x43})
+        //     );
 
-            var writes = new List<string>();
-            var socket = new Mock<IConnectedSocket>();
-            socket.Setup(x => x.Address).Returns("me");
-            socket.Setup(x => x.Receive(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
-                .Returns(incoming);
-            socket.Setup(x => x.Send(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
-                .Returns(Observable.Return(Unit.Default, run))
-                .Callback<byte[], IScheduler>((b, s) => writes.Add(new string(b.Select(Convert.ToChar).ToArray())));
+        //     var writes = new List<string>();
+        //     var socket = new Mock<IConnectedSocket>();
+        //     socket.Setup(x => x.Address).Returns("me");
+        //     socket.Setup(x => x.Receive(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+        //         .Returns(incoming);
+        //     socket.Setup(x => x.Send(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+        //         .Returns(Observable.Return(Unit.Default, run))
+        //         .Callback<byte[], IScheduler>((b, s) => writes.Add(new string(b.Select(Convert.ToChar).ToArray())));
 
-            var sut = new SuccessfulHandshake(socket.Object, upgrade);
+        //     var sut = new SuccessfulHandshake(socket.Object, upgrade);
 
-            var actual = run.Start(
-                create: () => {
-                    var bus = sut.Messages(run);
+        //     var actual = run.Start(
+        //         create: () => {
+        //             var bus = sut.Messages(run);
 
-                    return sut.Process(bus,run);
-                },
-                created: 0,
-                subscribed: 0,
-                disposed: 1000);
+        //             return sut.Process(bus,run);
+        //         },
+        //         created: 0,
+        //         subscribed: 0,
+        //         disposed: 1000);
 
-            Assert.AreEqual(2, actual.Messages.Count);
-            //socket.Verify(x => x.Dispose(), Times.Once());
-        }
+        //     Assert.AreEqual(2, actual.Messages.Count);
+        //     //socket.Verify(x => x.Dispose(), Times.Once());
+        // }
     }
 }

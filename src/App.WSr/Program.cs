@@ -3,7 +3,6 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Text;
 using WSr.Handshake;
-using WSr.Interfaces;
 using WSr.Socket;
 using static WSr.Socket.Fns;
 
@@ -34,17 +33,11 @@ namespace App.WSr
             var webSocketClients = connectedSockets
                 .SelectMany(c => c.Handshake());
 
-            // var messageBus = webSocketClients
-            //     .Do(x => Console.WriteLine("main"))
-            //     .SelectMany(c => c.Messages());
-
             var processes = webSocketClients
                 .SelectMany(ws => Observable.Using(
                     resourceFactory: () => ws,
                     observableFactory: c => c.Process(c.Messages())
                 ));
-
-            //messageBus.Subscribe(x => Console.WriteLine($"Message: {Encoding.UTF8.GetString(x.Payload)}"));
                         
             var run = processes.Subscribe(
                 onNext: _ => Console.WriteLine("Processed..."),

@@ -8,11 +8,6 @@ using static WSr.Functions.ListConstruction;
 
 namespace WSr.Frame
 {
-    public static class Frames
-    {
-        public static byte[] NormalClose { get; } = new byte[] { 0x88, 0x02, 0x03, 0xe8 };
-    }
-
     public static class FrameExtensions
     {
         public static bool Fin(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x80) != 0;

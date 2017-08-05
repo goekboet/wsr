@@ -9,10 +9,10 @@ using System.Text;
 using WSr.Socket;
 using WSr.Frame;
 using WSr.Handshake;
-using WSr.Interfaces;
 using WSr.Messaging;
 
 using static WSr.Messaging.Functions;
+using static WSr.Protocol.Functions;
 
 namespace WSr.Protocol
 {
@@ -40,9 +40,10 @@ namespace WSr.Protocol
             return Incoming(scheduler).Select(ToMessage);
         }
 
-        private IObservable<Unit> SendResponse(IScheduler scheduler)
+        private IObservable<ProcessResult> SendResponse(IScheduler scheduler)
         {
-            return _socket.Send(Parse.Respond(_request), scheduler);
+            return _socket.Send(Parse.Respond(_request), scheduler)
+                .Select(x => new ProcessResult(_socket.Address, ResultType.SuccessfulOpeningHandshake));
         }
 
         public SuccessfulHandshake(IConnectedSocket socket, Request request)
@@ -51,15 +52,15 @@ namespace WSr.Protocol
             _request = request;
         }
 
-        public IObservable<Unit> Process(
+        public IObservable<ProcessResult> Process(
             IObservable<Message> messageBus,
             IScheduler scheduler)
         {
             if (scheduler == null) scheduler = Scheduler.Default;
-            
-            var echo = Observable.Empty<Unit>();
-            
-            return SendResponse(scheduler).Concat(echo);
+
+            var processing = messageBus.EchoProcess(_socket, scheduler);
+
+            return SendResponse(scheduler).Concat(processing).TakeWhile(x => x.Type != ResultType.CloseSocket);
         }
 
         void IDisposable.Dispose()
@@ -70,5 +71,5 @@ namespace WSr.Protocol
         public override string ToString() => $"Processing opcodes for {_socket.ToString()}";
     }
 
-    
+
 }

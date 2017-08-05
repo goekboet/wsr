@@ -4,7 +4,6 @@ using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Text;
-using WSr.Interfaces;
 using WSr.Socket;
 using WSr.Messaging;
 
@@ -22,9 +21,10 @@ namespace WSr.Protocol
 
         public IObservable<Message> Messages(IScheduler scheduler = null) => Observable.Never<Message>();
 
-        private IObservable<Unit> SendResponse(IScheduler scheduler)
+        private IObservable<ProcessResult> SendResponse(IScheduler scheduler)
         {
-            return _socket.Send(Encoding.ASCII.GetBytes(Response[_code]), scheduler);
+            return _socket.Send(Encoding.ASCII.GetBytes(Response[_code]), scheduler)
+                .Select(_ => new ProcessResult(_socket.Address, ResultType.UnSuccessfulOpeningHandshake));
         }
 
         public FailedHandshake(IConnectedSocket socket, int code)
@@ -33,7 +33,7 @@ namespace WSr.Protocol
             _code = code;
         }
 
-        public IObservable<Unit> Process(
+        public IObservable<ProcessResult> Process(
             IObservable<Message> messageBus,
             IScheduler scheduler)
         {

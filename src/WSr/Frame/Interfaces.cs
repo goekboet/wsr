@@ -87,29 +87,4 @@ namespace WSr.Frame
         /// <returns>Always 0</returns>
         public override int GetHashCode() => 0;
     }
-
-    // public class InterpretedFrame
-    // {
-    //     private RawFrame _frame;
-    //     public InterpretedFrame(RawFrame frame)
-    //     {
-    //         _frame = frame;
-    //     }
-
-    //     public bool Fin => (_frame.Bitfield.ElementAt(0) & 0x80) != 0;
-    //     public bool Rsv1 => (_frame.Bitfield.ElementAt(0) & 0x40) != 0;
-    //     public bool Rsv2 => (_frame.Bitfield.ElementAt(0) & 0x20) != 0;
-    //     public bool Rsv3 => (_frame.Bitfield.ElementAt(0) & 0x10) != 0;
-    //     public int OpCode => _frame.Bitfield.ElementAt(0) & 0x0F;
-
-    //     public bool Masked => (_frame.Bitfield.ElementAt(1) & 0x80) != 0;
-    //     public ulong PayloadLength => BitConverter.ToUInt64(_frame.Length.ToArray(), 0);
-
-    //     public IEnumerable<byte> Mask => _frame.Mask;
-    //     public IEnumerable<byte> Payload => Masked
-    //         ? _frame.Payload.Zip(Forever(_frame.Mask).SelectMany(x => x), (p, m) => (byte)(p ^ m))
-    //         : _frame.Payload;
-
-    //     public RawFrame GetRaw => _frame;
-    // }
 }

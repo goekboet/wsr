@@ -6,7 +6,6 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using static System.Reactive.Linq.Observable;
 using System.Threading.Tasks;
-using WSr.Interfaces;
 using System.IO;
 using System.Linq;
 using System.Reactive;

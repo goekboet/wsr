@@ -8,7 +8,6 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using WSr.Protocol;
 using WSr.Socket;
-using WSr.Interfaces;
 
 namespace WSr.Handshake
 {

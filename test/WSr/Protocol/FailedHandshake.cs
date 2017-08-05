@@ -7,6 +7,9 @@ using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using WSr.Socket;
 using WSr.Protocol;
+using System.Collections.Generic;
+using Moq;
+using System.Reactive.Concurrency;
 
 namespace WSr.Tests.Protocol
 {
@@ -20,15 +23,18 @@ namespace WSr.Tests.Protocol
 
             var expectedWrite = "400 Bad Request";
 
-            var written = new byte[expectedWrite.Length];
+            var writes = new List<string>();
+            var socket = new Mock<IConnectedSocket>();
+            socket.Setup(x => x.Address).Returns("me");
+            socket.Setup(x => x.Send(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+                .Returns(Observable.Return(Unit.Default, run))
+                .Callback<byte[], IScheduler>((b, s) => writes.Add(new string(b.Select(Convert.ToChar).ToArray())));
 
-            var socket = new TestSocket(new MemoryStream(written));
-
-            var sut = new FailedHandshake(socket, 400);
+            var sut = new FailedHandshake(socket.Object, 400);
 
             var expected = run.CreateHotObservable(
-                OnNext(2, Unit.Default),
-                OnCompleted<Unit>(2)
+                OnNext(2, new ProcessResult("me", ResultType.UnSuccessfulOpeningHandshake)),
+                OnCompleted<ProcessResult>(2)
             );
 
             var actual = run.Start(
@@ -44,7 +50,7 @@ namespace WSr.Tests.Protocol
                actual: actual.Messages,
                message: $"{Environment.NewLine} expected: {string.Join(", ", expected.Messages)} {Environment.NewLine} actual: {string.Join(", ", actual.Messages)}");
 
-            Assert.AreEqual(expectedWrite, new string(written.Select(Convert.ToChar).ToArray()));
+            Assert.AreEqual(expectedWrite, writes.Single());
         }
     }
 }

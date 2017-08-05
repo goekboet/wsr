@@ -7,7 +7,6 @@ using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using WSr.Socket;
 using WSr.Handshake;
-using WSr.Interfaces;
 using WSr.Protocol;
 using static WSr.Handshake.Parse;
 
