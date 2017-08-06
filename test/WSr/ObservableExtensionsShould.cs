@@ -79,8 +79,8 @@ namespace WSr.Tests
             );
 
             var expected = run.CreateHotObservable(
-                OnNext(110, new ProcessResult(new DateTimeOffset(110, TimeSpan.MinValue), origin, ResultType.CloseHandshakeFinished)),
-                OnNext(111, new ProcessResult(new DateTimeOffset(110, TimeSpan.MinValue), origin, ResultType.CloseSocket))
+                OnNext(110, new ProcessResult(new DateTimeOffset(110, TimeSpan.FromSeconds(0)), origin, ResultType.CloseHandshakeFinished)),
+                OnNext(111, new ProcessResult(new DateTimeOffset(110, TimeSpan.FromSeconds(0)), origin, ResultType.CloseSocket))
             );
 
             var actual = run.Start(
