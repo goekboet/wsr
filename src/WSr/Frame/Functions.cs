@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace WSr.Frame
 {
@@ -35,6 +37,17 @@ namespace WSr.Frame
             bs[i] = b;
 
             return i < to ? true : false;
+        }
+
+        public static ulong InterpretLengthBytes(IEnumerable<byte> bytes)
+        {
+            if (BitConverter.IsLittleEndian)
+                bytes = bytes.Reverse();
+
+            if (bytes.Count() == 2)
+                return (ulong)BitConverter.ToUInt16(bytes.ToArray(), 0);
+
+            return BitConverter.ToUInt64(bytes.ToArray(), 0);
         }
     }
 }

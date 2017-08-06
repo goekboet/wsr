@@ -1,5 +1,6 @@
 using System;
-
+using System.Collections.Generic;
+using System.Linq;
 using static WSr.Frame.Functions;
 
 namespace WSr.Frame
@@ -32,7 +33,7 @@ namespace WSr.Frame
 
         private void Initialize()
         {
-            _lengthbytes = new byte[8];
+            _lengthbytes = new byte[0];
             _maskbytes = new byte[4];
             _payload = new byte[0];
             Complete = false;
@@ -54,9 +55,8 @@ namespace WSr.Frame
                     var masked = IsMasked(_bitfield);
                     if (l < 126)
                     {
-                        _lengthbytes[0] = (byte)l;
                         if (masked)
-                            Next = ReadMaskBytes();
+                            Next = ReadMaskBytes((ulong)l);
                         else
                             Next = l == 0 ? ReadBitfield(true) : ReadPayloadBytes((ulong)l);
                     }
@@ -71,6 +71,7 @@ namespace WSr.Frame
         }
         private Func<byte, IFrameReaderState<RawFrame>> ReadLengthBytes(int count, bool masked)
         {
+            _lengthbytes = new byte[count];
             var read = MakeReader(_lengthbytes, count - 1);
 
             return b =>
@@ -79,15 +80,15 @@ namespace WSr.Frame
                 if (!hasNext)
                 {
                     if (masked)
-                        Next = ReadMaskBytes();
+                        Next = ReadMaskBytes(InterpretLengthBytes(_lengthbytes));
                     else
-                        Next = ReadPayloadBytes(BitConverter.ToUInt64(_lengthbytes, 0));
+                        Next = ReadPayloadBytes(InterpretLengthBytes(_lengthbytes));
                 }
                 return this;
             };
         }
 
-        private Func<byte, IFrameReaderState<RawFrame>> ReadMaskBytes()
+        private Func<byte, IFrameReaderState<RawFrame>> ReadMaskBytes(ulong payloadLength)
         {
             var read = MakeReader(_maskbytes);
 
@@ -97,7 +98,7 @@ namespace WSr.Frame
                 if (!hasNext) 
                     Next = BitFieldLength(_bitfield) == 0 
                         ? ReadBitfield(true) 
-                        : ReadPayloadBytes(BitConverter.ToUInt64(_lengthbytes, 0));
+                        : ReadPayloadBytes(payloadLength);
 
                 return this;
             };

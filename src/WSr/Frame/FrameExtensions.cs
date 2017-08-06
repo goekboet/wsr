@@ -17,7 +17,14 @@ namespace WSr.Frame
         public static int OpCode(this RawFrame frame) => frame.Bitfield.ElementAt(0) & 0x0F;
 
         public static bool Masked(this RawFrame frame) => (frame.Bitfield.ElementAt(1) & 0x80) != 0;
-        public static ulong PayloadLength(this RawFrame frame) => BitConverter.ToUInt64(frame.Length.ToArray(), 0);
+        public static ulong PayloadLength(this RawFrame frame) 
+        {
+            var bitfieldLength = BitFieldLength(frame.Bitfield.ToArray());
+            
+            if (bitfieldLength < 126) return (ulong)bitfieldLength;
+
+            return InterpretLengthBytes(frame.Length);
+        }
 
         public static IEnumerable<byte> UnMaskedPayload(this RawFrame frame) => frame.Masked()
             ? frame.Payload.Zip(Forever(frame.Mask).SelectMany(x => x), (p, m) => (byte)(p ^ m))

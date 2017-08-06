@@ -187,7 +187,7 @@ namespace WSr.Tests.WebsocketFrame
             var bytes = new byte[] {0x81, 0x80, 0xe2, 0x0f, 0x69, 0x34};
             var expected = new RawFrame(
                 bitfield: new byte[] { 0x81, 0x80 },
-                length: new byte[8],
+                length: new byte[0],
                 mask: new byte[] { 0xe2, 0x0f, 0x69, 0x34 },
                 payload: new byte[0]);
 
