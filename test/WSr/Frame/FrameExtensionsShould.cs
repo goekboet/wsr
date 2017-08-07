@@ -25,7 +25,7 @@ namespace WSr.Tests.WebsocketFrame
             Assert.AreEqual(false, raw.Rsv1(), $"Rsv1 - expected: false, actual {raw.Rsv1()}");
             Assert.AreEqual(false, raw.Rsv2(), $"Rsv2 - expected: false, actual {raw.Rsv2()}");
             Assert.AreEqual(false, raw.Rsv3(), $"Rsv3 - expected: false, actual {raw.Rsv3()}");
-            Assert.AreEqual(1, raw.OpCode(), $"OpCode - expected: 1, actual {raw.OpCode()}");
+            Assert.AreEqual(OpCode.Text, raw.OpCode(), $"OpCode - expected: 1, actual {raw.OpCode()}");
             Assert.AreEqual(false, raw.Masked(), $"Masked - expected: false, actual {raw.Masked()}");
             Assert.AreEqual((ulong)5, raw.PayloadLength(), $"Length - expected: 5, actual {raw.PayloadLength()}");
             Assert.IsTrue(new byte[4].SequenceEqual(raw.Mask), $"Mask - expected: {Showlist(new byte[4])}, actual {Showlist(raw.Mask)}");
@@ -46,7 +46,7 @@ namespace WSr.Tests.WebsocketFrame
             Assert.AreEqual(false, raw.Rsv1(), $"Rsv1 - expected: false, actual {raw.Rsv1()}");
             Assert.AreEqual(false, raw.Rsv2(), $"Rsv2 - expected: false, actual {raw.Rsv2()}");
             Assert.AreEqual(false, raw.Rsv3(), $"Rsv3 - expected: false, actual {raw.Rsv3()}");
-            Assert.AreEqual(1, raw.OpCode(), $"OpCode - expected: 1, actual {raw.OpCode()}");
+            Assert.AreEqual(OpCode.Text, raw.OpCode(), $"OpCode - expected: 1, actual {raw.OpCode()}");
             Assert.AreEqual((ulong)5, raw.PayloadLength(), $"Length - expected: 5, actual {raw.PayloadLength()}");
             Assert.AreEqual(true, raw.Masked(), $"Masked - expected: true, actual {raw.Masked()}");
             Assert.AreEqual("Hello", Encoding.UTF8.GetString(raw.UnMaskedPayload().ToArray()), $"Payload - expected: Hello, actual {Encoding.UTF8.GetString(raw.Payload.ToArray())}");
@@ -73,7 +73,7 @@ namespace WSr.Tests.WebsocketFrame
             Assert.AreEqual(false, raw1.Rsv1(), $"Rsv1 - expected: false, actual {raw1.Rsv1()}");
             Assert.AreEqual(false, raw1.Rsv2(), $"Rsv2 - expected: false, actual {raw1.Rsv2()}");
             Assert.AreEqual(false, raw1.Rsv3(), $"Rsv3 - expected: false, actual {raw1.Rsv3()}");
-            Assert.AreEqual(1, raw1.OpCode(), $"OpCode - expected: 1, actual {raw1.OpCode()}");
+            Assert.AreEqual(OpCode.Text, raw1.OpCode(), $"OpCode - expected: Text, actual {raw1.OpCode()}");
             Assert.AreEqual((ulong)3, raw1.PayloadLength(), $"Length - expected: 3, actual {raw1.PayloadLength()}");
             Assert.AreEqual(false, raw1.Masked(), $"Masked - expected: false, actual {raw1.Masked()}");
             Assert.AreEqual("Hel", Encoding.UTF8.GetString(raw1.UnMaskedPayload().ToArray()), $"Payload - expected: Hel, actual {Encoding.UTF8.GetString(raw1.Payload.ToArray())}");
@@ -82,7 +82,7 @@ namespace WSr.Tests.WebsocketFrame
             Assert.AreEqual(false, raw2.Rsv1(), $"Rsv1 - expected: false, actual {raw2.Rsv1()}");
             Assert.AreEqual(false, raw2.Rsv2(), $"Rsv2 - expected: false, actual {raw2.Rsv2()}");
             Assert.AreEqual(false, raw2.Rsv3(), $"Rsv3 - expected: false, actual {raw2.Rsv3()}");
-            Assert.AreEqual(0, raw2.OpCode(), $"OpCode - expected: 0, actual {raw2.OpCode()}");
+            Assert.AreEqual(OpCode.Continuation, raw2.OpCode(), $"OpCode - expected: Continuation, actual {raw2.OpCode()}");
             Assert.AreEqual((ulong)2, raw2.PayloadLength(), $"Length - expected: 2, actual {raw2.PayloadLength()}");
             Assert.AreEqual(false, raw2.Masked(), $"Masked - expected: true, actual {raw2.Masked()}");
             Assert.AreEqual("lo", Encoding.UTF8.GetString(raw2.UnMaskedPayload().ToArray()), $"Payload - expected: lo, actual {Encoding.UTF8.GetString(raw2.Payload.ToArray())}");

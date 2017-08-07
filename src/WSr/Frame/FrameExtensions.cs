@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reactive.Linq;
 
 using static WSr.Frame.Functions;
-using static WSr.Functions.ListConstruction;
+using static WSr.ListConstruction;
 
 namespace WSr.Frame
 {
@@ -14,7 +14,7 @@ namespace WSr.Frame
         public static bool Rsv1(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x40) != 0;
         public static bool Rsv2(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x20) != 0;
         public static bool Rsv3(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x10) != 0;
-        public static int OpCode(this RawFrame frame) => frame.Bitfield.ElementAt(0) & 0x0F;
+        public static OpCode OpCode(this RawFrame frame) => (OpCode)(frame.Bitfield.ElementAt(0) & 0x0F);
 
         public static bool Masked(this RawFrame frame) => (frame.Bitfield.ElementAt(1) & 0x80) != 0;
         public static ulong PayloadLength(this RawFrame frame) 

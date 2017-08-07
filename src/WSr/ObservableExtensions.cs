@@ -4,7 +4,6 @@ using System.Reactive.Linq;
 using WSr.Messaging;
 using WSr.Protocol;
 using WSr.Socket;
-using WSr.Functions;
 
 using static WSr.Protocol.Functions;
 

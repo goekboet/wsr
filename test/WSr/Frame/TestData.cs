@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using WSr.Frame;
 
-using static WSr.Functions.ListConstruction;
+using static WSr.ListConstruction;
 
 namespace WSr.Tests
 {

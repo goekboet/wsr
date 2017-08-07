@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace WSr.Functions
+namespace WSr
 {
     public static class ListConstruction
     {
@@ -23,6 +23,13 @@ namespace WSr.Functions
             }
 
             yield break;
+        }
+
+        public static IEnumerable<T> Pad<T>(
+            IEnumerable<T> list, 
+            int count) where T : struct
+        {
+            return list.Concat(Forever(default(T))).Take(count);
         }
     }
 }

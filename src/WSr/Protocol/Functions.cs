@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using WSr.Messaging;
 
+using static WSr.IntegersFromByteConverter;
+
 namespace WSr.Protocol
 {
     public static class Functions
@@ -23,18 +25,15 @@ namespace WSr.Protocol
             else if (payload.Length <= ushort.MaxValue)
             {
                 secondByte = (byte)126;
-                lengthbytes = BitConverter.GetBytes((ushort)payload.Length);
+                lengthbytes = ToNetwork2Bytes((ushort)payload.Length);
             }
             else
             {
                 secondByte = (byte)127;
-                lengthbytes = BitConverter.GetBytes((ulong)payload.Length);
+                lengthbytes = ToNetwork8Bytes((ulong)payload.Length);
             }
 
             var bitfield = new byte[] { 0x81, secondByte};
-
-            if (BitConverter.IsLittleEndian)
-                lengthbytes = lengthbytes.Reverse();
 
             return bitfield
                 .Concat(lengthbytes)

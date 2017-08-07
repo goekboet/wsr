@@ -1,37 +1,65 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+using static WSr.ListConstruction;
+using static WSr.IntegersFromByteConverter;
 
 namespace WSr.Messaging
 {
     public abstract class Message : IEquatable<Message>
     {
-        public Message(string origin)
+        public Message(
+            string origin,
+            OpCode opCode, 
+            IEnumerable<byte> payload)
         {
             Origin = origin;
+            OpCode = opCode;
+            FramePayload = payload;
         }
+
+        public IEnumerable<byte> FramePayload { get; }
+        public OpCode OpCode { get; } 
         public string Origin { get; }
 
-        public virtual bool Equals(Message other)
+        public bool Equals(Message other)
         {
-            return other.Origin.Equals(Origin);
+            if (other == null) return false;
+
+            return FramePayload.SequenceEqual(other.FramePayload) &&
+                Origin.Equals(other.Origin) &&
+                OpCode.Equals(other.OpCode);
+        }
+
+        public override bool Equals(object obj) => Equals(obj as Message);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+
+                hash = hash * 31 * Origin.GetHashCode();
+                hash = hash * 31 * OpCode.GetHashCode();
+                hash = hash * 31 * BitConverter.ToInt32(Pad(FramePayload, 4).ToArray(), 0);
+
+                return hash;
+            }
         }
     }
 
     public class TextMessage : Message
     {
-        public TextMessage(string origin, string text) : base(origin)
+        public TextMessage(
+            string origin,
+            OpCode opCode, 
+            IEnumerable<byte> payload) : base(origin, opCode, payload)
         {
-            Text = text;
         }
 
-        public string Text { get; }
-
-        public override bool Equals(Message other)
-        {
-            if (!(other is TextMessage m)) return false;
-
-            return m.Text.Equals(Text) && base.Equals(other);
-        }
+        public string Text => Encoding.UTF8.GetString(FramePayload.ToArray());
 
         public override string ToString()
         {
@@ -46,23 +74,18 @@ namespace WSr.Messaging
 
     public class Close : Message
     {
-        public Close(string origin, int code, string reason) : base(origin)
+        public Close(
+            string origin,
+            OpCode opCode,
+            IEnumerable<byte> payload) : base(origin, opCode, payload)
         {
-            Code = code;
-            Reason = reason;    
         }
 
-        public int Code { get; }
-        public string Reason { get; }
+        private IEnumerable<byte> CodeBytes => FramePayload.Take(2);
+        private IEnumerable<byte> ReasonBytes => FramePayload.Skip(2);
 
-        public override bool Equals(Message other)
-        {
-            if (!(other is Close c)) return false;
-
-            return c.Code.Equals(Code) &&
-                c.Reason.Equals(Reason) &&
-                base.Equals(other);
-        }
+        public ushort Code => FromNetwork2Bytes(CodeBytes);
+        public string Reason => Encoding.UTF8.GetString(ReasonBytes.ToArray());
 
         public override string ToString()
         {

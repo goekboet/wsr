@@ -1,5 +1,5 @@
 using static WSr.Tests.Functions.Debug;
-using static WSr.Functions.ListConstruction;
+using static WSr.ListConstruction;
 using static WSr.Frame.Functions;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;

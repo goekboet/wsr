@@ -3,20 +3,22 @@ using Moq;
 using WSr.Frame;
 using WSr.Messaging;
 using static WSr.Messaging.Functions;
+using static WSr.Frame.Functions;
 
 namespace WSr.Tests.Messaging
 {
     [TestClass]
     public class MessageFunctionsShould
     {
+        private static string Origin => "o";
+
         [TestMethod]
         public void TransformRawFrameToTextMessage()
         {
-            var origin = "test";
-            var transformFrame = ToMessageWithOrigin(origin);
+            var transformFrame = ToMessageWithOrigin(Origin);
 
             var frame = SpecExamples.SingleFrameMaskedTextFrame;
-            var expected = new TextMessage(origin, "Hello");
+            var expected = new TextMessage(Origin, frame.OpCode(), frame.UnMaskedPayload());
 
             var result = transformFrame(frame);
             
@@ -26,11 +28,10 @@ namespace WSr.Tests.Messaging
         [TestMethod]
         public void TransformRawFrameToCloseMessage()
         {
-            var origin = "test";
-            var transformFrame = ToMessageWithOrigin(origin);
+            var transformFrame = ToMessageWithOrigin(Origin);
 
             var frame = SpecExamples.MaskedGoingAwayCloseFrame;
-            var expected = new Close(origin, 1001, "Going Away");
+            var expected = new Close(Origin, frame.OpCode(), frame.UnMaskedPayload());
 
             var result = transformFrame(frame);
             

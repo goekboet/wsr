@@ -6,7 +6,8 @@ using System.Reactive;
 using System.Text;
 using Microsoft.Reactive.Testing;
 
-using static WSr.Functions.ListConstruction;
+using static WSr.ListConstruction;
+using static WSr.IntegersFromByteConverter;
 
 namespace WSr.Tests.Functions
 {
@@ -46,5 +47,18 @@ namespace WSr.Tests.Functions
     public static class StreamConstruction
     {
         public static Stream EmptyStream => new MemoryStream(new byte [] { });
+    }
+
+    public static class FrameCreator
+    {
+        public static IEnumerable<byte> Create(ushort code, string message)
+        {
+            return ToNetwork2Bytes(code).Concat(Encoding.UTF8.GetBytes(message));
+        }
+
+        public static IEnumerable<byte> Create(string s)
+        {
+            return Encoding.UTF8.GetBytes(s);
+        }
     }
 }

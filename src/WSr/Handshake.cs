@@ -2,16 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Security.Cryptography;
 using System.Text;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using WSr.Protocol;
 using WSr.Socket;
 
+using static WSr.Algorithms;
+
 namespace WSr.Handshake
 {
-    public struct Request
+    public class Request
     {
         public static Request Default => new Request("", new Dictionary<string, string>());
 
@@ -85,8 +86,8 @@ namespace WSr.Handshake
         }
 
         private static string ws = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-        private static SHA1 _sha1 = SHA1.Create();
-        private static byte[] hash(string s) => _sha1.ComputeHash(Encoding.UTF8.GetBytes(s));
+        
+        private static byte[] hash(string s) => SHA1.ComputeHash(Encoding.UTF8.GetBytes(s));
 
         public static string ResponseKey(string requestKey)
         {

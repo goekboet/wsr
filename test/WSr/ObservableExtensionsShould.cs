@@ -12,6 +12,9 @@ using WSr.Protocol;
 using WSr.Socket;
 
 using static WSr.Tests.Functions.Debug;
+using static WSr.Tests.Functions.FrameCreator;
+using static WSr.IntegersFromByteConverter;
+
 using static WSr.Protocol.Functions;
 using System;
 
@@ -20,6 +23,7 @@ namespace WSr.Tests
     [TestClass]
     public class ObservableExtensionsShould : ReactiveTest
     {
+        private static string Origin => "o";
         public static Mock<IConnectedSocket> MockSocket(
             IList writeTo, 
             string address)
@@ -38,16 +42,15 @@ namespace WSr.Tests
         {
             var run = new TestScheduler();
             
-            var origin = "test";
             var actualWrites = new List<byte[]>();
-            var socket = MockSocket(actualWrites, origin);
+            var socket = MockSocket(actualWrites, Origin);
 
             var messages = run.CreateColdObservable(
-                OnNext(10, new TextMessage(origin, "Hello"))
+                OnNext(10, new TextMessage(Origin, OpCode.Text, Create("test")))
             );
 
             var expected = run.CreateHotObservable(
-                OnNext(110, new ProcessResult(run.Now, origin, ResultType.TextMessageSent))
+                OnNext(110, new ProcessResult(run.Now, Origin, ResultType.TextMessageSent))
             );
 
             var actual = run.Start(
@@ -75,7 +78,7 @@ namespace WSr.Tests
             var socket = MockSocket(actualWrites, origin);
 
             var messages = run.CreateColdObservable(
-                OnNext(10, new Close(origin, 1000, ""))
+                OnNext(10, new Close(Origin, OpCode.Close, Create(1000, "")))
             );
 
             var expected = run.CreateHotObservable(
