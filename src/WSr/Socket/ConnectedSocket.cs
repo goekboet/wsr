@@ -55,7 +55,6 @@ namespace WSr.Socket
 
         public virtual void Dispose()
         {
-            Console.WriteLine("Disposing connected socket");
             _socket.Dispose();
         }
 
