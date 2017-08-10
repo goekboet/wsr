@@ -29,6 +29,7 @@ namespace WSr.Socket
 
         public override string ToString() => _testIdentifier;
     }
+
     public class TcpConnection : IConnectedSocket
     {
         private readonly TcpClient _socket;
@@ -46,13 +47,8 @@ namespace WSr.Socket
 
         private Func<IScheduler, byte[], IObservable<int>> CreateReader(int bufferSize)
         {
-            Console.WriteLine($"receiving from {Address}");
             return (scheduler, buffer) => Observable
-                .FromAsync(tkn => Stream.ReadAsync(buffer, 0, bufferSize, tkn), scheduler);
-                // .Do(
-                //     x => Console.WriteLine("read onnext"),
-                //     x => Console.WriteLine($"read onerror {x.GetType().FullName}"),
-                //     () => Console.WriteLine($"read complete"));
+                .FromAsync(() => Stream.ReadAsync(buffer, 0, bufferSize), scheduler);
         }
 
         private Func<IScheduler, byte[], IObservable<Unit>> CreateWriter()
@@ -62,8 +58,6 @@ namespace WSr.Socket
 
         public virtual void Dispose()
         {
-            _socket.Client.Shutdown(SocketShutdown.Receive);
-            Console.WriteLine($"Disposing connected socket {Address}");
             _socket.Dispose();
         }
 
@@ -77,7 +71,7 @@ namespace WSr.Socket
             IScheduler scheduler)
         {
             var writer = CreateWriter();
-            Console.WriteLine($"writing to {Address}");
+
             return writer(scheduler, buffer.ToArray());
         }
 
@@ -89,10 +83,6 @@ namespace WSr.Socket
                 .Repeat()
                 .TakeWhile(x => x > 0)
                 .Select(r => buffer.Take(r).ToArray())
-                .Do(
-                    x => Console.WriteLine("read onnext"),
-                    x => Console.WriteLine($"read onerror {x.GetType().FullName}"),
-                    () => Console.WriteLine($"read complete"))
                 .Catch<byte[], ObjectDisposedException>(e => Observable.Empty<byte[]>());
         }
     }

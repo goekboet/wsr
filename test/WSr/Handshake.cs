@@ -126,84 +126,84 @@ namespace WSr.Tests.Handshake
             Assert.AreEqual(expected, show(actual));
         }
 
-        [TestMethod]
-        public void Handshake_Fails_to_Right_Protocol()
-        {
-            var run = new TestScheduler();
+        // [TestMethod]
+        // public void Handshake_Fails_to_Right_Protocol()
+        // {
+        //     var run = new TestScheduler();
 
-            var input = new MemoryStream(
-               ("GET X HTTP/1.0\r\n" + // bad http version
-               "X: X\r\n" +
-               "\r\n")
-               .Select(Convert.ToByte)
-               .ToArray());
-            var identifier = "testsocket";
+        //     var input = new MemoryStream(
+        //        ("GET X HTTP/1.0\r\n" + // bad http version
+        //        "X: X\r\n" +
+        //        "\r\n")
+        //        .Select(Convert.ToByte)
+        //        .ToArray());
+        //     var identifier = "testsocket";
 
-            var socket = new TestSocket(input, identifier) as IConnectedSocket;
-            var incomingSocket = Observable.Return(socket);
+        //     var socket = new TestSocket(input, identifier) as IConnectedSocket;
+        //     var incomingSocket = Observable.Return(socket);
 
-            var protocol = new FailedHandshake(socket, 400) as IProtocol;
-            var expected = run.CreateColdObservable
-            (
-                OnNext(2, "Failed handshake with testsocket"),
-                OnCompleted<string>(2)
-            );
+        //     var protocol = new FailedHandshake(socket, 400) as IProtocol;
+        //     var expected = run.CreateColdObservable
+        //     (
+        //         OnNext(2, "Failed handshake with testsocket"),
+        //         OnCompleted<string>(2)
+        //     );
 
-            var actual = run.Start(
-                create:() => incomingSocket
-                    .SelectMany(x => OpenHandshake(x, run))
-                    .Select(x => x.ToString()),
-                created: 0,
-                subscribed: 0,
-                disposed: 10
-            );
+        //     var actual = run.Start(
+        //         create:() => incomingSocket
+        //             .SelectMany(x => OpenHandshake(x, run))
+        //             .Select(x => x.ToString()),
+        //         created: 0,
+        //         subscribed: 0,
+        //         disposed: 10
+        //     );
 
-            ReactiveAssert.AreElementsEqual(
-               expected: expected.Messages,
-               actual: actual.Messages,
-               message: $"{Environment.NewLine} expected: {string.Join(", ", expected.Messages)} {Environment.NewLine} actual: {string.Join(", ", actual.Messages)}");
-        }
+        //     ReactiveAssert.AreElementsEqual(
+        //        expected: expected.Messages,
+        //        actual: actual.Messages,
+        //        message: $"{Environment.NewLine} expected: {string.Join(", ", expected.Messages)} {Environment.NewLine} actual: {string.Join(", ", actual.Messages)}");
+        // }
 
-        [TestMethod]
-        public void Handshake_Succeds_to_OpCodeOnly_Protocol()
-        {
-            var run = new TestScheduler();
+        // [TestMethod]
+        // public void Handshake_Succeds_to_OpCodeOnly_Protocol()
+        // {
+        //     var run = new TestScheduler();
 
-            var input = new MemoryStream(
-                ("GET /chat HTTP/1.1\r\n" +
-                "Host: 127.1.1.1:80\r\n" +
-                "Upgrade: websocket\r\n" +
-                "Connection: Upgrade\r\n" +
-                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
-                "Sec-WebSocket-Version: 13\r\n" +
-                "\r\n")
-                .Select(Convert.ToByte)
-                .ToArray());
-            var identifier = "testsocket";
+        //     var input = new MemoryStream(
+        //         ("GET /chat HTTP/1.1\r\n" +
+        //         "Host: 127.1.1.1:80\r\n" +
+        //         "Upgrade: websocket\r\n" +
+        //         "Connection: Upgrade\r\n" +
+        //         "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+        //         "Sec-WebSocket-Version: 13\r\n" +
+        //         "\r\n")
+        //         .Select(Convert.ToByte)
+        //         .ToArray());
+        //     var identifier = "testsocket";
 
-            var socket = new TestSocket(input, identifier) as IConnectedSocket;
-            var incomingSocket = Observable.Return(socket);
+        //     var socket = new TestSocket(input, identifier) as IConnectedSocket;
+        //     var incomingSocket = Observable.Return(socket);
 
-            var protocol = new FailedHandshake(socket, 400) as IProtocol;
-            var expected = run.CreateColdObservable
-            (
-                OnNext(2, $"Processing opcodes for {identifier}"),
-                OnCompleted<string>(2)
-            );
+        //     var protocol = new FailedHandshake(socket, 400) as IProtocol;
+        //     var expected = run.CreateColdObservable
+        //     (
+        //         OnNext(2, $"Processing opcodes for {identifier}"),
+        //         OnCompleted<string>(2)
+        //     );
 
-            var actual = run.Start(
-                create:() => incomingSocket
-                    .SelectMany(x => OpenHandshake(x, run))
-                    .Select(x => x.ToString()),
-                created: 0,
-                subscribed: 0,
-                disposed: 10
-            );
+        //     var actual = run.Start(
+        //         create:() => incomingSocket
+        //             .SelectMany(x => OpenHandshake(x, run))
+        //             .Select(x => x.ToString()),
+        //         created: 0,
+        //         subscribed: 0,
+        //         disposed: 10
+        //     );
 
-            ReactiveAssert.AreElementsEqual(
-               expected: expected.Messages,
-               actual: actual.Messages,
-               message: $"{Environment.NewLine} expected: {string.Join(", ", expected.Messages)} {Environment.NewLine} actual: {string.Join(", ", actual.Messages)}");
-        }
+        //     ReactiveAssert.AreElementsEqual(
+        //        expected: expected.Messages,
+        //        actual: actual.Messages,
+        //        message: $"{Environment.NewLine} expected: {string.Join(", ", expected.Messages)} {Environment.NewLine} actual: {string.Join(", ", actual.Messages)}");
+        // }
     }
 }

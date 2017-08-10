@@ -40,13 +40,13 @@ namespace WSr
             IConnectedSocket socket,
             IScheduler scheduler)
         {
-            return messages.Do(Console.WriteLine).SelectMany(m =>
+            return messages.SelectMany(m =>
             {
                 switch (m)
                 {
                     case HandShakeMessage h:
-                        return socket
-                            .Send(h.Response, scheduler)
+                        return Observable.Return(socket)
+                            .Select(s => s.Send(h.Response, scheduler))
                             .Timestamp(scheduler)
                             .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.SuccessfulOpeningHandshake))
                             .Catch<ProcessResult, FormatException>(BadRequest(socket, scheduler));
@@ -77,7 +77,8 @@ namespace WSr
                 .Return(new Reader(
                     address: socket.Address, 
                     buffers: socket.Receive(buffer, s)))
-                .SelectMany(r => r.Buffers.Select(x => new KeyValuePair<string, IEnumerable<byte>>(r.Address, x)));
+                .SelectMany(r => r.Buffers
+                    .Select(x => new KeyValuePair<string, IEnumerable<byte>>(r.Address, x)));
         }
 
         public static IObservable<Message> PerformHandShake(
@@ -109,10 +110,9 @@ namespace WSr
 
             return Observable.Using(
                 resourceFactory: () => output,
-                observableFactory: o => PerformHandShake(o.Address, mine.Take(1).Do(x => Console.WriteLine($"handshake {x.Count()}")))
-                .Concat(Messageing(o.Address, mine.Do(x => Console.WriteLine($"frames {x.Count()}"))))
+                observableFactory: o => PerformHandShake(o.Address, mine.Take(1))
+                .Concat(Messageing(o.Address, mine))
                 .EchoProcess(o, s)
-                //.Do(Console.WriteLine)
                 .TakeWhile(x => !x.Type.Equals(ResultType.CloseSocket)));
         }
 

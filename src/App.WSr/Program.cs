@@ -31,48 +31,20 @@ namespace App.WSr
                 .Using(
                     resourceFactory: server,
                     observableFactory: s => s
-                        .AcceptConnections(Scheduler.Default))
+                        .AcceptConnections())
                 .Publish();
 
             var listening = connectedSockets.Connect();
 
-            // var webSocketClients = connectedSockets
-            //     .SelectMany(c => c.Handshake());
-
             var broadcast = connectedSockets
-                .Do(x => Console.WriteLine($"{x.Address} connected"))
-                .SelectMany(Reads(new byte[8192]))
-                .Do(x => Console.WriteLine($"read {x.Value.Count()} from {x.Key}"));
-            //     .Publish();
-            // var reading = broadcast.Connect();
+                .SelectMany(Reads(new byte[8192]));
+            
             var processes = connectedSockets.GroupJoin(
                 right: broadcast,
                 leftDurationSelector: s => Observable.Never<Unit>(),
                 rightDurationSelector: _ => Observable.Return(Unit.Default),
                 resultSelector: (s, bs) => Process(bs, s)
             ).Merge();
-            // var processes = connectedSockets.Join(
-            //     right: broadcast,
-            //     leftDurationSelector: s => Observable.Never<Unit>(),
-            //     rightDurationSelector: _ => Observable.Never<Unit>(),
-            //     resultSelector: (s, b) => Observable.Using(() => s,w => Process(Observable.Return(b), w))
-            // ).Merge();
-            // var processes = connectedSockets
-            //     .SelectMany(x => Observable.Using(
-            //         resourceFactory: () => x,
-            //         observableFactory: s => Process(broadcast, s)
-            //     ));
-            // var processes = connectedSockets
-            //     .SelectMany(x => Observable.Using(
-            //         resourceFactory: () => x,
-            //         observableFactory: s => Process(s.Receive(new byte[8192], Scheduler.Default).Select(b => new KeyValuePair<string, IEnumerable<byte>>(s.Address, b)), s)
-            //     ));
-
-            // var processes = webSocketClients
-            //     .SelectMany(ws => Observable.Using(
-            //         resourceFactory: () => ws,
-            //         observableFactory: c => c.Process(c.Messages())
-            //     ));
                         
             var run = processes.Subscribe(
                 onNext: WriteLine,
@@ -81,7 +53,6 @@ namespace App.WSr
 
             Console.WriteLine("Any key to quit");
             Console.ReadKey();
-            //reading.Dispose();
             listening.Dispose();
             run.Dispose();
         }

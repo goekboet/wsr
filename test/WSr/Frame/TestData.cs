@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using WSr.Frame;
@@ -77,6 +78,14 @@ namespace WSr.Tests
                 mask: new byte[] { 0x05, 0xbc, 0x3a, 0x6c },
                 payload: new byte[] { 0x06, 0x55, 0x7d, 0x03, 0x6c, 0xd2, 0x5d, 0x4c, 0x44, 0xcb, 0x5b, 0x15 }
         );
+    }
 
+    public static class OpenWebsocketRequestData
+    {
+        public static byte[] BadRequest => ("GET X HTTP/1.0\r\n" + // bad http version
+                "X: X\r\n" +
+                "\r\n")
+                .Select(Convert.ToByte)
+                .ToArray();
     }
 }

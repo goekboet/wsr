@@ -107,31 +107,5 @@ namespace WSr.Handshake
                 .Select(Convert.ToByte)
                 .ToArray();
         }
-
-        public static IObservable<IProtocol> Handshake(
-            this IConnectedSocket socket,
-            IScheduler scheduler = null)
-        {
-            if (scheduler == null) scheduler = Scheduler.Default;
-
-            return OpenHandshake(socket, scheduler);
-        }
-
-        
-
-        public static IObservable<IProtocol> OpenHandshake(
-            IConnectedSocket socket, 
-            IScheduler scheduler)
-        {
-            var bufferSize = 8192;
-            var buffer = new byte[bufferSize];
-
-            return socket
-                .Receive(buffer, scheduler)
-                .Take(1)
-                .Select(ToHandshakeRequest)
-                .Select(x => new SuccessfulHandshake(socket, x) as IProtocol)
-                .Catch<IProtocol, FormatException>(e => Observable.Return(new FailedHandshake(socket, 400) as IProtocol));
-        }
     }
 }

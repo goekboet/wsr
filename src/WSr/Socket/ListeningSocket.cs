@@ -35,24 +35,7 @@ namespace WSr.Socket
                 .Select(c => new TcpConnection(c));
         }
     }
-
-    internal class DebugTcpSocket : TcpSocket
-    {
-        public DebugTcpSocket(string ip, int port) : base(ip, port) { }
-
-        public override void Dispose()
-        {
-            Console.WriteLine("Disposing listener socket");
-            base.Dispose();
-        }
-
-        public override IObservable<IConnectedSocket> Connect(IScheduler scheduler)
-        {
-            Console.WriteLine("Serving...");
-            return base.Connect(scheduler);
-        }
-    }
-
+    
     public static class Fns
     {
         public static IListeningSocket ListenTo(string ip, int port)
@@ -60,15 +43,12 @@ namespace WSr.Socket
             return new TcpSocket(ip, port);
         }
 
-        public static IListeningSocket AcceptAndDebug(string ip, int port)
-        {
-            return new DebugTcpSocket(ip, port);
-        }
-
         public static IObservable<IConnectedSocket> AcceptConnections(
             this IListeningSocket server,
-            IScheduler scheduler)
+            IScheduler scheduler = null)
         {
+            if (scheduler == null) scheduler = Scheduler.Default;
+
             return server.Connect(scheduler).Repeat();
         }
     }

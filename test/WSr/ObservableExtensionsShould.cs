@@ -14,6 +14,7 @@ using WSr.Socket;
 using static WSr.Tests.Functions.Debug;
 using static WSr.Tests.Functions.FrameCreator;
 using static WSr.IntegersFromByteConverter;
+using static WSr.Tests.OpenWebsocketRequestData;
 
 using static WSr.Protocol.Functions;
 using System;
@@ -46,7 +47,35 @@ namespace WSr.Tests
         [TestMethod]
         public void EchoProcessSendsUnsuccessfulOpenHandshake()
         {
+            var run = new TestScheduler();
             
+            var actualWrites = new List<byte[]>();
+            var socket = MockSocket(actualWrites, Origin);
+
+            var messages = run.CreateColdObservable(
+                OnNext(10, new HandShakeMessage(Origin, BadRequest))
+            );
+
+            var expected = run.CreateHotObservable(
+                OnNext(110, new ProcessResult(run.Now, Origin, ResultType.UnSuccessfulOpeningHandshake)),
+                OnNext(111, new ProcessResult(run.Now, Origin, ResultType.CloseSocket))
+            );
+
+            var actual = run.Start(
+                create: () => messages.EchoProcess(socket.Object, run),
+                created: 0,
+                subscribed: 100,
+                disposed: 1000
+            );
+
+            ReactiveAssert.AreElementsEqual(
+               expected: expected.Messages,
+               actual: actual.Messages,
+               message: debugElementsEqual(expected.Messages, actual.Messages));
+
+            Assert.AreEqual(
+                "400 Bad Request", 
+                new string(actualWrites.First().Select(Convert.ToChar).ToArray()));
         }
 
         [TestMethod]
