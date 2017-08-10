@@ -17,10 +17,17 @@ namespace WSr.Messaging
                     return ToTextMessage(origin, frame);
                 case OpCode.Close:
                     return ToCloseMessage(origin, frame);
+                case OpCode.Binary:
+                    return ToBinaryMessage(origin, frame);
                 default:
                     throw new ArgumentException($"OpCode {frame.OpCode()} has no defined message");
             }
         };
+
+        private static Message ToBinaryMessage(string origin, RawFrame frame)
+        {
+            return new BinaryMessage(origin, frame.UnMaskedPayload());
+        }
 
         public static Message ToTextMessage(
             string origin, 

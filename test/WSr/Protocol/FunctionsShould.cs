@@ -14,6 +14,18 @@ namespace WSr.Tests.Protocol
         [TestMethod]
         public void EchoTextMessageOfLengthLessThan126()
         {
+            var expected = new byte[] {0x82, 0x04, 0x74, 0x65, 0x73, 0x74};
+
+            var message = new BinaryMessage(Origin, expected.Skip(2));
+            
+            var actual = Echo(message);
+
+            Assert.IsTrue(expected.SequenceEqual(actual));
+        }
+
+        [TestMethod]
+        public void EchoBinaryMessageOfLengthLessThan126()
+        {
             var expected = new byte[] {0x81, 0x04, 0x74, 0x65, 0x73, 0x74};
 
             var message = new TextMessage(Origin, (OpCode)0x1, expected.Skip(2));

@@ -11,11 +11,11 @@ namespace WSr.Protocol
     public static class Functions
     {
         public static byte[] NormalClose { get; } = new byte[] { 0x88, 0x02, 0x03, 0xe8 };
-        public static byte[] Echo(TextMessage message)
+        public static byte[] Echo(Message message)
         {
-            var payload = Encoding.UTF8.GetBytes(message.Text);
+            var payload = message.FramePayload.ToArray();
 
-            byte secondByte = 0;
+            byte secondByte = 0x00;
             IEnumerable<byte> lengthbytes = null;
             if (payload.Length < 126)
             {
@@ -33,7 +33,9 @@ namespace WSr.Protocol
                 lengthbytes = ToNetwork8Bytes((ulong)payload.Length);
             }
 
-            var bitfield = new byte[] { 0x81, secondByte};
+            var firstByte = (byte)((byte)message.OpCode | 0x80);
+
+            var bitfield = new byte[] { firstByte, secondByte};
 
             return bitfield
                 .Concat(lengthbytes)

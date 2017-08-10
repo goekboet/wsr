@@ -45,10 +45,8 @@ namespace WSr
                 switch (m)
                 {
                     case HandShakeMessage h:
-                        return Observable.Return(socket).Take(1)
+                        return Observable.Return(socket)
                             .SelectMany(s => s.Send(h.Response, scheduler))
-                        // return socket
-                        //     .Send(h.Response, scheduler)
                             .Timestamp(scheduler)
                             .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.SuccessfulOpeningHandshake))
                             .Catch<ProcessResult, FormatException>(BadRequest(socket, scheduler));
@@ -57,6 +55,11 @@ namespace WSr
                             .Send(Echo(t), scheduler)
                             .Timestamp(scheduler)
                             .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.TextMessageSent));
+                    case BinaryMessage b:
+                        return socket
+                            .Send(Echo(b), scheduler)
+                            .Timestamp(scheduler)
+                            .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.BinaryMessageSent));
                     case Close c:
                         return socket
                             .Send(NormalClose, scheduler)

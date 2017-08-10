@@ -73,6 +73,27 @@ namespace WSr.Messaging
         }
     }
 
+    public class BinaryMessage : Message
+    {
+        public BinaryMessage(
+            string origin,
+            IEnumerable<byte> payload) : base(origin, OpCode.Binary, payload)
+        {
+        }
+
+        public IEnumerable<byte> Payload => FramePayload;
+
+        public override string ToString()
+        {
+            return string.Join(Environment.NewLine, new[] 
+            {
+                "BinaryMessage", 
+                $"Origin: {Origin}", 
+                $"Text: {HexDump(Payload)}"
+            });
+        }
+    }
+
     public class Close : Message
     {
         public Close(

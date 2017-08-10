@@ -25,5 +25,10 @@ namespace WSr
             BitConverter.IsLittleEndian
                 ? BitConverter.GetBytes(n).Reverse()
                 : BitConverter.GetBytes(n);
+
+        public static string HexDump(IEnumerable<byte> bytes)
+        {
+            return BitConverter.ToString(bytes.ToArray());
+        }
     }
 }
