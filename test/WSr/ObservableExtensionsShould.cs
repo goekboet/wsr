@@ -41,7 +41,34 @@ namespace WSr.Tests
         [TestMethod]
         public void EchoProcessSendsSuccessfulOpenHandshake()
         {
+            var run = new TestScheduler();
+            
+            var actualWrites = new List<byte[]>();
+            var socket = MockSocket(actualWrites, Origin);
 
+            var messages = run.CreateColdObservable(
+                OnNext(10, new HandShakeMessage(Origin, WellFormedRequest))
+            );
+
+            var expected = run.CreateHotObservable(
+                OnNext(110, new ProcessResult(run.Now, Origin, ResultType.SuccessfulOpeningHandshake))
+            );
+
+            var actual = run.Start(
+                create: () => messages.EchoProcess(socket.Object, run),
+                created: 0,
+                subscribed: 100,
+                disposed: 1000
+            );
+
+            ReactiveAssert.AreElementsEqual(
+               expected: expected.Messages,
+               actual: actual.Messages,
+               message: debugElementsEqual(expected.Messages, actual.Messages));
+
+            Assert.AreEqual(
+                SuccessfulHandshakeResponse, 
+                new string(actualWrites.First().Select(Convert.ToChar).ToArray()));
         }
 
         [TestMethod]

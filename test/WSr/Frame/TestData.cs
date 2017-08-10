@@ -87,5 +87,22 @@ namespace WSr.Tests
                 "\r\n")
                 .Select(Convert.ToByte)
                 .ToArray();
+
+        public static byte[] WellFormedRequest => 
+                ("GET /chat HTTP/1.1\r\n" +
+                "Host: 127.1.1.1:80\r\n" +
+                "Upgrade: websocket\r\n" +
+                "Connection: Upgrade\r\n" +
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+                "Sec-WebSocket-Version: 13\r\n" +
+                "\r\n")
+                .Select(Convert.ToByte)
+                .ToArray();
+
+        public static string SuccessfulHandshakeResponse = (
+                "HTTP/1.1 101 Switching Protocols\r\n" +
+                "Upgrade: websocket\r\n" +
+                "Connection: Upgrade\r\n" +
+                "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n");
     }
 }
