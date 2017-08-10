@@ -109,12 +109,11 @@ namespace WSr.Tests.Socket
                 OnNext(401, Unit.Default),
                 OnNext(401, Unit.Default)
             );
-
             
             var actual = run.Start(
                 create: () => socket
-                    .SelectMany(Writes(buffers, run))
-                    .SelectMany(x => x.Writes),
+                    .SelectMany(s => Writers(s, run))
+                    .SelectMany(x => x.Write(buffers)),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000
@@ -125,8 +124,14 @@ namespace WSr.Tests.Socket
                actual: actual.Messages,
                message: debugElementsEqual(expected.Messages, actual.Messages));
 
-            Assert.AreEqual(6, writeTo.Count);
-
+            Assert.IsTrue(new [] {
+                "socket 1: ett",
+                "socket 1: två",
+                "socket 1: tre",
+                "socket 2: tre",
+                "socket 1: fyr",
+                "socket 2: fyr"
+            }.SequenceEqual(writeTo));
         }
     }
 }

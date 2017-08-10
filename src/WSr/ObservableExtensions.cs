@@ -121,14 +121,14 @@ namespace WSr
                 .TakeWhile(x => !x.Type.Equals(ResultType.CloseSocket)));
         }
 
-        public static Func<IConnectedSocket, IObservable<Writer>> Writes(
-            IObservable<IEnumerable<byte>> buffers,
+        public static IObservable<Writer> Writers(
+            IConnectedSocket socket,
             IScheduler s = null)
         {
-            return socket => Observable
+            return Observable
                 .Return(new Writer(
                     address: socket.Address, 
-                    writes: buffers.SelectMany(b => socket.Send(b, s))));
+                    writes: b => b.SelectMany(x => socket.Send(x, s))));
         }
     }
 }

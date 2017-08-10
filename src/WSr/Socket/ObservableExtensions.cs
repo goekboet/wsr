@@ -27,13 +27,13 @@ namespace WSr.Socket
     {
         public Writer(
             string address,
-            IObservable<Unit> writes)
+            Func<IObservable<byte[]>, IObservable<Unit>> writes)
         {
             Address = address;
-            Writes = writes;
+            Write = writes;
         }
 
         public string Address { get; }
-        public IObservable<Unit> Writes { get; }
+        public Func<IObservable<byte[]>, IObservable<Unit>> Write { get; }
     }
 }
