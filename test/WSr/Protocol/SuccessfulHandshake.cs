@@ -21,7 +21,7 @@ namespace WSr.Tests.Protocol
     [TestClass]
     public class SuccessfulHandshakeShould : ReactiveTest
     {
-        static Request upgrade = new Request(
+        static OpenRequest upgrade = new OpenRequest(
                 url: "/chat",
                 headers: new Dictionary<string, string>()
                 {
@@ -97,8 +97,8 @@ namespace WSr.Tests.Protocol
                 .Returns(sndRead);
             
             var incoming = run.CreateHotObservable(
-                OnNext(100, new SuccessfulHandshake(fstSocket.Object, Request.Default)),
-                OnNext(200, new SuccessfulHandshake(sndSocket.Object, Request.Default))
+                OnNext(100, new SuccessfulHandshake(fstSocket.Object, OpenRequest.Default)),
+                OnNext(200, new SuccessfulHandshake(sndSocket.Object, OpenRequest.Default))
             );
 
             var expected = run.CreateHotObservable(

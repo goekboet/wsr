@@ -29,7 +29,7 @@ namespace WSr.Tests.Handshake
                 .Select(Convert.ToByte)
                 .ToArray();
 
-            var expected = new Request(
+            var expected = new OpenRequest(
                 url: "/chat",
                 headers: new Dictionary<string, string>()
                 {
@@ -56,7 +56,7 @@ namespace WSr.Tests.Handshake
                 .Select(Convert.ToByte)
                 .ToArray();
 
-            var expected = new Request(
+            var expected = new OpenRequest(
                 url: "/chat",
                 headers: new Dictionary<string, string>()
                 {
@@ -82,7 +82,7 @@ namespace WSr.Tests.Handshake
                     (k, v) => new { key = k, Value = v })
                 .ToDictionary(x => x.key, x => x.Value);
 
-            var actual = Validate(new Request("", withValues));
+            var actual = Validate(new OpenRequest("", withValues));
 
             Assert.AreEqual(expected, actual);
         }
@@ -104,7 +104,7 @@ namespace WSr.Tests.Handshake
         public void GenerateResponse()
         {
 
-            var request = new Request(
+            var request = new OpenRequest(
                 url: "/chat",
                 headers: new Dictionary<string, string>()
                 {

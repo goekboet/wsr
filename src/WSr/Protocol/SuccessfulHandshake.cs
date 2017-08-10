@@ -19,7 +19,7 @@ namespace WSr.Protocol
     public class SuccessfulHandshake : IProtocol
     {
         private IConnectedSocket _socket;
-        private Request _request;
+        private OpenRequest _request;
 
         private Func<RawFrame, Message> ToMessage => ToMessageWithOrigin(_socket.Address);
 
@@ -48,7 +48,7 @@ namespace WSr.Protocol
                 .Select(x => new ProcessResult(x.Timestamp, _socket.Address, ResultType.SuccessfulOpeningHandshake));
         }
 
-        public SuccessfulHandshake(IConnectedSocket socket, Request request)
+        public SuccessfulHandshake(IConnectedSocket socket, OpenRequest request)
         {
             _socket = socket;
             _request = request;

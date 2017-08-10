@@ -31,7 +31,7 @@ namespace WSr.Tests.Messaging
             var transformFrame = ToMessageWithOrigin(Origin);
 
             var frame = SpecExamples.MaskedGoingAwayCloseFrame;
-            var expected = new Close(Origin, frame.OpCode(), frame.UnMaskedPayload());
+            var expected = new Close(Origin, frame.UnMaskedPayload());
 
             var result = transformFrame(frame);
             

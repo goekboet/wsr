@@ -38,6 +38,18 @@ namespace WSr.Tests
         }
 
         [TestMethod]
+        public void EchoProcessSendsSuccessfulOpenHandshake()
+        {
+
+        }
+
+        [TestMethod]
+        public void EchoProcessSendsUnsuccessfulOpenHandshake()
+        {
+            
+        }
+
+        [TestMethod]
         public void EchoProcessResendsTextMessageToSocket()
         {
             var run = new TestScheduler();
@@ -78,7 +90,7 @@ namespace WSr.Tests
             var socket = MockSocket(actualWrites, origin);
 
             var messages = run.CreateColdObservable(
-                OnNext(10, new Close(Origin, OpCode.Close, Create(1000, "")))
+                OnNext(10, new Close(Origin, Create(1000, "")))
             );
 
             var expected = run.CreateHotObservable(

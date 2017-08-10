@@ -10,6 +10,8 @@ using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Collections.Generic;
+using System.Threading;
+using System.Reactive.Subjects;
 
 namespace WSr.Socket
 {
@@ -44,8 +46,13 @@ namespace WSr.Socket
 
         private Func<IScheduler, byte[], IObservable<int>> CreateReader(int bufferSize)
         {
+            Console.WriteLine($"receiving from {Address}");
             return (scheduler, buffer) => Observable
-                .FromAsync(() => Stream.ReadAsync(buffer, 0, bufferSize), scheduler);
+                .FromAsync(tkn => Stream.ReadAsync(buffer, 0, bufferSize, tkn), scheduler);
+                // .Do(
+                //     x => Console.WriteLine("read onnext"),
+                //     x => Console.WriteLine($"read onerror {x.GetType().FullName}"),
+                //     () => Console.WriteLine($"read complete"));
         }
 
         private Func<IScheduler, byte[], IObservable<Unit>> CreateWriter()
@@ -55,6 +62,8 @@ namespace WSr.Socket
 
         public virtual void Dispose()
         {
+            _socket.Client.Shutdown(SocketShutdown.Receive);
+            Console.WriteLine($"Disposing connected socket {Address}");
             _socket.Dispose();
         }
 
@@ -68,18 +77,23 @@ namespace WSr.Socket
             IScheduler scheduler)
         {
             var writer = CreateWriter();
-
+            Console.WriteLine($"writing to {Address}");
             return writer(scheduler, buffer.ToArray());
         }
 
         public IObservable<IEnumerable<byte>> Receive(byte[] buffer, IScheduler scheduler)
         {
             var reader = CreateReader(buffer.Length);
-
+            
             return reader(scheduler, buffer)
                 .Repeat()
                 .TakeWhile(x => x > 0)
-                .Select(r => buffer.Take(r).ToArray());
+                .Select(r => buffer.Take(r).ToArray())
+                .Do(
+                    x => Console.WriteLine("read onnext"),
+                    x => Console.WriteLine($"read onerror {x.GetType().FullName}"),
+                    () => Console.WriteLine($"read complete"))
+                .Catch<byte[], ObjectDisposedException>(e => Observable.Empty<byte[]>());
         }
     }
 

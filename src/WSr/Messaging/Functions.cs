@@ -33,7 +33,7 @@ namespace WSr.Messaging
             string origin, 
             RawFrame frame)
         {
-            return new Close(origin, frame.OpCode(), frame.UnMaskedPayload());
+            return new Close(origin, frame.UnMaskedPayload());
         }
 
         

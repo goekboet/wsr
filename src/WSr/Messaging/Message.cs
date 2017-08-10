@@ -5,6 +5,7 @@ using System.Text;
 
 using static WSr.ListConstruction;
 using static WSr.IntegersFromByteConverter;
+using static WSr.Handshake.Parse;
 
 namespace WSr.Messaging
 {
@@ -76,8 +77,7 @@ namespace WSr.Messaging
     {
         public Close(
             string origin,
-            OpCode opCode,
-            IEnumerable<byte> payload) : base(origin, opCode, payload)
+            IEnumerable<byte> payload) : base(origin, OpCode.Close, payload)
         {
         }
 
@@ -95,6 +95,26 @@ namespace WSr.Messaging
                 $"Origin: {Origin}", 
                 $"Code: {Code}",
                 $"Reason: {Reason}"
+            });
+        }
+    }
+
+    public class HandShakeMessage : Message
+    {
+        public HandShakeMessage(
+            string origin, 
+            IEnumerable<byte> request) : base(origin, OpCode.HandShake, request)
+        {
+        }
+
+        public byte[] Response => Respond(ToHandshakeRequest(FramePayload));
+
+        public override string ToString()
+        {
+            return string.Join(Environment.NewLine, new[] 
+            {
+                "HandshakeMessage", 
+                $"Origin: {Origin}", 
             });
         }
     }

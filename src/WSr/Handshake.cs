@@ -12,11 +12,11 @@ using static WSr.Algorithms;
 
 namespace WSr.Handshake
 {
-    public class Request
+    public class OpenRequest
     {
-        public static Request Default => new Request("", new Dictionary<string, string>());
+        public static OpenRequest Default => new OpenRequest("", new Dictionary<string, string>());
 
-        public Request(
+        public OpenRequest(
             string url,
             IDictionary<string, string> headers)
         {
@@ -36,7 +36,7 @@ namespace WSr.Handshake
         private static string parseRequestLine = @"^GET\s(/\S*)\sHTTP/1\.1$";
         private static string parseHeaderLine = @"^(\S*):\s(\S*)$";
 
-        public static Request ToHandshakeRequest(
+        public static OpenRequest ToHandshakeRequest(
             IEnumerable<byte> buffer)
         {
             try
@@ -60,8 +60,8 @@ namespace WSr.Handshake
                 complete = lines[lines.Count - 1].Groups[1].Value.Equals("");
 
                 return complete
-                    ? new Request(url, headers)
-                    : Request.Default;
+                    ? new OpenRequest(url, headers)
+                    : OpenRequest.Default;
 
             }
             catch (System.Exception e)
@@ -80,7 +80,7 @@ namespace WSr.Handshake
             "Sec-WebSocket-Version"
         });
 
-        public static bool Validate(Request request)
+        public static bool Validate(OpenRequest request)
         {
             return RequiredHeaders.IsSubsetOf(new HashSet<string>(request.Headers.Keys));
         }
@@ -100,7 +100,7 @@ namespace WSr.Handshake
                 "Connection: Upgrade\r\n" +
                 "Sec-WebSocket-Accept: {0}\r\n\r\n";
 
-        public static byte[] Respond(Request request)
+        public static byte[] Respond(OpenRequest request)
         {
             var requestKey = request.Headers["Sec-WebSocket-Key"]; 
             return string.Format(_response, ResponseKey(requestKey))
@@ -116,6 +116,8 @@ namespace WSr.Handshake
 
             return OpenHandshake(socket, scheduler);
         }
+
+        
 
         public static IObservable<IProtocol> OpenHandshake(
             IConnectedSocket socket, 

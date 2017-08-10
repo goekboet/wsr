@@ -9,7 +9,7 @@ namespace WSr.Protocol
         TextMessageSent,
         CloseHandshakeFinished,
         CloseSocket,
-        NoOp
+        NoOp,
     }
 
     public class ProcessResult : IEquatable<ProcessResult>

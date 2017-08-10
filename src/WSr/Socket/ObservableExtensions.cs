@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using WSr.Messaging;
+using WSr.Protocol;
 
 namespace WSr.Socket
 {
@@ -32,29 +35,5 @@ namespace WSr.Socket
 
         public string Address { get; }
         public IObservable<Unit> Writes { get; }
-    }
-    public class ObservableExtensions
-    {
-        public static Func<IConnectedSocket, IObservable<Reader>> Reads(
-            byte[] buffer,
-            IScheduler s = null)
-        {
-            return socket => Observable
-                .Return(new Reader(
-                    address: socket.Address, 
-                    buffers: socket.Receive(buffer, s)));
-        }
-
-        public static Func<IConnectedSocket, IObservable<Writer>> Writes(
-            IObservable<IEnumerable<byte>> buffers,
-            IScheduler s = null)
-        {
-            return socket => Observable
-                .Return(new Writer(
-                    address: socket.Address, 
-                    writes: buffers.SelectMany(b => socket.Send(b, s))));
-        }
-
-
     }
 }
