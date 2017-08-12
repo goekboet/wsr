@@ -15,21 +15,6 @@ using System.Reactive.Subjects;
 
 namespace WSr.Socket
 {
-    public class TestSocket : TcpConnection
-    {
-        private string _testIdentifier = null;
-        public TestSocket(Stream teststream, string testidentifier = "") 
-            : base() 
-        { 
-            Stream = teststream;
-            _testIdentifier = testidentifier;
-        }
-
-        public override Stream Stream { get; }
-
-        public override string ToString() => _testIdentifier;
-    }
-
     public class TcpConnection : IConnectedSocket
     {
         private readonly TcpClient _socket;
@@ -58,6 +43,7 @@ namespace WSr.Socket
 
         public virtual void Dispose()
         {
+            Console.WriteLine($"{Address} disposed.");
             _socket.Dispose();
         }
 

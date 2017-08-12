@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using WSr.Messaging;
@@ -10,6 +12,8 @@ namespace WSr.Tests.Protocol
     public class FunctionsShould
     {
         private static string Origin => "o";
+
+        string show(byte[] bytes) => new string(bytes.Select(Convert.ToChar).ToArray());
 
         [TestMethod]
         public void EchoTextMessageOfLengthLessThan126()
@@ -61,6 +65,43 @@ namespace WSr.Tests.Protocol
             var actual = Echo(message);
 
             Assert.IsTrue(expected.SequenceEqual(actual));
+        }
+
+        [TestMethod]
+        public void CanGenerateResponseKey()
+        {
+            var clientKey = "dGhlIHNhbXBsZSBub25jZQ==";
+            var expected = "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=";
+
+            var actual = ResponseKey(clientKey);
+
+            Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void GenerateResponse()
+        {
+            var request = new UpgradeRequest(
+                origin: "o",
+                url: "/chat",
+                headers: new Dictionary<string, string>()
+                {
+                    ["Host"] = "127.1.1.1:80",
+                    ["Upgrade"] = "websocket",
+                    ["Connection"] = "Upgrade",
+                    ["Sec-WebSocket-Key"] = "dGhlIHNhbXBsZSBub25jZQ==",
+                    ["Sec-WebSocket-Version"] = "13"
+                });
+
+            var expected = (
+                "HTTP/1.1 101 Switching Protocols\r\n" +
+                "Upgrade: websocket\r\n" +
+                "Connection: Upgrade\r\n" +
+                "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n");
+
+            var actual = Upgrade(request);
+
+            Assert.AreEqual(expected, show(actual));
         }
     }
 }

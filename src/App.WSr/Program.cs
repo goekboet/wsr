@@ -32,12 +32,13 @@ namespace App.WSr
                     resourceFactory: server,
                     observableFactory: s => s
                         .AcceptConnections())
+                .Do(x => Console.WriteLine($"{x.Address} connected"))
                 .Publish();
 
             var listening = connectedSockets.Connect();
 
             var broadcast = connectedSockets
-                .SelectMany(Reads(new byte[8192]));
+                .SelectMany(ReadMessages(new byte[8192]));
             
             var processes = connectedSockets.GroupJoin(
                 right: broadcast,

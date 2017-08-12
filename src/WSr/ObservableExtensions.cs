@@ -37,9 +37,9 @@ namespace WSr
                 .Select(x => new ProcessResult(x.Timestamp, s.Address, ResultType.UnSuccessfulOpeningHandshake))
                 .Concat(Observable.Return(new ProcessResult(sch.Now, s.Address, ResultType.CloseSocket), sch));
         }
-        
+
         public static IObservable<ProcessResult> EchoProcess(
-            this IObservable<Message> messages, 
+            this IObservable<IMessage> messages,
             IConnectedSocket socket,
             IScheduler scheduler)
         {
@@ -47,12 +47,17 @@ namespace WSr
             {
                 switch (m)
                 {
-                    case HandShakeMessage h:
-                        return Observable.Return(socket)
-                            .SelectMany(s => s.Send(h.Response, scheduler))
+                    case UpgradeRequest h:
+                        return socket
+                            .Send(Upgrade(h), scheduler)
                             .Timestamp(scheduler)
-                            .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.SuccessfulOpeningHandshake))
-                            .Catch<ProcessResult, FormatException>(BadRequest(socket, scheduler));
+                            .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.SuccessfulOpeningHandshake));
+                    case BadUpgradeRequest b:
+                        return socket
+                            .Send(DoNotUpgrade(b), scheduler)
+                            .Timestamp(scheduler)
+                            .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.UnSuccessfulOpeningHandshake))
+                            .Concat(Observable.Return(new ProcessResult(scheduler.Now, socket.Address, ResultType.CloseSocket), scheduler));
                     case TextMessage t:
                         return socket
                             .Send(Echo(t), scheduler)
@@ -83,45 +88,40 @@ namespace WSr
 
             return socket => Observable
                 .Return(new Reader(
-                    address: socket.Address, 
+                    address: socket.Address,
                     buffers: socket.Receive(buffer, s)))
                 .SelectMany(r => r.Buffers
                     .Select(x => new KeyValuePair<string, IEnumerable<byte>>(r.Address, x)));
         }
 
-        public static IObservable<Message> PerformHandShake(
+        public static IObservable<FrameMessage> PerformHandShake(
             string origin,
             IObservable<IEnumerable<byte>> input)
         {
-            return input.Select(x => new HandShakeMessage(origin, x));
+            throw new NotImplementedException();
         }
 
-        public static IObservable<Message> Messageing(
+        public static IObservable<IMessage> Messageing(
             string origin,
             IObservable<IEnumerable<byte>> input)
         {
             return input
                 .ReadFrames()
                 .Select(ToMessageWithOrigin(origin));
-        } 
+        }
 
         public static IObservable<ProcessResult> Process(
-            IObservable<KeyValuePair<string, IEnumerable<byte>>> input,
+            IObservable<IMessage> input,
             IConnectedSocket output,
             IScheduler s = null)
         {
-            if(s == null) s = Scheduler.Default;
-
-            var mine = input
-                .Where(x => x.Key.Equals(output.Address))
-                .Select(x => x.Value);
+            if (s == null) s = Scheduler.Default;
 
             return Observable.Using(
                 resourceFactory: () => output,
-                observableFactory: o => PerformHandShake(o.Address, mine.Take(1))
-                .Concat(Messageing(o.Address, mine))
-                .EchoProcess(o, s)
-                .TakeWhile(x => !x.Type.Equals(ResultType.CloseSocket)));
+                observableFactory: o => input
+                    .EchoProcess(o, s)
+                    .TakeWhile(x => !x.Type.Equals(ResultType.CloseSocket)));
         }
 
         public static IObservable<Writer> Writers(
@@ -130,8 +130,35 @@ namespace WSr
         {
             return Observable
                 .Return(new Writer(
-                    address: socket.Address, 
+                    address: socket.Address,
                     writes: b => b.SelectMany(x => socket.Send(x, s))));
+        }
+
+        public static Func<IConnectedSocket, IObservable<IMessage>> ReadMessages(
+            byte[] buffer,
+            IScheduler scheduler = null)
+        {
+            if (scheduler == null) scheduler = Scheduler.Default;
+
+            return socket =>
+            {
+                var bytes = socket
+                        .Receive(buffer, scheduler)
+                        .SelectMany(x => x.ToObservable());
+
+                var handshake = bytes
+                    .ChopUpgradeRequest()
+                    .Select(x => ToHandshakeMessage(socket.Address, x))
+                    .Take(1);
+
+                var frames = bytes
+                    .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
+                    .Where(x => x.Complete)
+                    .Select(x => x.Reading)
+                    .Select(ToMessageWithOrigin(socket.Address));
+
+                return handshake.Concat(frames);
+            };
         }
     }
 }

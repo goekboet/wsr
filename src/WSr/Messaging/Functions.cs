@@ -8,7 +8,7 @@ namespace WSr.Messaging
 {
     public static class Functions
     {
-        public static Func<RawFrame, Message> ToMessageWithOrigin(string origin) => (RawFrame frame) =>
+        public static Func<RawFrame, IMessage> ToMessageWithOrigin(string origin) => (RawFrame frame) =>
         {
             var opcode = frame.OpCode();
             switch (opcode)
@@ -24,19 +24,19 @@ namespace WSr.Messaging
             }
         };
 
-        private static Message ToBinaryMessage(string origin, RawFrame frame)
+        private static IMessage ToBinaryMessage(string origin, RawFrame frame)
         {
             return new BinaryMessage(origin, frame.UnMaskedPayload());
         }
 
-        public static Message ToTextMessage(
+        public static IMessage ToTextMessage(
             string origin, 
             RawFrame frame)
         {
             return new TextMessage(origin, frame.OpCode(), frame.UnMaskedPayload());
         }
 
-        public static Message ToCloseMessage(
+        public static IMessage ToCloseMessage(
             string origin, 
             RawFrame frame)
         {

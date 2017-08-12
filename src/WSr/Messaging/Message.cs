@@ -9,9 +9,13 @@ using static WSr.Handshake.Functions;
 
 namespace WSr.Messaging
 {
-    public abstract class Message : IEquatable<Message>
+    public interface IMessage
     {
-        public Message(
+        string Origin { get; }
+    }
+    public abstract class FrameMessage : IMessage, IEquatable<FrameMessage>
+    {
+        public FrameMessage(
             string origin,
             OpCode opCode, 
             IEnumerable<byte> payload)
@@ -25,7 +29,7 @@ namespace WSr.Messaging
         public OpCode OpCode { get; } 
         public string Origin { get; }
 
-        public bool Equals(Message other)
+        public bool Equals(FrameMessage other)
         {
             if (other == null) return false;
 
@@ -34,7 +38,7 @@ namespace WSr.Messaging
                 OpCode.Equals(other.OpCode);
         }
 
-        public override bool Equals(object obj) => Equals(obj as Message);
+        public override bool Equals(object obj) => Equals(obj as FrameMessage);
 
         public override int GetHashCode()
         {
@@ -51,7 +55,7 @@ namespace WSr.Messaging
         }
     }
 
-    public class TextMessage : Message
+    public class TextMessage : FrameMessage
     {
         public TextMessage(
             string origin,
@@ -73,7 +77,7 @@ namespace WSr.Messaging
         }
     }
 
-    public class BinaryMessage : Message
+    public class BinaryMessage : FrameMessage
     {
         public BinaryMessage(
             string origin,
@@ -94,7 +98,7 @@ namespace WSr.Messaging
         }
     }
 
-    public class Close : Message
+    public class Close : FrameMessage
     {
         public Close(
             string origin,
@@ -119,24 +123,117 @@ namespace WSr.Messaging
             });
         }
     }
-
-    public class HandShakeMessage : Message
+    public class UpgradeRequest : IMessage, IEquatable<UpgradeRequest>
     {
-        public HandShakeMessage(
-            string origin, 
-            IEnumerable<byte> request) : base(origin, OpCode.HandShake, request)
+        private IDictionary<string, string> Headers { get; }
+
+        public UpgradeRequest(
+            string origin,
+            string url,
+            IDictionary<string, string> headers)
         {
+            Origin = origin;
+            Url = url;
+            Headers = headers;
         }
 
-        public byte[] Response => Respond(ToHandshakeRequest(FramePayload));
+        public string Url { get; }
+
+        public string RequestKey => Headers["Sec-WebSocket-Key"];
+
+        public string Origin { get; }
+
+        public bool Equals(UpgradeRequest other)
+        {
+            if (other == null) return false;
+
+            return other.Url.Equals(Url) &&
+                other.Origin.Equals(Origin) &&
+                other.RequestKey.Equals(RequestKey);
+        }
+
+        public override bool Equals(object obj) => Equals(obj as UpgradeRequest);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+
+                hash = hash * 31 * Url.GetHashCode();
+                hash = hash * 31 * Origin.GetHashCode();
+                hash = hash * 31 * RequestKey.GetHashCode();
+
+                return hash;
+            }
+        }
 
         public override string ToString()
         {
             return string.Join(Environment.NewLine, new[] 
             {
-                "HandshakeMessage", 
+                "UpgradeRequest", 
                 $"Origin: {Origin}", 
+                $"Url: {Url}",
+                $"RequestKey: {RequestKey}"
             });
         }
     }
+
+    public enum UpgradeFail
+    {
+        MalformedRequestLine,
+        MalformedHeaderLine,
+        MissRequiredHeader
+    }
+
+    public class BadUpgradeRequest : IMessage, IEquatable<BadUpgradeRequest>
+    {
+        public BadUpgradeRequest(
+            string origin,
+            UpgradeFail reason) 
+        {
+            Origin = origin;
+            Reason = reason;
+        }
+
+        public string Origin { get; }
+
+        public UpgradeFail Reason { get; }
+
+        public bool Equals(BadUpgradeRequest other)
+        {
+            if (other == null) return false;
+
+            return other.Origin.Equals(Origin) &&
+                other.Reason.Equals(Reason);
+        }
+
+        public override bool Equals(object obj) => Equals(obj as BadUpgradeRequest);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+
+                hash = hash * 31 * Origin.GetHashCode();
+                hash = hash * 31 * Reason.GetHashCode();
+
+                return hash;
+            }
+        }
+ 
+        public override string ToString()
+        {
+            return string.Join(Environment.NewLine, new[] 
+            {
+                "UpgradeFail", 
+                $"Origin: {Origin}", 
+                $"Reason: {Reason}"
+            });
+        }
+    }
+
+
 }

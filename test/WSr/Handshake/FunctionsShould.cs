@@ -7,7 +7,7 @@ using System.Text;
 using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using WSr.Handshake;
-
+using WSr.Messaging;
 using static WSr.Handshake.Functions;
 using static WSr.Tests.Functions.Debug;
 
@@ -61,6 +61,126 @@ namespace WSr.Tests.Handshake
             );
             
             Assert.IsTrue(actual.Messages.Single().Value.Kind.Equals(NotificationKind.OnError));
+        }
+
+        [TestMethod]
+        public void MakeWellFormedUpgradeRequest()
+        {
+            var origin = "o";
+            var input = new[]
+            {
+                "GET /chat HTTP/1.1",
+                "Host: 127.1.1.1:80",
+                "Upgrade: websocket",
+                "Connection: Upgrade",
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==",
+                "Sec-WebSocket-Version: 13"
+
+            };
+
+            var expected = new UpgradeRequest(
+                origin: origin,
+                url: "/chat",
+                headers: new Dictionary<string, string>()
+                {
+                    ["Host"] = "127.1.1.1:80",
+                    ["Upgrade"] = "websocket",
+                    ["Connection"] = "Upgrade",
+                    ["Sec-WebSocket-Key"] = "dGhlIHNhbXBsZSBub25jZQ==",
+                    ["Sec-WebSocket-Version"] = "13"
+                }
+            );
+
+            var actual = ToHandshakeMessage(origin, input);
+
+            Assert.IsTrue(expected.Equals(actual));
+        }
+
+        public void MakeBadUpgradeRequestReasonRequestLine()
+        {
+            var origin = "o";
+            var input = new[]
+            {
+                "GET /chat HTTP/1.0",
+                "Host: 127.1.1.1:80",
+                "Upgrade: websocket",
+                "Connection: Upgrade",
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==",
+                "Sec-WebSocket-Version: 13"
+
+            };
+
+            var expected = new BadUpgradeRequest(
+                origin: origin,
+                reason: UpgradeFail.MalformedHeaderLine
+            );
+
+            var actual = ToHandshakeMessage(origin, input);
+
+            Assert.IsTrue(expected.Equals(actual));
+        }
+
+        public void MakeBadUpgradeRequestReasonHeaderLine()
+        {
+            var origin = "o";
+            var input = new[]
+            {
+                "GET /chat HTTP/1.0",
+                "Host: 127.1.1.1:80",
+                "Upgrade: websocket ",
+                "Connection: Upgrade",
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==",
+                "Sec-WebSocket-Version: 13"
+
+            };
+
+            var expected = new BadUpgradeRequest(
+                origin: origin,
+                reason: UpgradeFail.MalformedHeaderLine
+            );
+
+            var actual = ToHandshakeMessage(origin, input);
+
+            Assert.IsTrue(expected.Equals(actual));
+        }
+
+        public void MakeBadUpgradeRequestReasonMissRequiredHeader()
+        {
+            var origin = "o";
+            var input = new[]
+            {
+                "GET /chat HTTP/1.0",
+                "Host: 127.1.1.1:80",
+                "Connection: Upgrade",
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==",
+                "Sec-WebSocket-Version: 13"
+
+            };
+
+            var expected = new BadUpgradeRequest(
+                origin: origin,
+                reason: UpgradeFail.MissRequiredHeader
+            );
+
+            var actual = ToHandshakeMessage(origin, input);
+
+            Assert.IsTrue(expected.Equals(actual));
+        }
+
+        [TestMethod]
+        [DataRow(new [] {"Host", "Upgrade", "Connection", "Sec-WebSocket-Key", "Sec-WebSocket-Version"}, true)]
+        [DataRow(new [] {"Host", "Upgrade", "Connection", "Sec-WebSocket-Key", "Sec-WebSocket-Version", "SomeotherHeader"}, true)]
+        [DataRow(new [] {"Host", "Upgrade", "Connection", "Sec-WebSocket-Key"}, false)]
+        public void ValidateRequest(IEnumerable<string> headers, bool expected)
+        {
+            var withValues = headers
+                .Zip(Enumerable.Repeat("X", headers.Count()), 
+                    (k, v) => new { key = k, Value = v })
+                .ToDictionary(x => x.key, x => x.Value);
+
+            var actual = Validate(withValues);
+
+            Assert.AreEqual(expected, actual);
         }
     }
 }

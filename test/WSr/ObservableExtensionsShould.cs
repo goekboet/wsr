@@ -37,6 +37,14 @@ namespace WSr.Tests
             return socket;
         }
 
+        private Dictionary<string, string> WithRequestKey(string key)
+        {
+            return new Dictionary<string, string>()
+            {
+                ["Sec-WebSocket-Key"] = key
+            };
+        }
+
         [TestMethod]
         public void EchoProcessSendsSuccessfulOpenHandshake()
         {
@@ -46,7 +54,7 @@ namespace WSr.Tests
             var socket = MockSocket(actualWrites, Origin);
 
             var messages = run.CreateColdObservable(
-                OnNext(10, new HandShakeMessage(Origin, WellFormedRequest))
+                OnNext(10, new UpgradeRequest(Origin, "u", WithRequestKey("k")))
             );
 
             var expected = run.CreateHotObservable(
@@ -65,9 +73,7 @@ namespace WSr.Tests
                actual: actual.Messages,
                message: debugElementsEqual(expected.Messages, actual.Messages));
 
-            Assert.AreEqual(
-                SuccessfulHandshakeResponse,
-                new string(actualWrites.First().Select(Convert.ToChar).ToArray()));
+            Assert.IsTrue(actualWrites.Count() == 1);
         }
 
         [TestMethod]
@@ -79,7 +85,7 @@ namespace WSr.Tests
             var socket = MockSocket(actualWrites, Origin);
 
             var messages = run.CreateColdObservable(
-                OnNext(10, new HandShakeMessage(Origin, BadRequest))
+                OnNext(10, new BadUpgradeRequest(Origin, UpgradeFail.MalformedHeaderLine))
             );
 
             var expected = run.CreateHotObservable(
@@ -99,9 +105,7 @@ namespace WSr.Tests
                actual: actual.Messages,
                message: debugElementsEqual(expected.Messages, actual.Messages));
 
-            Assert.AreEqual(
-                "400 Bad Request",
-                new string(actualWrites.First().Select(Convert.ToChar).ToArray()));
+            Assert.IsTrue(actualWrites.Count() == 1);
         }
 
         [TestMethod]
