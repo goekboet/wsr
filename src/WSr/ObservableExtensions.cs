@@ -10,7 +10,10 @@ using System.Linq;
 
 using static WSr.Protocol.Functions;
 using static WSr.Messaging.Functions;
+using static WSr.Handshake.Functions;
+
 using System.Text;
+using WSr.Handshake;
 
 namespace WSr
 {

@@ -5,7 +5,7 @@ using System.Text;
 
 using static WSr.ListConstruction;
 using static WSr.IntegersFromByteConverter;
-using static WSr.Handshake.Parse;
+using static WSr.Handshake.Functions;
 
 namespace WSr.Messaging
 {

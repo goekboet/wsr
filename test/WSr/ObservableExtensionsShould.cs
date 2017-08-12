@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,11 +14,9 @@ using WSr.Socket;
 
 using static WSr.Tests.Functions.Debug;
 using static WSr.Tests.Functions.FrameCreator;
-using static WSr.IntegersFromByteConverter;
 using static WSr.Tests.OpenWebsocketRequestData;
 
 using static WSr.Protocol.Functions;
-using System;
 
 namespace WSr.Tests
 {
@@ -26,7 +25,7 @@ namespace WSr.Tests
     {
         private static string Origin => "o";
         public static Mock<IConnectedSocket> MockSocket(
-            IList writeTo, 
+            IList writeTo,
             string address)
         {
             var socket = new Mock<IConnectedSocket>();
@@ -42,7 +41,7 @@ namespace WSr.Tests
         public void EchoProcessSendsSuccessfulOpenHandshake()
         {
             var run = new TestScheduler();
-            
+
             var actualWrites = new List<byte[]>();
             var socket = MockSocket(actualWrites, Origin);
 
@@ -67,7 +66,7 @@ namespace WSr.Tests
                message: debugElementsEqual(expected.Messages, actual.Messages));
 
             Assert.AreEqual(
-                SuccessfulHandshakeResponse, 
+                SuccessfulHandshakeResponse,
                 new string(actualWrites.First().Select(Convert.ToChar).ToArray()));
         }
 
@@ -75,7 +74,7 @@ namespace WSr.Tests
         public void EchoProcessSendsUnsuccessfulOpenHandshake()
         {
             var run = new TestScheduler();
-            
+
             var actualWrites = new List<byte[]>();
             var socket = MockSocket(actualWrites, Origin);
 
@@ -101,7 +100,7 @@ namespace WSr.Tests
                message: debugElementsEqual(expected.Messages, actual.Messages));
 
             Assert.AreEqual(
-                "400 Bad Request", 
+                "400 Bad Request",
                 new string(actualWrites.First().Select(Convert.ToChar).ToArray()));
         }
 
@@ -109,7 +108,7 @@ namespace WSr.Tests
         public void EchoProcessResendsTextMessageToSocket()
         {
             var run = new TestScheduler();
-            
+
             var actualWrites = new List<byte[]>();
             var socket = MockSocket(actualWrites, Origin);
 
@@ -140,7 +139,7 @@ namespace WSr.Tests
         public void EchoProcessPerformsCloseHandshakeAndSignalsSocketClose()
         {
             var run = new TestScheduler();
-            
+
             var origin = "test";
             var actualWrites = new List<byte[]>();
             var socket = MockSocket(actualWrites, origin);

@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using WSr.Socket;
 using WSr.Handshake;
 using WSr.Protocol;
-using static WSr.Handshake.Parse;
+using static WSr.Handshake.Functions;
 
 namespace WSr.Tests.Handshake
 {
@@ -29,7 +29,7 @@ namespace WSr.Tests.Handshake
                 .Select(Convert.ToByte)
                 .ToArray();
 
-            var expected = new OpenRequest(
+            var expected = new UpgradeRequest(
                 url: "/chat",
                 headers: new Dictionary<string, string>()
                 {
@@ -56,7 +56,7 @@ namespace WSr.Tests.Handshake
                 .Select(Convert.ToByte)
                 .ToArray();
 
-            var expected = new OpenRequest(
+            var expected = new UpgradeRequest(
                 url: "/chat",
                 headers: new Dictionary<string, string>()
                 {
@@ -82,7 +82,7 @@ namespace WSr.Tests.Handshake
                     (k, v) => new { key = k, Value = v })
                 .ToDictionary(x => x.key, x => x.Value);
 
-            var actual = Validate(new OpenRequest("", withValues));
+            var actual = Validate(new UpgradeRequest("", withValues));
 
             Assert.AreEqual(expected, actual);
         }
@@ -104,7 +104,7 @@ namespace WSr.Tests.Handshake
         public void GenerateResponse()
         {
 
-            var request = new OpenRequest(
+            var request = new UpgradeRequest(
                 url: "/chat",
                 headers: new Dictionary<string, string>()
                 {
