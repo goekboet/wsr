@@ -6,14 +6,14 @@ namespace WSr.Frame
 {
     public static class Functions
     {
-        public static int BitFieldLength(byte[] bitfield)
+        public static int BitFieldLength(IEnumerable<byte> bitfield)
         {
-            return bitfield[1] & 0x7f;
+            return bitfield.Skip(1).Select(b => b & 0x7f).Take(1).Single();
         }
 
-        public static bool IsMasked(byte[] bitfield)
+        public static bool IsMasked(IEnumerable<byte> bitfield)
         {
-            return (bitfield[1] & 0x80) != 0;
+            return bitfield.Skip(1).Select(b => (b & 0x80) != 0).Take(1).Single();
         }
 
         public static Func<byte, bool> MakeReader(byte[] bs)
@@ -49,5 +49,7 @@ namespace WSr.Frame
 
             return BitConverter.ToUInt64(bytes.ToArray(), 0);
         }
+
+        
     }
 }
