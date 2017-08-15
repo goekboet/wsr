@@ -50,6 +50,30 @@ namespace WSr.Frame
             return BitConverter.ToUInt64(bytes.ToArray(), 0);
         }
 
+        public static RawFrame ToFrame(
+            (bool masked, int bitfieldLength, IEnumerable<byte> frame) parse)
+        {
+            var bitfield = parse.frame.Take(2);
+
+            int lenghtBytes = 0;
+            if (parse.bitfieldLength == 126)
+                lenghtBytes = 2;
+            else if (parse.bitfieldLength == 127)
+                lenghtBytes = 8;
+
+            var length = parse.frame.Skip(2).Take(lenghtBytes);
+            var mask = parse.masked
+                ? parse.frame.Skip(2 + lenghtBytes).Take(4)
+                : Enumerable.Empty<byte>();
+
+            var payload = parse.frame.Skip(2 + lenghtBytes + (parse.masked ? 4 : 0));
+
+            return new RawFrame(
+                bitfield: bitfield.ToArray(),
+                length: length.ToArray(),
+                mask: mask.ToArray(),
+                payload: payload.ToArray());
+        }
         
     }
 }

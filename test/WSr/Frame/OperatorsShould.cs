@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using Microsoft.Reactive.Testing;
@@ -12,6 +13,8 @@ namespace WSr.Tests.Frame
     [TestClass]
     public class OperatorsShould : ReactiveTest
     {
+        private string show((bool masked, int bitfieldLength, IEnumerable<byte> frame) parse) => $"{parse.bitfieldLength} {(parse.masked ? 'm' : '-')} {parse.frame.Count()}";
+
         [TestMethod]
         public void ChopUnmaskedFrameWithPayloadLength0()
         {
@@ -23,14 +26,14 @@ namespace WSr.Tests.Frame
                 .ToObservable(run);
             
             var expected = run.CreateColdObservable(
-                OnNext(3, 2),
-                OnNext(5, 2),
-                OnNext(7, 2),
-                OnCompleted<int>(8)
+                OnNext(3, "0 - 2"),
+                OnNext(5, "0 - 2"),
+                OnNext(7, "0 - 2"),
+                OnCompleted<string>(8)
             );
 
             var actual = run.Start(
-                create: () => bytes.ChopToFrames().Select(x => x.Count()),
+                create: () => bytes.ChopToFrames().Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 100
@@ -53,14 +56,14 @@ namespace WSr.Tests.Frame
                 .ToObservable(run);
             
             var expected = run.CreateColdObservable(
-                OnNext(7, 6),
-                OnNext(13, 6),
-                OnNext(19, 6),
-                OnCompleted<int>(20)
+                OnNext(7, "0 m 6"),
+                OnNext(13, "0 m 6"),
+                OnNext(19, "0 m 6"),
+                OnCompleted<string>(20)
             );
 
             var actual = run.Start(
-                create: () => bytes.ChopToFrames().Select(x => x.Count()),
+                create: () => bytes.ChopToFrames().Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 100
@@ -83,14 +86,14 @@ namespace WSr.Tests.Frame
                 .ToObservable(run);
             
             var expected = run.CreateColdObservable(
-                OnNext(31, 30),
-                OnNext(61, 30),
-                OnNext(91, 30),
-                OnCompleted<int>(92)
+                OnNext(31, "28 - 30"),
+                OnNext(61, "28 - 30"),
+                OnNext(91, "28 - 30"),
+                OnCompleted<string>(92)
             );
 
             var actual = run.Start(
-                create: () => bytes.ChopToFrames().Select(x => x.Count()),
+                create: () => bytes.ChopToFrames().Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 100
@@ -113,14 +116,14 @@ namespace WSr.Tests.Frame
                 .ToObservable(run);
             
             var expected = run.CreateColdObservable(
-                OnNext(35, 34),
-                OnNext(69, 34),
-                OnNext(103, 34),
-                OnCompleted<int>(104)
+                OnNext(35, "28 m 34"),
+                OnNext(69, "28 m 34"),
+                OnNext(103, "28 m 34"),
+                OnCompleted<string>(104)
             );
 
             var actual = run.Start(
-                create: () => bytes.ChopToFrames().Select(x => x.Count()),
+                create: () => bytes.ChopToFrames().Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000
@@ -143,14 +146,14 @@ namespace WSr.Tests.Frame
                 .ToObservable(run);
             
             var expected = run.CreateColdObservable(
-                OnNext(5, 4),
-                OnNext(9, 4),
-                OnNext(13, 4),
-                OnCompleted<int>(14)
+                OnNext(5, "2 - 4"),
+                OnNext(9, "2 - 4"),
+                OnNext(13, "2 - 4"),
+                OnCompleted<string>(14)
             );
 
             var actual = run.Start(
-                create: () => bytes.ChopToFrames().Select(x => x.Count()),
+                create: () => bytes.ChopToFrames().Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000
@@ -173,14 +176,14 @@ namespace WSr.Tests.Frame
                 .ToObservable(run);
             
             var expected = run.CreateColdObservable(
-                OnNext(133, 132),
-                OnNext(265, 132),
-                OnNext(397, 132),
-                OnCompleted<int>(398)
+                OnNext(133, "126 - 132"),
+                OnNext(265, "126 - 132"),
+                OnNext(397, "126 - 132"),
+                OnCompleted<string>(398)
             );
 
             var actual = run.Start(
-                create: () => bytes.ChopToFrames().Select(x => x.Count()),
+                create: () => bytes.ChopToFrames().Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000
@@ -203,14 +206,14 @@ namespace WSr.Tests.Frame
                 .ToObservable(run);
             
             var expected = run.CreateColdObservable(
-                OnNext(137, 136),
-                OnNext(273, 136),
-                OnNext(409, 136),
-                OnCompleted<int>(410)
+                OnNext(137, "126 m 136"),
+                OnNext(273, "126 m 136"),
+                OnNext(409, "126 m 136"),
+                OnCompleted<string>(410)
             );
 
             var actual = run.Start(
-                create: () => bytes.ChopToFrames().Select(x => x.Count()),
+                create: () => bytes.ChopToFrames().Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000
@@ -233,14 +236,14 @@ namespace WSr.Tests.Frame
                 .ToObservable(run);
             
             var expected = run.CreateColdObservable(
-                OnNext(65547, 65546),
-                OnNext(131093, 65546),
-                OnNext(196639, 65546),
-                OnCompleted<int>(196640)
+                OnNext(65547, "127 - 65546"),
+                OnNext(131093, "127 - 65546"),
+                OnNext(196639, "127 - 65546"),
+                OnCompleted<string>(196640)
             );
 
             var actual = run.Start(
-                create: () => bytes.ChopToFrames().Select(x => x.Count()),
+                create: () => bytes.ChopToFrames().Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000000
@@ -263,14 +266,14 @@ namespace WSr.Tests.Frame
                 .ToObservable(run);
             
             var expected = run.CreateColdObservable(
-                OnNext(65551, 65550),
-                OnNext(131101, 65550),
-                OnNext(196651, 65550),
-                OnCompleted<int>(196652)
+                OnNext(65551, "127 m 65550"),
+                OnNext(131101, "127 m 65550"),
+                OnNext(196651, "127 m 65550"),
+                OnCompleted<string>(196652)
             );
 
             var actual = run.Start(
-                create: () => bytes.ChopToFrames().Select(x => x.Count()),
+                create: () => bytes.ChopToFrames().Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000000
