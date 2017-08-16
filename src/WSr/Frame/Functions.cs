@@ -16,29 +16,6 @@ namespace WSr.Frame
             return bitfield.Skip(1).Select(b => (b & 0x80) != 0).Take(1).Single();
         }
 
-        public static Func<byte, bool> MakeReader(byte[] bs)
-        {
-            var i = 0;
-
-            return b => ReadByte(bs, i++, b);
-        }
-
-        public static Func<byte, bool> MakeReader(byte[] bs, int to)
-        {
-            var i = 0;
-
-            return b => ReadBytesTo(bs, i++, b, to);
-        }
-
-        public static bool ReadByte(byte[] bs, int i, byte b) => ReadBytesTo(bs, i, b, bs.Length - 1);
-
-        public static bool ReadBytesTo(byte[] bs, int i, byte b, int to)
-        {
-            bs[i] = b;
-
-            return i < to ? true : false;
-        }
-
         public static ulong InterpretLengthBytes(IEnumerable<byte> bytes)
         {
             if (BitConverter.IsLittleEndian)

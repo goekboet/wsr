@@ -65,6 +65,14 @@ namespace WSr.Frame
                 }, o.OnError, o.OnCompleted);
             });
         }
+
+        public static IObservable<RawFrame> ParseFrames(
+            this IObservable<byte> bytes)
+        {
+            return bytes
+                .ChopToFrames()
+                .Select(ToFrame);
+        }
     }
 
 }

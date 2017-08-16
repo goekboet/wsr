@@ -25,9 +25,7 @@ namespace WSr
             return buffers
                 .Select(x => x.ToObservable())
                 .Concat()
-                .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
-                .Where(x => x.Complete)
-                .Select(x => x.Reading);
+                .ParseFrames();
         }
 
         public static Func<FormatException, IObservable<ProcessResult>> BadRequest(IConnectedSocket s, IScheduler sch)
@@ -152,9 +150,7 @@ namespace WSr
                     .Take(1);
 
                 var frames = bytes
-                    .Scan(FrameBuilder.Init, (s, b) => s.Next(b))
-                    .Where(x => x.Complete)
-                    .Select(x => x.Reading)
+                    .ParseFrames()
                     .Select(ToMessageWithOrigin(socket.Address));
 
                 return handshake.Concat(frames);
