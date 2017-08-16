@@ -58,7 +58,8 @@ namespace WSr.Socket
         {
             var writer = CreateWriter();
 
-            return writer(scheduler, buffer.ToArray());
+            return writer(scheduler, buffer.ToArray())
+                .Do(x => Console.WriteLine($"Wrote {buffer.Count()} on {Address}"));
         }
 
         public IObservable<IEnumerable<byte>> Receive(byte[] buffer, IScheduler scheduler)
@@ -68,6 +69,7 @@ namespace WSr.Socket
             return reader(scheduler, buffer)
                 .Repeat()
                 .TakeWhile(x => x > 0)
+                .Do(x => Console.WriteLine($"read {x} bytes from {Address}"))
                 .Select(r => buffer.Take(r).ToArray())
                 .Catch<byte[], ObjectDisposedException>(e => Observable.Empty<byte[]>());
         }

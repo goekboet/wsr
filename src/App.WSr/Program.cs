@@ -38,7 +38,8 @@ namespace App.WSr
             var listening = connectedSockets.Connect();
 
             var broadcast = connectedSockets
-                .SelectMany(ReadMessages(new byte[8192]));
+                .SelectMany(ReadMessages(new byte[8192]))
+                .Do(Console.WriteLine);
             
             var processes = connectedSockets.GroupJoin(
                 right: broadcast,
@@ -49,7 +50,7 @@ namespace App.WSr
                         
             var run = processes.Subscribe(
                 onNext: WriteLine,
-                onError: e => Console.WriteLine($"error: {e.Message} {e.Source}")
+                onError: e => Console.WriteLine($"error: {e.Message} {e.Source} {e.StackTrace}")
             );
 
             Console.WriteLine("Any key to quit");
