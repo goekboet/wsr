@@ -14,6 +14,7 @@ using static WSr.Handshake.Functions;
 
 using System.Text;
 using WSr.Handshake;
+using System.Reactive;
 
 namespace WSr
 {
@@ -66,6 +67,16 @@ namespace WSr
                             .Send(Echo(b), scheduler)
                             .Timestamp(scheduler)
                             .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.BinaryMessageSent));
+                    case Ping p:
+                        return socket
+                            .Send(Pong(p), scheduler)
+                            .Timestamp()
+                            .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.PongSent));
+                    case Pong p:
+                        return Observable
+                            .Return(Unit.Default)
+                            .Timestamp()
+                            .Select(x => new ProcessResult(x.Timestamp, socket.Address, ResultType.PongSent));
                     case Close c:
                         return socket
                             .Send(NormalClose, scheduler)

@@ -93,7 +93,7 @@ namespace WSr.Messaging
             {
                 "BinaryMessage", 
                 $"Origin: {Origin}", 
-                $"Text: {HexDump(Payload.Take(10))} ({Payload.Count()})"
+                $"Text: {Show(Payload)})"
             });
         }
     }
@@ -109,7 +109,7 @@ namespace WSr.Messaging
         private IEnumerable<byte> CodeBytes => FramePayload.Take(2);
         private IEnumerable<byte> ReasonBytes => FramePayload.Skip(2);
 
-        public ushort Code => FromNetwork2Bytes(CodeBytes);
+        public ushort Code => CodeBytes.Count() == 2 ? FromNetwork2Bytes(CodeBytes) : (ushort)0;
         public string Reason => Encoding.UTF8.GetString(ReasonBytes.ToArray());
 
         public override string ToString()
@@ -123,6 +123,45 @@ namespace WSr.Messaging
             });
         }
     }
+
+    public class Ping : FrameMessage
+    {
+        public Ping(
+            string origin,
+            IEnumerable<byte> payload) : base(origin, OpCode.Ping, payload)
+        {
+        }
+
+        public override string ToString()
+        {
+            return string.Join(Environment.NewLine, new[] 
+            {
+                "Pingmessage", 
+                $"Origin: {Origin}", 
+                $"Payload: {Show(FramePayload)}",
+            });
+        }
+    }
+
+    public class Pong : FrameMessage
+    {
+        public Pong(
+            string origin,
+            IEnumerable<byte> payload) : base(origin, OpCode.Pong, payload)
+        {
+        }
+
+        public override string ToString()
+        {
+            return string.Join(Environment.NewLine, new[] 
+            {
+                "Pongmessage", 
+                $"Origin: {Origin}", 
+                $"Payload: {Show(FramePayload)}",
+            });
+        }
+    }
+
     public class UpgradeRequest : IMessage, IEquatable<UpgradeRequest>
     {
         private IDictionary<string, string> Headers { get; }

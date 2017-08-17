@@ -13,6 +13,10 @@ namespace WSr.Protocol
     {
         public static byte[] NormalClose { get; } = new byte[] { 0x88, 0x02, 0x03, 0xe8 };
 
+        public static byte[] PingHead { get; } = new byte[] { 0x89 };
+
+        public static byte[] PongHead { get; } = new byte[] { 0x8a };
+
         private static string _upgradeResponse =
                 "HTTP/1.1 101 Switching Protocols\r\n" +
                 "Upgrade: websocket\r\n" +
@@ -52,7 +56,7 @@ namespace WSr.Protocol
 
             var firstByte = (byte)((byte)message.OpCode | 0x80);
 
-            var bitfield = new byte[] { firstByte, secondByte};
+            var bitfield = new byte[] { firstByte, secondByte };
 
             return bitfield
                 .Concat(lengthbytes)
@@ -71,5 +75,17 @@ namespace WSr.Protocol
         {
             return Encoding.ASCII.GetBytes("400 Bad Request");
         }
+
+        public static byte[] Ping(Pong pong) =>
+            PingHead
+                .Concat(new[] { (byte)pong.FramePayload.Count() })
+                .Concat(pong.FramePayload)
+                .ToArray();
+
+        public static byte[] Pong(Ping ping) =>
+            PongHead
+                .Concat(new[] { (byte)ping.FramePayload.Count() })
+                .Concat(ping.FramePayload)
+                .ToArray();
     }
 }

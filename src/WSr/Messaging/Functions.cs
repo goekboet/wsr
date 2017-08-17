@@ -13,6 +13,10 @@ namespace WSr.Messaging
             var opcode = frame.OpCode();
             switch (opcode)
             {
+                case OpCode.Ping:
+                    return ToPingMessage(origin, frame);
+                case OpCode.Pong:
+                    return ToPongMessage(origin, frame);
                 case OpCode.Text:
                     return ToTextMessage(origin, frame);
                 case OpCode.Close:
@@ -42,7 +46,18 @@ namespace WSr.Messaging
         {
             return new Close(origin, frame.UnMaskedPayload());
         }
-
         
+        public static IMessage ToPingMessage(
+            string origin, 
+            RawFrame frame)
+        {
+            return new Ping(origin, frame.UnMaskedPayload());
+        }
+        public static IMessage ToPongMessage(
+            string origin, 
+            RawFrame frame)
+        {
+            return new Pong(origin, frame.UnMaskedPayload());
+        }
     }
 }

@@ -10,7 +10,9 @@ namespace WSr.Protocol
         CloseHandshakeFinished,
         CloseSocket,
         NoOp,
-        BinaryMessageSent
+        BinaryMessageSent,
+        PingSent,
+        PongSent
     }
 
     public class ProcessResult : IEquatable<ProcessResult>

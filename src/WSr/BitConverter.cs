@@ -30,5 +30,8 @@ namespace WSr
         {
             return BitConverter.ToString(bytes.ToArray());
         }
+
+        public static string Show(IEnumerable<byte> bytes) => 
+            $"{HexDump(bytes.Take(10))} ({bytes.Count()}";
     }
 }
