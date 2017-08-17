@@ -72,7 +72,7 @@ namespace WSr.Messaging
             {
                 "Textmessage", 
                 $"Origin: {Origin}", 
-                $"Text: {Text}"
+                $"Text: {new string(Text.Take(10).ToArray())} ({Text.Length})"
             });
         }
     }
@@ -93,7 +93,7 @@ namespace WSr.Messaging
             {
                 "BinaryMessage", 
                 $"Origin: {Origin}", 
-                $"Text: {HexDump(Payload)}"
+                $"Text: {HexDump(Payload.Take(10))} ({Payload.Count()})"
             });
         }
     }
