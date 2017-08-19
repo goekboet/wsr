@@ -7,7 +7,7 @@ using WSr.Messaging;
 using static WSr.IntegersFromByteConverter;
 using static WSr.Algorithms;
 
-namespace WSr.Protocol
+namespace WSr.Deciding
 {
     public static class Functions
     {

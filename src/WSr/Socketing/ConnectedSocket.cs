@@ -12,6 +12,7 @@ using System.Reactive;
 using System.Collections.Generic;
 using System.Threading;
 using System.Reactive.Subjects;
+using WSr.Deciding;
 
 namespace WSr.Socket
 {
@@ -19,7 +20,7 @@ namespace WSr.Socket
     {
         private readonly TcpClient _socket;
 
-        protected TcpConnection() {}
+        protected TcpConnection() { }
 
         internal TcpConnection(TcpClient connectedSocket)
         {
@@ -53,7 +54,7 @@ namespace WSr.Socket
         }
 
         public IObservable<Unit> Send(
-            IEnumerable<byte> buffer, 
+            IEnumerable<byte> buffer,
             IScheduler scheduler)
         {
             var writer = CreateWriter();
@@ -65,7 +66,7 @@ namespace WSr.Socket
         public IObservable<IEnumerable<byte>> Receive(byte[] buffer, IScheduler scheduler)
         {
             var reader = CreateReader(buffer.Length);
-            
+
             return reader(scheduler, buffer)
                 .Repeat()
                 .TakeWhile(x => x > 0)

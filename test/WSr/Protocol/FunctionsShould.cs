@@ -4,8 +4,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using WSr.Messaging;
 
-using static WSr.Protocol.Functions;
-
+using static WSr.Deciding.Functions;
 namespace WSr.Tests.Protocol
 {
     [TestClass]

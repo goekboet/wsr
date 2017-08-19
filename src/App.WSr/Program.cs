@@ -6,10 +6,12 @@ using System.Linq;
 using WSr.Handshake;
 using WSr.Socket;
 using static WSr.Socket.Fns;
+using static WSr.Socket.Functions;
+using static WSr.Deciding.Functions;
 
-using static WSr.ObservableExtensions;
 using System.Collections.Generic;
 using System.Reactive;
+using WSr.Deciding;
 
 namespace App.WSr
 {
@@ -45,7 +47,7 @@ namespace App.WSr
                 right: broadcast,
                 leftDurationSelector: s => Observable.Never<Unit>(),
                 rightDurationSelector: _ => Observable.Return(Unit.Default),
-                resultSelector: (s, bs) => Process(bs, s)
+                resultSelector: (s, bs) => bs.FromMessage().Publish().RefCount().Process(s)
             ).Merge();
                         
             var run = processes.Subscribe(

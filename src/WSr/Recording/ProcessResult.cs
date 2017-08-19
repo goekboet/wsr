@@ -1,36 +1,26 @@
 using System;
+using WSr.Deciding;
 
 namespace WSr.Protocol
 {
-    public enum ResultType
-    {
-        UnSuccessfulOpeningHandshake,
-        SuccessfulOpeningHandshake,
-        TextMessageSent,
-        CloseHandshakeFinished,
-        CloseSocket,
-        NoOp,
-        BinaryMessageSent,
-        PingSent,
-        PongSent
-    }
+    
 
     public class ProcessResult : IEquatable<ProcessResult>
     {
+        private IOCommand _command;
+
         public ProcessResult(
             DateTimeOffset timestamp, 
-            string counterPart, 
-            ResultType type)
+            IOCommand command)
         {
             TimeStamp = timestamp;
-            CounterPart = counterPart;
-            Type = type;
+            _command = command;
         }
 
         public DateTimeOffset TimeStamp { get; }
 
-        public string CounterPart { get; }
-        public ResultType Type { get; }
+        public string CounterPart => _command.Origin;
+        public CommandName Type => _command.Name;
 
         public bool Equals(ProcessResult other)
         {

@@ -8,10 +8,11 @@ using System.Text;
 using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using WSr.Deciding;
 using WSr.Socket;
 
-using static WSr.ObservableExtensions;
 using static WSr.Tests.Functions.Debug;
+using static WSr.Socket.Functions;
 
 namespace WSr.Tests.Socket
 {
