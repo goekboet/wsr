@@ -106,7 +106,7 @@ namespace WSr.Deciding
             return c => socket
                 .Send(c.OutBound.ToArray(), s)
                 .Timestamp(s)
-                .Select(x => new ProcessResult(x.Timestamp, c));
+                .Select(x => ProcessResult.Transmitted(c.OutBound.Count(), socket.Address, x.Timestamp));
         }
 
         public static IObservable<ProcessResult> Process(
