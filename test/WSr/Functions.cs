@@ -51,6 +51,8 @@ namespace WSr.Tests.Functions
 
     public static class FrameCreator
     {
+        public static RawFrame MakeFrame(IEnumerable<byte> bitfield) =>
+            new RawFrame(bitfield.ToArray(), new byte[0], new byte[0], new byte[0] );
         public static IEnumerable<byte> Create(ushort code, string message)
         {
             return ToNetwork2Bytes(code).Concat(Encoding.UTF8.GetBytes(message));

@@ -1,9 +1,11 @@
+using System;
 using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using WSr.Frame;
 
 using static WSr.Tests.Functions.Debug;
+using static WSr.Tests.Functions.FrameCreator;
 
 namespace WSr.Tests.WebsocketFrame
 {
@@ -86,6 +88,62 @@ namespace WSr.Tests.WebsocketFrame
             Assert.AreEqual((ulong)2, raw2.PayloadLength(), $"Length - expected: 2, actual {raw2.PayloadLength()}");
             Assert.AreEqual(false, raw2.Masked(), $"Masked - expected: true, actual {raw2.Masked()}");
             Assert.AreEqual("lo", Encoding.UTF8.GetString(raw2.UnMaskedPayload().ToArray()), $"Payload - expected: lo, actual {Encoding.UTF8.GetString(raw2.Payload.ToArray())}");
+        }
+
+        public static RawFrame NoProblemsCont => MakeFrame(new byte[] {0x80, 0x80});
+        public static RawFrame NoProblemsText => MakeFrame(new byte[] {0x81, 0x80});
+        public static RawFrame NoProblemsBin => MakeFrame(new byte[] {0x82, 0x80});
+        public static RawFrame NoProblemsPing => MakeFrame(new byte[] {0x89, 0x80});
+        public static RawFrame NoProblemsPong => MakeFrame(new byte[] {0x8a, 0x80});
+        public static RawFrame NoProblemsClose => MakeFrame(new byte[] {0x88, 0x80});
+        public static RawFrame BadOpCodeLengthPing => MakeFrame(new byte[] {0x89, 0xfe});
+        public static RawFrame BadOpCodeLengthPong => MakeFrame(new byte[] {0x8a, 0xfe});
+        public static RawFrame BadOpCodeLengthClose => MakeFrame(new byte[] {0x88, 0xfe});
+
+        public static RawFrame FrameWithLabel(string label)
+        {
+            switch (label)
+            {
+                case "ConNoProblems":
+                    return NoProblemsCont;
+                case "TexNoProblems":
+                    return NoProblemsText;
+                case "BinNoProblems":
+                    return NoProblemsBin;
+                case "PigNoProblems":
+                    return NoProblemsPing;
+                case "PonNoProblems":
+                    return NoProblemsPong;
+                case "CloNoProblems":
+                    return NoProblemsClose;
+                case "BadLengthPin":
+                    return BadOpCodeLengthPing;
+                case "BadLengthPon":
+                    return BadOpCodeLengthPong;
+                case "BadLengthClo":
+                    return BadOpCodeLengthClose;
+                default:
+                    throw new ArgumentException($"{label.ToString()} not mapped to instance of RawFrame");
+            }
+        }
+
+        [TestMethod]
+        [DataRow("ConNoProblems", 0)]
+        [DataRow("TexNoProblems", 0)]
+        [DataRow("BinNoProblems", 0)]
+        [DataRow("PigNoProblems", 0)]
+        [DataRow("PonNoProblems", 0)]
+        [DataRow("CloNoProblems", 0)]
+        [DataRow("BadLengthPin",  1)]
+        [DataRow("BadLengthPon",  1)]
+        [DataRow("BadLengthClo",  1)]
+        public void ValidateFrame(
+            string frameLabel,
+            int errorcount)
+        {
+            var result = FrameWithLabel(frameLabel).ProtocolProblems();
+
+            Assert.AreEqual(errorcount, result.Count());
         }
     } 
 }

@@ -29,5 +29,26 @@ namespace WSr.Frame
         public static IEnumerable<byte> UnMaskedPayload(this RawFrame frame) => frame.Masked()
             ? frame.Payload.Zip(Forever(frame.Mask).SelectMany(x => x), (p, m) => (byte)(p ^ m))
             : frame.Payload;
+
+        public static bool IsOpcode(this RawFrame frame) => ((byte)frame.OpCode() & (byte)0b0000_1000) != 0;
+
+        public static IEnumerable<string> ProtocolProblems(this RawFrame frame)
+        {
+            Action<IList<string>, string> AddIfNotEmpty = (l, s) => 
+            {
+                if (s.Count() > 0)
+                    l.Add(s);
+            };
+
+            var errors = new List<string>();
+            AddIfNotEmpty(errors, OpCodeLengthLessThan126(frame));
+
+            return errors;
+        }
+
+        private static string OpCodeLengthLessThan126(RawFrame f) =>
+            f.IsOpcode() && (BitFieldLength(f.Bitfield) > 125) 
+                ? "Opcode payloadlength must be < 125" 
+                : "";
     }
 }
