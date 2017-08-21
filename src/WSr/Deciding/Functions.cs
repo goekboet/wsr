@@ -12,6 +12,7 @@ namespace WSr.Deciding
     public static class Functions
     {
         public static byte[] NormalClose { get; } = new byte[] { 0x88, 0x02, 0x03, 0xe8 };
+        public static byte[] ProtocolErrorClose { get; } = new byte[] { 0x88, 0x02}.Concat(ToNetwork2Bytes(1002)).ToArray();
 
         public static byte[] PingHead { get; } = new byte[] { 0x89 };
 

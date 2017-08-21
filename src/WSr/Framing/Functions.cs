@@ -52,5 +52,13 @@ namespace WSr.Frame
                 payload: payload.ToArray());
         }
         
+        public static IEnumerable<string> ProtocolProblems(this RawFrame f)
+        {
+            var errors = new List<string>();
+            if (f.OpCodeLengthLessThan126()) 
+                errors.Add("Opcode payloadlength must be < 125");
+
+            return errors;
+        }
     }
 }

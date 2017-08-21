@@ -274,5 +274,53 @@ namespace WSr.Messaging
         }
     }
 
+    public class InvalidFrame : IMessage, IEquatable<InvalidFrame>
+    {
+        public InvalidFrame(
+            string origin,
+            IEnumerable<string> errors)
+        {
+            Origin = origin;  
+            Errors = errors;
+        }
+
+        public string Origin {get; }
+
+        public IEnumerable<string> Errors { get; }
+
+        public override bool Equals(object obj) => Equals(obj as InvalidFrame);
+
+        public bool Equals(InvalidFrame other)
+        {
+            if (other == null) return false;
+
+            return Origin.Equals(other.Origin) &&
+                Errors.Count().Equals(other.Errors.Count());
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+
+                hash = hash * 31 * Origin.GetHashCode();
+                hash = hash * 31 * Errors.Count();
+
+                return hash;
+            }
+        }
+
+        public override string ToString()
+        {
+            return string.Join(Environment.NewLine, new[] 
+            {
+                "InvalidFrame", 
+                $"Origin: {Origin}", 
+                $"Errors: {string.Join(", ", Errors.ToArray())}"
+            });
+        }
+    }
+
 
 }

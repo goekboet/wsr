@@ -8,8 +8,15 @@ namespace WSr.Messaging
 {
     public static class Functions
     {
-        public static Func<RawFrame, IMessage> ToMessageWithOrigin(string origin) => (RawFrame frame) =>
+        public static Func<(IEnumerable<string> errors, RawFrame frame), IMessage> ToMessageWithOrigin(string origin) => 
+            validated =>
         {
+            var errors = validated.errors.ToArray();
+            if (errors.Length > 0)
+                return ToInvalidFrameMessage(origin, errors);
+
+            var frame = validated.frame;
+            
             var opcode = frame.OpCode();
             switch (opcode)
             {
@@ -27,6 +34,11 @@ namespace WSr.Messaging
                     throw new ArgumentException($"OpCode {frame.OpCode()} has no defined message");
             }
         };
+
+        private static IMessage ToInvalidFrameMessage(string origin, IEnumerable<string> errors)
+        {
+            return new InvalidFrame(origin, errors);
+        }
 
         private static IMessage ToBinaryMessage(string origin, RawFrame frame)
         {

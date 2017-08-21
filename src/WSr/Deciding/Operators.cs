@@ -56,10 +56,19 @@ namespace WSr.Deciding
                     case Close cl:
                         return Observable.Return(AcceptCloseHandshake(cl))
                             .Concat(EndTransmission(cl.Origin, scheduler));
+                    case InvalidFrame i:
+                        return Observable.Return(ProtocolError(i), scheduler)
+                            .Concat(EndTransmission(i.Origin, scheduler));
                     default:
                         throw new ArgumentException($"{m.GetType().Name} not mapped to result. {m.ToString()}");
                 }
             });
+        }
+
+        public static ICommand ProtocolError(
+            InvalidFrame f)
+        {
+            return new IOCommand(f, CommandName.CloseHandshakeStarted, ProtocolErrorClose);
         }
 
         private static IObservable<ICommand> EndTransmission(

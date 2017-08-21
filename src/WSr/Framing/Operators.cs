@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 
 using static WSr.Frame.Functions;
@@ -73,6 +74,13 @@ namespace WSr.Frame
                 .ChopToFrames()
                 .Select(ToFrame);
         }
+
+        public static IObservable<(IEnumerable<string> errors, RawFrame f)> ValidateFrames(
+            this IObservable<RawFrame> frames,
+            IScheduler scehduler)
+            {
+                return frames.Select(f => (f.ProtocolProblems(), f));
+            }
     }
 
 }

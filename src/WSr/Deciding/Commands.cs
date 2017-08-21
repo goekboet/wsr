@@ -9,7 +9,8 @@ namespace WSr.Deciding
         SuccessfulOpeningHandshake,
         PayloadEcho,
         CloseHandshakeFinished,
-        PongSent
+        PongSent,
+        CloseHandshakeStarted
     }
 
     public interface ICommand

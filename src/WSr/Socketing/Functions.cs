@@ -74,6 +74,7 @@ namespace WSr.Socket
         {
             return input
                 .ReadFrames()
+                .Select(x => (x.ProtocolProblems(), x))
                 .Select(ToMessageWithOrigin(origin));
         }
 
@@ -106,6 +107,7 @@ namespace WSr.Socket
 
                 var frames = bytes
                     .ParseFrames()
+                    .Select(x => (x.ProtocolProblems(), x))
                     .Select(ToMessageWithOrigin(socket.Address));
 
                 return handshake.Concat(frames);

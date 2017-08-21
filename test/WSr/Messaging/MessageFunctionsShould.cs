@@ -4,6 +4,7 @@ using WSr.Frame;
 using WSr.Messaging;
 using static WSr.Messaging.Functions;
 using static WSr.Frame.Functions;
+using static WSr.Tests.Functions.FrameCreator;
 
 namespace WSr.Tests.Messaging
 {
@@ -20,7 +21,7 @@ namespace WSr.Tests.Messaging
             var frame = SpecExamples.SingleFrameMaskedTextFrame;
             var expected = new TextMessage(Origin, frame.OpCode(), frame.UnMaskedPayload());
 
-            var result = transformFrame(frame);
+            var result = transformFrame((frame.ProtocolProblems(), frame));
             
             Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
         }
@@ -33,8 +34,22 @@ namespace WSr.Tests.Messaging
             var frame = SpecExamples.MaskedGoingAwayCloseFrame;
             var expected = new Close(Origin, frame.UnMaskedPayload());
 
-            var result = transformFrame(frame);
+            var result = transformFrame((frame.ProtocolProblems(), frame));
             
+            Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
+        }
+
+        [TestMethod]
+        public void TransformInvalidFrame()
+        {
+            var transformFrame = ToMessageWithOrigin(Origin);
+            var errors = new [] { "problem" };
+
+            var frame = MakeFrame(new byte[] {0x80, 0x80});
+            var expected = new InvalidFrame(Origin, errors);
+
+            var result = transformFrame((errors, frame));
+
             Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
         }
     }
