@@ -36,7 +36,7 @@ namespace WSr.Deciding
         {
             if (scheduler == null) scheduler = Scheduler.Default;
 
-            return message.SelectMany(m =>
+            return message.Select(m =>
             {
                 switch (m)
                 {
@@ -62,7 +62,7 @@ namespace WSr.Deciding
                     default:
                         throw new ArgumentException($"{m.GetType().Name} not mapped to result. {m.ToString()}");
                 }
-            });
+            }).Concat();
         }
 
         public static ICommand ProtocolError(

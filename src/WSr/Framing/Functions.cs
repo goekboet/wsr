@@ -57,7 +57,11 @@ namespace WSr.Frame
             var errors = new List<string>();
             if (f.OpCodeLengthLessThan126()) 
                 errors.Add("Opcode payloadlength must be < 125");
-
+            if (f.ReservedBitsSet())
+                errors.Add("RSV-bit is set");
+            if (f.BadOpcode())
+                errors.Add("Not a valid opcode");
+            
             return errors;
         }
     }

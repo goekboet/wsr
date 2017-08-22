@@ -16,6 +16,7 @@ using static WSr.Tests.Functions.Debug;
 using static WSr.Deciding.Functions;
 using WSr.Deciding;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace WSr.Tests.Deciding
 {
@@ -88,6 +89,52 @@ namespace WSr.Tests.Deciding
                message: debugElementsEqual(expected.Messages, actual.Messages));
 
             Assert.IsTrue(actualWrites.Count() == 3);
+        }
+
+        public static Dictionary<string, string> WSKey => 
+            new Dictionary<string, string> {["Sec-WebSocket-Key"] = "key"};
+        public static IMessage UpgradeRequest => new UpgradeRequest(Origin, "", WSKey);
+
+        public static IMessage Invalid => new InvalidFrame(Origin, new string[0]);
+        public static IEnumerable<IMessage> Messages  {get; } = new []
+        {
+            UpgradeRequest,
+            Invalid
+        };
+
+        public static ICommand WriteMe(byte[] bs) => 
+            new IOCommand(withOrigin(Origin), CommandName.CloseHandshakeFinished, bs);
+
+        public static IEnumerable<IEnumerable<ICommand>> Commands{get;} = new[]
+        {
+            new [] {WriteMe(new byte[] { 0x02, 0x42})},
+            new [] {WriteMe(new byte[0]), new EOF(Origin)}
+        };
+
+        //[Ignore]
+        [DataRow(0)]
+        [DataRow(1)]
+        [TestMethod]
+        public void MapMessagesToWrites(int caseno)
+        {
+            var run = new TestScheduler();
+
+            var messages = Observable.Return(Messages.ElementAt(caseno), run);
+            var expected = Commands.ElementAt(caseno).ToObservable(run);
+            var record = run.CreateObserver<bool>();
+            
+            var actual = expected
+                .SequenceEqual(messages.FromMessage(run))
+                .Subscribe(record);
+
+            run.Start();
+            
+            var result = record.Messages
+                .Where(x => x.Value.Kind == NotificationKind.OnNext)
+                .Select(x => x.Value.Value)
+                .Single();
+
+            Assert.IsTrue(result);
         }
     }
 }

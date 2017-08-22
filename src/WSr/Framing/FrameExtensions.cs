@@ -10,11 +10,20 @@ namespace WSr.Frame
 {
     public static class FrameExtensions
     {
+        public static HashSet<OpCode> ValidOpCodes = new HashSet<OpCode>(new[] {
+            OpCode.Continuation,
+            OpCode.Text,
+            OpCode.Binary,
+            OpCode.Close,
+            OpCode.Ping,
+            OpCode.Pong
+        });
+
         public static bool Fin(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x80) != 0;
         public static bool Rsv1(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x40) != 0;
         public static bool Rsv2(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x20) != 0;
         public static bool Rsv3(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x10) != 0;
-        public static OpCode OpCode(this RawFrame frame) => (OpCode)(frame.Bitfield.ElementAt(0) & 0x0F);
+        public static OpCode GetOpCode(this RawFrame frame) => (OpCode)(frame.Bitfield.ElementAt(0) & 0x0F);
 
         public static bool Masked(this RawFrame frame) => (frame.Bitfield.ElementAt(1) & 0x80) != 0;
         public static ulong PayloadLength(this RawFrame frame) 
@@ -30,10 +39,10 @@ namespace WSr.Frame
             ? frame.Payload.Zip(Forever(frame.Mask).SelectMany(x => x), (p, m) => (byte)(p ^ m))
             : frame.Payload;
 
-        public static bool IsOpcode(this RawFrame frame) => ((byte)frame.OpCode() & (byte)0b0000_1000) != 0;
+        public static bool IsControlCode(this RawFrame frame) => ((byte)frame.GetOpCode() & (byte)0b0000_1000) != 0;
         public static bool OpCodeLengthLessThan126(this RawFrame f) =>
-            f.IsOpcode() && (BitFieldLength(f.Bitfield) > 125); 
-                //? "Opcode payloadlength must be < 125" 
-                //: "";
+            f.IsControlCode() && (BitFieldLength(f.Bitfield) > 125); 
+        public static bool ReservedBitsSet(this RawFrame frame) => (frame.Bitfield.ElementAt(0) & 0x70) != 0;
+        public static bool BadOpcode(this RawFrame frame) => !ValidOpCodes.Contains(frame.GetOpCode());
     }
 }

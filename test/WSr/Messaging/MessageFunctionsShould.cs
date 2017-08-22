@@ -19,7 +19,7 @@ namespace WSr.Tests.Messaging
             var transformFrame = ToMessageWithOrigin(Origin);
 
             var frame = SpecExamples.SingleFrameMaskedTextFrame;
-            var expected = new TextMessage(Origin, frame.OpCode(), frame.UnMaskedPayload());
+            var expected = new TextMessage(Origin, frame.GetOpCode(), frame.UnMaskedPayload());
 
             var result = transformFrame((frame.ProtocolProblems(), frame));
             

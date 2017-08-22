@@ -17,7 +17,7 @@ namespace WSr.Messaging
 
             var frame = validated.frame;
             
-            var opcode = frame.OpCode();
+            var opcode = frame.GetOpCode();
             switch (opcode)
             {
                 case OpCode.Ping:
@@ -31,7 +31,7 @@ namespace WSr.Messaging
                 case OpCode.Binary:
                     return ToBinaryMessage(origin, frame);
                 default:
-                    throw new ArgumentException($"OpCode {frame.OpCode()} has no defined message");
+                    throw new ArgumentException($"OpCode {frame.GetOpCode()} has no defined message");
             }
         };
 
@@ -49,7 +49,7 @@ namespace WSr.Messaging
             string origin, 
             RawFrame frame)
         {
-            return new TextMessage(origin, frame.OpCode(), frame.UnMaskedPayload());
+            return new TextMessage(origin, frame.GetOpCode(), frame.UnMaskedPayload());
         }
 
         public static IMessage ToCloseMessage(

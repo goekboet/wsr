@@ -8,6 +8,7 @@ using Microsoft.Reactive.Testing;
 
 using static WSr.ListConstruction;
 using static WSr.IntegersFromByteConverter;
+using WSr.Messaging;
 
 namespace WSr.Tests.Functions
 {
