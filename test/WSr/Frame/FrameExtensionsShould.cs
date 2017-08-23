@@ -2,20 +2,24 @@ using System;
 using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using WSr.Frame;
+using WSr.Framing;
 
 using static WSr.Tests.Functions.Debug;
 using static WSr.Tests.Functions.FrameCreator;
+using static WSr.Framing.Functions;
 
 namespace WSr.Tests.WebsocketFrame
 {
     [TestClass]
     public class FrameExtensionsShould
     {
+        public static string Origin {get;} = "o";
+
         [TestMethod]
         public void SingleFrameUnMaskedTextMessage()
         {
-            var raw = new RawFrame(
+            var raw = new ParsedFrame(
+                origin: Origin,
                 bitfield: new byte[] { 0x81, 0x05 },
                 length: new byte[] { 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
                 mask: new byte[4],
@@ -37,7 +41,8 @@ namespace WSr.Tests.WebsocketFrame
         [TestMethod]
         public void SingleFrameMaskedTextMessage()
         {
-            var raw = new RawFrame(
+            var raw = new ParsedFrame(
+                origin: Origin,
                 bitfield: new byte[] { 0x81, 0x85 },
                 length: new byte[] { 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
                 mask: new byte[] { 0x37, 0xfa, 0x21, 0x3d },
@@ -57,14 +62,16 @@ namespace WSr.Tests.WebsocketFrame
         [TestMethod]
         public void FragmentedUnMaskedTextMessage()
         {
-            var raw1 = new RawFrame(
+            var raw1 = new ParsedFrame(
+                origin: Origin,
                 bitfield: new byte[] { 0x01, 0x03 },
                 length: new byte[] { 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
                 mask: new byte[4],
                 payload: new byte[] { 0x48, 0x65, 0x6c }
             );
 
-            var raw2 = new RawFrame(
+            var raw2 = new ParsedFrame(
+                origin: Origin,
                 bitfield: new byte[] { 0x80, 0x02 },
                 length: new byte[] { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
                 mask: new byte[4],
@@ -90,22 +97,20 @@ namespace WSr.Tests.WebsocketFrame
             Assert.AreEqual("lo", Encoding.UTF8.GetString(raw2.UnMaskedPayload().ToArray()), $"Payload - expected: lo, actual {Encoding.UTF8.GetString(raw2.Payload.ToArray())}");
         }
 
-        public static RawFrame NoProblemsCont => MakeFrame(new byte[] { 0x80, 0x80 });
-        public static RawFrame NoProblemsText => MakeFrame(new byte[] { 0x81, 0x80 });
-        public static RawFrame NoProblemsBin => MakeFrame(new byte[] { 0x82, 0x80 });
-        public static RawFrame NoProblemsPing => MakeFrame(new byte[] { 0x89, 0x80 });
-        public static RawFrame NoProblemsPong => MakeFrame(new byte[] { 0x8a, 0x80 });
-        public static RawFrame NoProblemsClose => MakeFrame(new byte[] { 0x88, 0x80 });
-        public static RawFrame BadOpCodeLengthPing => MakeFrame(new byte[] { 0x89, 0xfe });
-        public static RawFrame BadOpCodeLengthPong => MakeFrame(new byte[] { 0x8a, 0xfe });
-        public static RawFrame BadOpCodeLengthClose => MakeFrame(new byte[] { 0x88, 0xfe });
-
-        public static RawFrame RSV1Set => MakeFrame(new byte[] { 0xc0, 0x80 });
-        public static RawFrame RSV2Set => MakeFrame(new byte[] { 0xa0, 0x80 });
-        public static RawFrame RSV3Set => MakeFrame(new byte[] { 0x90, 0x80 });
-        public static RawFrame BadOpCode => MakeFrame(new byte[] { 0x83, 0x80 });
-
-        public static RawFrame FrameWithLabel(string label)
+        public static ParsedFrame NoProblemsCont => MakeFrame(Origin, new byte[] { 0x80, 0x80 });
+        public static ParsedFrame NoProblemsText => MakeFrame(Origin,new byte[] { 0x81, 0x80 });
+        public static ParsedFrame NoProblemsBin => MakeFrame(Origin,new byte[] { 0x82, 0x80 });
+        public static ParsedFrame NoProblemsPing => MakeFrame(Origin,new byte[] { 0x89, 0x80 });
+        public static ParsedFrame NoProblemsPong => MakeFrame(Origin,new byte[] { 0x8a, 0x80 });
+        public static ParsedFrame NoProblemsClose => MakeFrame(Origin,new byte[] { 0x88, 0x80 });
+        public static ParsedFrame BadOpCodeLengthPing => MakeFrame(Origin,new byte[] { 0x89, 0xfe });
+        public static ParsedFrame BadOpCodeLengthPong => MakeFrame(Origin,new byte[] { 0x8a, 0xfe });
+        public static ParsedFrame BadOpCodeLengthClose => MakeFrame(Origin,new byte[] { 0x88, 0xfe });
+        public static ParsedFrame RSV1Set => MakeFrame(Origin,new byte[] { 0xc0, 0x80 });
+        public static ParsedFrame RSV2Set => MakeFrame(Origin,new byte[] { 0xa0, 0x80 });
+        public static ParsedFrame RSV3Set => MakeFrame(Origin,new byte[] { 0x90, 0x80 });
+        public static ParsedFrame BadOpCode => MakeFrame(Origin,new byte[] { 0x83, 0x80 });
+   public static ParsedFrame FrameWithLabel(string label)
         {
             switch (label)
             {
@@ -141,26 +146,26 @@ namespace WSr.Tests.WebsocketFrame
         }
 
         [TestMethod]
-        [DataRow("ConNoProblems", 0)]
-        [DataRow("TexNoProblems", 0)]
-        [DataRow("BinNoProblems", 0)]
-        [DataRow("PigNoProblems", 0)]
-        [DataRow("PonNoProblems", 0)]
-        [DataRow("CloNoProblems", 0)]
-        [DataRow("BadLengthPin", 1)]
-        [DataRow("BadLengthPon", 1)]
-        [DataRow("BadLengthClo", 1)]
-        [DataRow("RSV1Set", 1)]
-        [DataRow("RSV2Set", 1)]
-        [DataRow("RSV3Set", 1)]
-        [DataRow("BadOpCode", 1)]
+        [DataRow("ConNoProblems", typeof(ParsedFrame))]
+        [DataRow("TexNoProblems", typeof(ParsedFrame))]
+        [DataRow("BinNoProblems", typeof(ParsedFrame))]
+        [DataRow("PigNoProblems", typeof(ParsedFrame))]
+        [DataRow("PonNoProblems", typeof(ParsedFrame))]
+        [DataRow("CloNoProblems", typeof(ParsedFrame))]
+        [DataRow("BadLengthPin", typeof(BadFrame))]
+        [DataRow("BadLengthPon", typeof(BadFrame))]
+        [DataRow("BadLengthClo", typeof(BadFrame))]
+        [DataRow("RSV1Set", typeof(BadFrame))]
+        [DataRow("RSV2Set", typeof(BadFrame))]
+        [DataRow("RSV3Set", typeof(BadFrame))]
+        [DataRow("BadOpCode", typeof(BadFrame))]
         public void ValidateFrame(
             string frameLabel,
-            int errorcount)
+            Type expected)
         {
-            var result = FrameWithLabel(frameLabel).ProtocolProblems();
+            var result = IsValid(FrameWithLabel(frameLabel));
 
-            Assert.AreEqual(errorcount, result.Count());
+            Assert.IsInstanceOfType(result, expected);
         }
     }
 }

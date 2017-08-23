@@ -4,16 +4,17 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 
-using static WSr.Frame.Functions;
+using static WSr.Framing.Functions;
 
-namespace WSr.Frame
+namespace WSr.Framing
 {
     public static class Operators
     {
-        public static IObservable<(bool masked, int bitfieldLength, IEnumerable<byte> frame)> ChopToFrames(
-            this IObservable<byte> bytes)
+        public static IObservable<(string origin, bool masked, int bitfieldLength, IEnumerable<byte> frame)> ChopToFrames(
+            this IObservable<byte> bytes,
+            string origin)
         {
-            return Observable.Create<(bool, int, IEnumerable<byte>)>(o =>
+            return Observable.Create<(string, bool, int, IEnumerable<byte>)>(o =>
             {
                 var chop = new List<byte>();
                 ulong read = 2;
@@ -38,7 +39,7 @@ namespace WSr.Frame
                                 if (masked) read += 4;
                                 else
                                 {
-                                    o.OnNext((masked, bitfieldLength, chop.ToList()));
+                                    o.OnNext((origin, masked, bitfieldLength, chop.ToList()));
                                     chop.Clear();
                                     read = 2;
                                 }
@@ -57,7 +58,7 @@ namespace WSr.Frame
                             read = InterpretLengthBytes(chop.Skip(2)) + (masked ? (ulong)4 : 0);
                         else
                         {
-                            o.OnNext((masked, bitfieldLength, chop.ToList()));
+                            o.OnNext((origin, masked, bitfieldLength, chop.ToList()));
                             chop.Clear();
                             read = 2;
                             masked = false;
@@ -67,20 +68,14 @@ namespace WSr.Frame
             });
         }
 
-        public static IObservable<RawFrame> ParseFrames(
-            this IObservable<byte> bytes)
+        public static IObservable<Frame> ParseFrames(
+            this IObservable<byte> bytes,
+            string origin)
         {
             return bytes
-                .ChopToFrames()
-                .Select(ToFrame);
+                .ChopToFrames(origin)
+                .Select(ToFrame)
+                .Select(IsValid);
         }
-
-        public static IObservable<(IEnumerable<string> errors, RawFrame f)> ValidateFrames(
-            this IObservable<RawFrame> frames,
-            IScheduler scehduler)
-            {
-                return frames.Select(f => (f.ProtocolProblems(), f));
-            }
     }
-
 }

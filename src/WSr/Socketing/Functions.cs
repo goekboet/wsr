@@ -6,7 +6,7 @@ using System.Reactive.Linq;
 using WSr.Deciding;
 using WSr.Messaging;
 using WSr.Protocol;
-using WSr.Frame;
+using WSr.Framing;
 
 using static WSr.Messaging.Functions;
 using static WSr.Handshake.Functions;
@@ -45,13 +45,14 @@ namespace WSr.Socket
 
     public static class Functions
     {
-        public static IObservable<RawFrame> ReadFrames(
-            this IObservable<IEnumerable<byte>> buffers)
+        public static IObservable<Frame> ReadFrames(
+            this IObservable<IEnumerable<byte>> buffers,
+            string origin)
         {
             return buffers
                 .Select(x => x.ToObservable())
                 .Concat()
-                .ParseFrames();
+                .ParseFrames(origin);
         }
 
         public static Func<IConnectedSocket, IObservable<KeyValuePair<string, IEnumerable<byte>>>> Reads(
@@ -66,16 +67,6 @@ namespace WSr.Socket
                     buffers: socket.Receive(buffer, s)))
                 .SelectMany(r => r.Buffers
                     .Select(x => new KeyValuePair<string, IEnumerable<byte>>(r.Address, x)));
-        }
-
-        public static IObservable<IMessage> Messageing(
-            string origin,
-            IObservable<IEnumerable<byte>> input)
-        {
-            return input
-                .ReadFrames()
-                .Select(x => (x.ProtocolProblems(), x))
-                .Select(ToMessageWithOrigin(origin));
         }
 
         public static IObservable<Writer> Writers(
@@ -106,9 +97,8 @@ namespace WSr.Socket
                     .Take(1);
 
                 var frames = bytes
-                    .ParseFrames()
-                    .Select(x => (x.ProtocolProblems(), x))
-                    .Select(ToMessageWithOrigin(socket.Address));
+                    .ParseFrames(socket.Address)
+                    .Select(ToMessage);
 
                 return handshake.Concat(frames);
             };

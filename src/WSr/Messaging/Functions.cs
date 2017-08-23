@@ -2,74 +2,72 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using WSr.Frame;
+using WSr.Framing;
 
 namespace WSr.Messaging
 {
     public static class Functions
     {
-        public static Func<(IEnumerable<string> errors, RawFrame frame), IMessage> ToMessageWithOrigin(string origin) => 
-            validated =>
+        public static Func<Frame, IMessage> ToMessage =
+            frame =>
         {
-            var errors = validated.errors.ToArray();
-            if (errors.Length > 0)
-                return ToInvalidFrameMessage(origin, errors);
-
-            var frame = validated.frame;
-            
-            var opcode = frame.GetOpCode();
-            switch (opcode)
+            switch (frame)
             {
-                case OpCode.Ping:
-                    return ToPingMessage(origin, frame);
-                case OpCode.Pong:
-                    return ToPongMessage(origin, frame);
-                case OpCode.Text:
-                    return ToTextMessage(origin, frame);
-                case OpCode.Close:
-                    return ToCloseMessage(origin, frame);
-                case OpCode.Binary:
-                    return ToBinaryMessage(origin, frame);
+                case BadFrame b:
+                    return ToInvalidFrameMessage(b);
+                case ParsedFrame f:
+                    switch (f.GetOpCode())
+                    {
+                        case OpCode.Ping:
+                            return ToPingMessage(f);
+                        case OpCode.Pong:
+                            return ToPongMessage(f);
+                        case OpCode.Text:
+                            return ToTextMessage(f);
+                        case OpCode.Close:
+                            return ToCloseMessage(f);
+                        case OpCode.Binary:
+                            return ToBinaryMessage(f);
+                        default:
+                            return ToInvalidFrameMessage(
+                                BadFrame.MessageMapperError($"OpCode {f.GetOpCode()} has no defined message"));
+                    }
                 default:
-                    throw new ArgumentException($"OpCode {frame.GetOpCode()} has no defined message");
+                    return ToInvalidFrameMessage(BadFrame.ParserError);
             }
         };
 
-        private static IMessage ToInvalidFrameMessage(string origin, IEnumerable<string> errors)
+        private static IMessage ToInvalidFrameMessage(BadFrame f)
         {
-            return new InvalidFrame(origin, errors);
+            return new InvalidFrame(f.Origin, f.Reason);
         }
 
-        private static IMessage ToBinaryMessage(string origin, RawFrame frame)
+        private static IMessage ToBinaryMessage(ParsedFrame frame)
         {
-            return new BinaryMessage(origin, frame.UnMaskedPayload());
+            return new BinaryMessage(frame.Origin, frame.UnMaskedPayload());
         }
 
         public static IMessage ToTextMessage(
-            string origin, 
-            RawFrame frame)
+            ParsedFrame frame)
         {
-            return new TextMessage(origin, frame.GetOpCode(), frame.UnMaskedPayload());
+            return new TextMessage(frame.Origin, frame.GetOpCode(), frame.UnMaskedPayload());
         }
 
         public static IMessage ToCloseMessage(
-            string origin, 
-            RawFrame frame)
+            ParsedFrame frame)
         {
-            return new Close(origin, frame.UnMaskedPayload());
+            return new Close(frame.Origin, frame.UnMaskedPayload());
         }
-        
+
         public static IMessage ToPingMessage(
-            string origin, 
-            RawFrame frame)
+            ParsedFrame frame)
         {
-            return new Ping(origin, frame.UnMaskedPayload());
+            return new Ping(frame.Origin, frame.UnMaskedPayload());
         }
         public static IMessage ToPongMessage(
-            string origin, 
-            RawFrame frame)
+            ParsedFrame frame)
         {
-            return new Pong(origin, frame.UnMaskedPayload());
+            return new Pong(frame.Origin, frame.UnMaskedPayload());
         }
     }
 }

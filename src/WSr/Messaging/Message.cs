@@ -6,6 +6,7 @@ using System.Text;
 using static WSr.ListConstruction;
 using static WSr.IntegersFromByteConverter;
 using static WSr.Handshake.Functions;
+using WSr.Framing;
 
 namespace WSr.Messaging
 {
@@ -278,15 +279,15 @@ namespace WSr.Messaging
     {
         public InvalidFrame(
             string origin,
-            IEnumerable<string> errors)
+            string reason)
         {
             Origin = origin;  
-            Errors = errors;
+            Reason = reason;
         }
 
         public string Origin {get; }
 
-        public IEnumerable<string> Errors { get; }
+        public string Reason { get; }
 
         public override bool Equals(object obj) => Equals(obj as InvalidFrame);
 
@@ -295,7 +296,7 @@ namespace WSr.Messaging
             if (other == null) return false;
 
             return Origin.Equals(other.Origin) &&
-                Errors.Count().Equals(other.Errors.Count());
+                Reason.Count().Equals(other.Reason.Count());
         }
 
         public override int GetHashCode()
@@ -305,7 +306,7 @@ namespace WSr.Messaging
                 int hash = 17;
 
                 hash = hash * 31 * Origin.GetHashCode();
-                hash = hash * 31 * Errors.Count();
+                hash = hash * 31 * Reason.Count();
 
                 return hash;
             }
@@ -317,7 +318,7 @@ namespace WSr.Messaging
             {
                 "InvalidFrame", 
                 $"Origin: {Origin}", 
-                $"Errors: {string.Join(", ", Errors.ToArray())}"
+                $"Errors: {string.Join(", ", Reason.ToArray())}"
             });
         }
     }

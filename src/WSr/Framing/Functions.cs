@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace WSr.Frame
+namespace WSr.Framing
 {
     public static class Functions
     {
@@ -27,8 +27,8 @@ namespace WSr.Frame
             return BitConverter.ToUInt64(bytes.ToArray(), 0);
         }
 
-        public static RawFrame ToFrame(
-            (bool masked, int bitfieldLength, IEnumerable<byte> frame) parse)
+        public static ParsedFrame ToFrame(
+            (string origin, bool masked, int bitfieldLength, IEnumerable<byte> frame) parse)
         {
             var bitfield = parse.frame.Take(2);
 
@@ -45,24 +45,24 @@ namespace WSr.Frame
 
             var payload = parse.frame.Skip(2 + lenghtBytes + (parse.masked ? 4 : 0));
 
-            return new RawFrame(
+            return new ParsedFrame(
+                origin: parse.origin,
                 bitfield: bitfield.ToArray(),
                 length: length.ToArray(),
                 mask: mask.ToArray(),
                 payload: payload.ToArray());
         }
-        
-        public static IEnumerable<string> ProtocolProblems(this RawFrame f)
+
+        public static Frame IsValid(ParsedFrame frame)
         {
-            var errors = new List<string>();
-            if (f.OpCodeLengthLessThan126()) 
-                errors.Add("Opcode payloadlength must be < 125");
-            if (f.ReservedBitsSet())
-                errors.Add("RSV-bit is set");
-            if (f.BadOpcode())
-                errors.Add("Not a valid opcode");
-            
-            return errors;
+            if (frame.OpCodeLengthLessThan126()) 
+                return new BadFrame(frame.Origin, "Opcode payloadlength must be < 125");
+            if (frame.ReservedBitsSet())
+                return new BadFrame(frame.Origin,"RSV-bit is set");
+            if (frame.BadOpcode())
+                return new BadFrame(frame.Origin, "Not a valid opcode");
+
+            return frame;
         }
     }
 }

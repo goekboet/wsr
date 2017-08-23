@@ -95,7 +95,7 @@ namespace WSr.Tests.Deciding
             new Dictionary<string, string> {["Sec-WebSocket-Key"] = "key"};
         public static IMessage UpgradeRequest => new UpgradeRequest(Origin, "", WSKey);
 
-        public static IMessage Invalid => new InvalidFrame(Origin, new string[0]);
+        public static IMessage Invalid => new InvalidFrame(Origin, "");
         public static IEnumerable<IMessage> Messages  {get; } = new []
         {
             UpgradeRequest,

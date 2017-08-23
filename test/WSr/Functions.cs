@@ -9,6 +9,7 @@ using Microsoft.Reactive.Testing;
 using static WSr.ListConstruction;
 using static WSr.IntegersFromByteConverter;
 using WSr.Messaging;
+using WSr.Framing;
 
 namespace WSr.Tests.Functions
 {
@@ -45,23 +46,9 @@ namespace WSr.Tests.Functions
         }
     }
 
-    public static class StreamConstruction
-    {
-        public static Stream EmptyStream => new MemoryStream(new byte [] { });
-    }
-
     public static class FrameCreator
     {
-        public static RawFrame MakeFrame(IEnumerable<byte> bitfield) =>
-            new RawFrame(bitfield.ToArray(), new byte[0], new byte[0], new byte[0] );
-        public static IEnumerable<byte> Create(ushort code, string message)
-        {
-            return ToNetwork2Bytes(code).Concat(Encoding.UTF8.GetBytes(message));
-        }
-
-        public static IEnumerable<byte> Create(string s)
-        {
-            return Encoding.UTF8.GetBytes(s);
-        }
+        public static ParsedFrame MakeFrame(string origin, IEnumerable<byte> bitfield) =>
+            new ParsedFrame(origin, bitfield.ToArray(), new byte[0], new byte[0], new byte[0] );
     }
 }

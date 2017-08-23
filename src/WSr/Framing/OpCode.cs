@@ -1,4 +1,4 @@
-namespace WSr
+namespace WSr.Framing
 {
     public enum OpCode : byte
     {

@@ -2,31 +2,33 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace WSr
+namespace WSr.Framing
 {
+    public abstract class Frame
+    {
+        public abstract string Origin { get; }
+    }
+    
     /// <summary>
     /// Represents a websocket frame according to specification.
     /// </summary>
-    public class RawFrame : IEquatable<RawFrame>
+    public class ParsedFrame : Frame, IEquatable<ParsedFrame>
     {
-        public static RawFrame Empty { get; } =
-            new RawFrame(
-                bitfield: new byte[2],
-                length: new byte[8],
-                mask: new byte[4],
-                payload: new byte[0]);
-
-        public RawFrame(
+        public ParsedFrame(
+            string origin,
             byte[] bitfield,
             byte[] length,
             byte[] mask,
             byte[] payload)
         {
+            Origin = origin;
             Bitfield = bitfield.Clone() as IEnumerable<byte>;
             Length = length.Clone() as IEnumerable<byte>;
             Mask = mask.Clone() as IEnumerable<byte>;
             Payload = payload.Clone() as IEnumerable<byte>;
         }
+
+        public override string Origin { get; }
 
         public IEnumerable<byte> Bitfield { get; }
 
@@ -41,7 +43,7 @@ namespace WSr
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
-        public bool Equals(RawFrame other)
+        public bool Equals(ParsedFrame other)
         {
             return this.Payload.SequenceEqual(other.Payload) &&
                 this.Mask.SequenceEqual(other.Mask) &&
@@ -51,11 +53,11 @@ namespace WSr
 
         public override bool Equals(object obj)
         {
-            var other = obj as RawFrame;
+            var other = obj as ParsedFrame;
 
             return obj == null ? false : this.Equals(other);
         }
-        
+
         /// <summary>
         /// This class is not intended to work with hashcodes.The purpose of this implementation is
         /// to get rid of compiler warnings regarding it missing eventhough we override object. The Message 
@@ -63,5 +65,21 @@ namespace WSr
         /// </summary>
         /// <returns>Always 0</returns>
         public override int GetHashCode() => 0;
+    }
+
+    public class BadFrame : Frame
+    {
+        public static BadFrame ParserError => new BadFrame("", "Parsererror");
+
+        public static BadFrame MessageMapperError(string e) => new BadFrame("", e);
+        public BadFrame(
+            string origin,
+            string reason)
+        {
+            Origin = origin;
+            Reason = reason;
+        }
+        public override string Origin { get; }
+        public string Reason { get; }
     }
 }

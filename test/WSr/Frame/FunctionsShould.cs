@@ -3,25 +3,27 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using static WSr.Tests.Bytes;
-using static WSr.Frame.Functions;
+using static WSr.Framing.Functions;
 using System;
+using WSr.Framing;
 
-namespace WSr.Tests.Frame
+namespace WSr.Tests.Framing
 {
     [TestClass]
     public class FunctionsShould
     {
-        public static (bool, int, IEnumerable<byte>)[] parses =
+        public static string Origin { get; } = "o";
+        public static (string, bool, int, IEnumerable<byte>)[] parses =
         {
-            (false, 0, L0UMasked),
-            (true, 0, L0Masked),
-            (false, 28, L28UMasked),
-            (true, 28, L28Masked),
-            (false, 2, L2UMasked),
-            (false, 126, L128UMasked),
-            (true, 126, L128Masked),
-            (false, 127, L65536UMasked),
-            (true, 127, L65536Masked)
+            (Origin, false, 0, L0UMasked),
+            (Origin,true, 0, L0Masked),
+            (Origin,false, 28, L28UMasked),
+            (Origin,true, 28, L28Masked),
+            (Origin,false, 2, L2UMasked),
+            (Origin,false, 126, L128UMasked),
+            (Origin,true, 126, L128Masked),
+            (Origin,false, 127, L65536UMasked),
+            (Origin,true, 127, L65536Masked)
         };
 
         public static (int, int, int, int)[] frames =
@@ -37,7 +39,7 @@ namespace WSr.Tests.Frame
             (2, 8, 4, 65536)
         };
 
-        public Func<RawFrame, (int, int, int, int)> byteCounts = f => 
+        public Func<ParsedFrame, (int, int, int, int)> byteCounts = f =>
             (f.Bitfield.Count(), f.Length.Count(), f.Mask.Count(), f.Payload.Count());
 
         [TestMethod]
@@ -50,5 +52,5 @@ namespace WSr.Tests.Frame
             Assert.IsTrue(result.SequenceEqual(frames));
         }
     }
-    
+
 }

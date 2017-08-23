@@ -1,9 +1,9 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using WSr.Frame;
+using WSr.Framing;
 using WSr.Messaging;
 using static WSr.Messaging.Functions;
-using static WSr.Frame.Functions;
+using static WSr.Framing.Functions;
 using static WSr.Tests.Functions.FrameCreator;
 
 namespace WSr.Tests.Messaging
@@ -16,12 +16,10 @@ namespace WSr.Tests.Messaging
         [TestMethod]
         public void TransformRawFrameToTextMessage()
         {
-            var transformFrame = ToMessageWithOrigin(Origin);
-
-            var frame = SpecExamples.SingleFrameMaskedTextFrame;
+            var frame = SpecExamples.SingleFrameMaskedTextFrame(Origin);
             var expected = new TextMessage(Origin, frame.GetOpCode(), frame.UnMaskedPayload());
 
-            var result = transformFrame((frame.ProtocolProblems(), frame));
+            var result = ToMessage(frame);
             
             Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
         }
@@ -29,12 +27,11 @@ namespace WSr.Tests.Messaging
         [TestMethod]
         public void TransformRawFrameToCloseMessage()
         {
-            var transformFrame = ToMessageWithOrigin(Origin);
 
-            var frame = SpecExamples.MaskedGoingAwayCloseFrame;
+            var frame = SpecExamples.MaskedGoingAwayCloseFrame(Origin);
             var expected = new Close(Origin, frame.UnMaskedPayload());
 
-            var result = transformFrame((frame.ProtocolProblems(), frame));
+            var result = ToMessage(frame);
             
             Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
         }
@@ -42,13 +39,12 @@ namespace WSr.Tests.Messaging
         [TestMethod]
         public void TransformInvalidFrame()
         {
-            var transformFrame = ToMessageWithOrigin(Origin);
             var errors = new [] { "problem" };
 
-            var frame = MakeFrame(new byte[] {0x80, 0x80});
-            var expected = new InvalidFrame(Origin, errors);
+            var frame = new BadFrame(Origin, "test");
+            var expected = new InvalidFrame(Origin, "test");
 
-            var result = transformFrame((errors, frame));
+            var result = ToMessage(frame);
 
             Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
         }

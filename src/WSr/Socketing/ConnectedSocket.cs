@@ -20,8 +20,6 @@ namespace WSr.Socket
     {
         private readonly TcpClient _socket;
 
-        protected TcpConnection() { }
-
         internal TcpConnection(TcpClient connectedSocket)
         {
             _socket = connectedSocket;
