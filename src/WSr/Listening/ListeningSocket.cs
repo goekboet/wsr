@@ -12,10 +12,8 @@ using System.Reactive;
 using WSr.Socket;
 using WSr.Deciding;
 
-namespace WSr.Socket
+namespace WSr.Listening
 {
-    
-    
     internal class TcpSocket : IListeningSocket
     {
         private readonly TcpListener _listeningSocket;
@@ -39,20 +37,5 @@ namespace WSr.Socket
         }
     }
 
-    public static class Fns
-    {
-        public static IListeningSocket ListenTo(string ip, int port)
-        {
-            return new TcpSocket(ip, port);
-        }
-
-        public static IObservable<IConnectedSocket> AcceptConnections(
-            this IListeningSocket server,
-            IScheduler scheduler = null)
-        {
-            if (scheduler == null) scheduler = Scheduler.Default;
-
-            return server.Connect(scheduler).Repeat();
-        }
-    }
+    
 }

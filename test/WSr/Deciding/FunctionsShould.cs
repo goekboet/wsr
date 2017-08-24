@@ -6,7 +6,8 @@ using WSr.Framing;
 using WSr.Messaging;
 
 using static WSr.Deciding.Functions;
-namespace WSr.Tests.Protocol
+
+namespace WSr.Tests.Deciding
 {
     [TestClass]
     public class FunctionsShould

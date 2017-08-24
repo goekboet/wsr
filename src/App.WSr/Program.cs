@@ -5,7 +5,7 @@ using System.Text;
 using System.Linq;
 using WSr.Handshake;
 using WSr.Socket;
-using static WSr.Socket.Fns;
+using static WSr.Listening.Functions;
 using static WSr.Socket.Functions;
 using static WSr.Deciding.Functions;
 
