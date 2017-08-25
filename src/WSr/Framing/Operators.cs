@@ -68,7 +68,7 @@ namespace WSr.Framing
             });
         }
 
-        public static IObservable<Frame> ParseFrames(
+        public static IObservable<Frame> ToFrames(
             this IObservable<byte> bytes,
             string origin)
         {

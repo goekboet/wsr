@@ -27,8 +27,8 @@
       "requireClean": true
    },
    "failedByMe": false,
-   "httpRequest": "GET / HTTP/1.1\r\nUser-Agent: AutobahnTestSuite/0.7.6-0.10.9\r\nHost: 127.0.0.1:9001\r\nUpgrade: WebSocket\r\nConnection: Upgrade\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nSec-WebSocket-Key: HSwyt7foAYszfgoYqtDJRg==\r\nSec-WebSocket-Version: 13\r\n\r\n",
-   "httpResponse": "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: /FCx+Bh5bzB0gnLgBQ8nxaNG5ew=\r\n\r\n",
+   "httpRequest": "GET / HTTP/1.1\r\nUser-Agent: AutobahnTestSuite/0.7.6-0.10.9\r\nHost: 127.0.0.1:9001\r\nUpgrade: WebSocket\r\nConnection: Upgrade\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nSec-WebSocket-Key: /42NAt5PoSsaw3jkV/mnSQ==\r\nSec-WebSocket-Version: 13\r\n\r\n",
+   "httpResponse": "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: hd8w4phS+s4yqprGNmoSkajGnds=\r\n\r\n",
    "id": "1.2.2",
    "isServer": false,
    "localCloseCode": 1000,
@@ -55,7 +55,7 @@
       "127": 1,
       "129": 1
    },
-   "started": "2017-08-25T18:33:11.567Z",
+   "started": "2017-08-25T22:27:57.459Z",
    "trafficStats": null,
    "txFrameStats": {
       "2": 1,
@@ -96,7 +96,7 @@
          2,
          true,
          0,
-         "f39d7aa9",
+         "d3d049f8",
          null,
          null,
          false
@@ -105,7 +105,7 @@
          "TO",
          [
             131,
-            "82fdf39d7aa90d6384570d6384570d6384570d6384570d6384570d6384570d6384570d6384570d6384570d6384570d6384570d6384570d6384570d6384570d63 ..."
+            "82fdd3d049f82d2eb7062d2eb7062d2eb7062d2eb7062d2eb7062d2eb7062d2eb7062d2eb7062d2eb7062d2eb7062d2eb7062d2eb7062d2eb7062d2eb7062d2e ..."
          ],
          false
       ],
@@ -141,7 +141,7 @@
          8,
          true,
          0,
-         "d2bb2c33",
+         "cfba71ee",
          null,
          null,
          false
@@ -150,7 +150,7 @@
          "TO",
          [
             8,
-            "8882d2bb2c33d153"
+            "8882cfba71eecc52"
          ],
          false
       ],

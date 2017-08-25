@@ -77,7 +77,7 @@ namespace WSr.Tests.Deciding
             );
 
             var actual = run.Start(
-                create: () => commands.Process(socket.Object, run),
+                create: () => commands.Write(socket.Object, run),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000

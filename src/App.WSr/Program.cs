@@ -1,64 +1,52 @@
 ﻿using System;
-using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using System.Text;
 using System.Linq;
-using WSr.Handshake;
-using WSr.Serving;
-using static WSr.Listening.Functions;
-using static WSr.Serving.Functions;
-using static WSr.Deciding.Functions;
-
-using System.Collections.Generic;
 using System.Reactive;
-using WSr.Deciding;
+using System.Reactive.Subjects;
+
+using static WSr.Listening.Functions;
 
 namespace App.WSr
 {
     class Program
     {
         static void WriteLine(object s) => Console.WriteLine($"{s.ToString()}{Environment.NewLine}");
-        static Func<IListeningSocket> ServerFactory(string host, int port)
-        {
-            return () => ListenTo(host, port);
-        }
 
+        static void WriteError(Exception e) => Console.WriteLine($"error: {e.Message} {e.Source} {e.StackTrace}");
+        const int bufferSize = 8192;
         static void Main(string[] args)
         {
-            var host = "127.0.0.1";
-            var port = 9001;
-            var server = ServerFactory(host, port);
-
-            var connectedSockets = Observable
-                .Using(
-                    resourceFactory: server,
-                    observableFactory: s => s
-                        .AcceptConnections())
-                .Do(x => Console.WriteLine($"{x.Address} connected"))
-                .Publish();
-
-            var listening = connectedSockets.Connect();
-
-            var broadcast = connectedSockets
-                .SelectMany(ReadMessages(new byte[8192]))
-                .Do(Console.WriteLine);
             
-            var processes = connectedSockets.GroupJoin(
-                right: broadcast,
-                leftDurationSelector: s => Observable.Never<Unit>(),
-                rightDurationSelector: _ => Observable.Return(Unit.Default),
-                resultSelector: (s, bs) => bs.FromMessage().Publish().RefCount().Process(s)
-            ).Merge();
-                        
-            var run = processes.Subscribe(
-                onNext: WriteLine,
-                onError: e => Console.WriteLine($"error: {e.Message} {e.Source} {e.StackTrace}")
-            );
+            var ip = "127.0.0.1";
+            var port = 9001;
+            var terminator = new Subject<Unit>();
 
+
+            var connections = Serve(ip, port, terminator)
+                .Do(x => Console.WriteLine($"{x.Address} connected"))
+                .Publish()
+                .RefCount();
+
+            var incoming = connections
+                .Incoming(new byte[bufferSize])
+                .Do(Console.WriteLine)
+                .Publish()
+                .RefCount();
+
+            var outgoing = incoming
+                .WebSocketHandling();
+
+            var result = connections
+                .Transmit(outgoing)
+                .Subscribe(
+                    onNext: WriteLine,
+                    onError: WriteError);
+            
             Console.WriteLine("Any key to quit");
             Console.ReadKey();
-            listening.Dispose();
-            run.Dispose();
+            terminator.OnNext(Unit.Default);
+            result.Dispose();
+            Console.ReadKey();
         }
     }
 }

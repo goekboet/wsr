@@ -67,8 +67,8 @@ namespace WSr.Serving
             return socket =>
             {
                 var bytes = socket
-                        .Receive(buffer, scheduler)
-                        .SelectMany(x => x.ToObservable());
+                    .Receive(buffer, scheduler)
+                    .SelectMany(x => x.ToObservable());
 
                 var handshake = bytes
                     .ChopUpgradeRequest()
@@ -76,8 +76,8 @@ namespace WSr.Serving
                     .Take(1);
 
                 var frames = bytes
-                    .ParseFrames(socket.Address)
-                    .Select(ToMessage);
+                    .ToFrames(socket.Address)
+                    .ToMessage();
 
                 return handshake.Concat(frames);
             };

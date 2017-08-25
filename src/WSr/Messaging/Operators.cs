@@ -9,11 +9,11 @@ namespace WSr.Messaging
 {
     public static class Operators
     {
-        public static IObservable<IMessage> FromFrames(
+        public static IObservable<IMessage> ToMessage(
             this IObservable<Frame> frames)
         { 
             return frames
-                .Select(ToMessage);
+                .Select(Functions.ToMessage);
         }
     }
 }

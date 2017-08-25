@@ -108,7 +108,7 @@ namespace WSr.Deciding
                 .Select(x => ProcessResult.Transmitted(c.OutBound.Count(), socket.Address, x.Timestamp));
         }
 
-        public static IObservable<ProcessResult> Process(
+        public static IObservable<ProcessResult> Write(
             this IObservable<ICommand> input,
             IConnectedSocket output,
             IScheduler s = null)
