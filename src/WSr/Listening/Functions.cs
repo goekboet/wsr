@@ -24,15 +24,20 @@ namespace WSr.Listening
         }
 
         public static IObservable<IConnectedSocket> Serve(
-            string ip, 
+            string ip,
             int port,
             IObservable<Unit> eof,
+            IScheduler s = null) => Serve(eof, new TcpSocket(ip, port), s);
+
+        public static IObservable<IConnectedSocket> Serve(
+            IObservable<Unit> eof,
+            IListeningSocket host,
             IScheduler s = null)
         {
             if (s == null) s = Scheduler.Default;
 
             return Observable.Using(
-                resourceFactory: () => new TcpSocket(ip, port),
+                resourceFactory: () => host,
                 observableFactory: l => l.Connect(s).Repeat().TakeUntil(eof));
         }
     }

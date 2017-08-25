@@ -44,6 +44,17 @@ namespace WSr.Tests.Functions
         {
             return string.Join(", ", list.Select(x => x.ToString()));
         }
+
+        public static void AssertAsExpected<T>(
+            ITestableObservable<T> expected,
+            ITestableObserver<T> actual)
+        {
+            ReactiveAssert.AreElementsEqual(
+                expected: expected.Messages,
+                actual:actual.Messages,
+                message: debugElementsEqual(expected.Messages, actual.Messages)
+            );
+        }
     }
 
     public static class FrameCreator

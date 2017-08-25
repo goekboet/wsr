@@ -14,6 +14,7 @@ namespace WSr.Messaging
     {
         string Origin { get; }
     }
+    
     public abstract class FrameMessage : IMessage, IEquatable<FrameMessage>
     {
         public FrameMessage(

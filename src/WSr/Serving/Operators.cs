@@ -15,20 +15,6 @@ using System.Reactive;
 
 namespace WSr.Serving
 {
-    // public class Reader
-    // {
-    //     public Reader(
-    //         string address,
-    //         IObservable<IEnumerable<byte>> buffers)
-    //     {
-    //         Address = address;
-    //         Buffers = buffers;
-    //     }
-
-    //     public string Address { get; }
-    //     public IObservable<IEnumerable<byte>> Buffers { get; }
-    // }
-
     public class Writer
     {
         public Writer(
@@ -53,12 +39,13 @@ namespace WSr.Serving
             if (scheduler == null) scheduler = Scheduler.Default;
 
             return Observable.Return(socket)
-                .SelectMany(x => x.Read(buffer, scheduler))
+                .SelectMany(x => 
+                    x.Read(buffer, scheduler)
+                    .Catch<int, ObjectDisposedException>(e => Observable.Return(0, scheduler)))
                 .Repeat()
                 .TakeWhile(x => x > 0)
                 //.Do(x => Console.WriteLine($"read {x} bytes from {socket.Address}"))
-                .Select(r => buffer.Take(r).ToArray())
-                .Catch<byte[], ObjectDisposedException>(e => Observable.Empty<byte[]>());
+                .Select(r => buffer.Take(r).ToArray());
         }
 
         public static IObservable<Writer> Writers(
