@@ -4,9 +4,9 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Linq;
 using WSr.Handshake;
-using WSr.Socket;
+using WSr.Serving;
 using static WSr.Listening.Functions;
-using static WSr.Socket.Functions;
+using static WSr.Serving.Functions;
 using static WSr.Deciding.Functions;
 
 using System.Collections.Generic;

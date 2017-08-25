@@ -6,7 +6,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using WSr.Messaging;
 using WSr.Protocol;
-using WSr.Socket;
+using WSr.Serving;
 using static WSr.Deciding.Functions;
 
 namespace WSr.Deciding
@@ -16,17 +16,7 @@ namespace WSr.Deciding
         IObservable<IConnectedSocket> Connect(IScheduler on);
     }
     
-    public interface IConnectedSocket : IDisposable
-    {
-        string Address { get; }
-
-        IObservable<Unit> Send(
-            IEnumerable<byte> buffer,
-            IScheduler scheduler);
-        IObservable<IEnumerable<byte>> Receive(
-            byte[] buffer,
-            IScheduler scheduler);
-    }
+    
     
     public static class Operators
     {
@@ -113,7 +103,7 @@ namespace WSr.Deciding
             IScheduler s)
         {
             return c => socket
-                .Send(c.OutBound.ToArray(), s)
+                .Write(c.OutBound.ToArray(), s)
                 .Timestamp(s)
                 .Select(x => ProcessResult.Transmitted(c.OutBound.Count(), socket.Address, x.Timestamp));
         }
@@ -138,5 +128,7 @@ namespace WSr.Deciding
                     .Select(Transmit(output, s))
                     .Concat());
         }
+
+        
     }
 }

@@ -14,8 +14,20 @@ using System.Threading;
 using System.Reactive.Subjects;
 using WSr.Deciding;
 
-namespace WSr.Socket
+namespace WSr.Serving
 {
+    public interface IConnectedSocket : IDisposable
+    {
+        string Address { get; }
+
+        IObservable<Unit> Write(
+            IEnumerable<byte> buffer,
+            IScheduler scheduler);
+        IObservable<int> Read(
+            byte[] buffer,
+            IScheduler scheduler);
+    }
+
     public class TcpConnection : IConnectedSocket
     {
         private readonly TcpClient _socket;
@@ -27,13 +39,7 @@ namespace WSr.Socket
 
         public string Address => _socket.Client.RemoteEndPoint.ToString();
 
-        public virtual Stream Stream => _socket.GetStream();
-
-        private Func<IScheduler, byte[], IObservable<int>> CreateReader(int bufferSize)
-        {
-            return (scheduler, buffer) => Observable
-                .FromAsync(() => Stream.ReadAsync(buffer, 0, bufferSize), scheduler);
-        }
+        private Stream Stream => _socket.GetStream();
 
         private Func<IScheduler, byte[], IObservable<Unit>> CreateWriter()
         {
@@ -51,7 +57,7 @@ namespace WSr.Socket
             return Address;
         }
 
-        public IObservable<Unit> Send(
+        public IObservable<Unit> Write(
             IEnumerable<byte> buffer,
             IScheduler scheduler)
         {
@@ -61,16 +67,10 @@ namespace WSr.Socket
                 .Do(x => Console.WriteLine($"Wrote {buffer.Count()} on {Address}"));
         }
 
-        public IObservable<IEnumerable<byte>> Receive(byte[] buffer, IScheduler scheduler)
+        public IObservable<int> Read(byte[] buffer, IScheduler scheduler)
         {
-            var reader = CreateReader(buffer.Length);
-
-            return reader(scheduler, buffer)
-                .Repeat()
-                .TakeWhile(x => x > 0)
-                .Do(x => Console.WriteLine($"read {x} bytes from {Address}"))
-                .Select(r => buffer.Take(r).ToArray())
-                .Catch<byte[], ObjectDisposedException>(e => Observable.Empty<byte[]>());
+            return Observable
+                .FromAsync(() => Stream.ReadAsync(buffer, 0, buffer.Count()), scheduler);
         }
     }
 

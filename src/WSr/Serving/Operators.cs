@@ -13,21 +13,21 @@ using static WSr.Handshake.Functions;
 using static WSr.Deciding.Functions;
 using System.Reactive;
 
-namespace WSr.Socket
+namespace WSr.Serving
 {
-    public class Reader
-    {
-        public Reader(
-            string address,
-            IObservable<IEnumerable<byte>> buffers)
-        {
-            Address = address;
-            Buffers = buffers;
-        }
+    // public class Reader
+    // {
+    //     public Reader(
+    //         string address,
+    //         IObservable<IEnumerable<byte>> buffers)
+    //     {
+    //         Address = address;
+    //         Buffers = buffers;
+    //     }
 
-        public string Address { get; }
-        public IObservable<IEnumerable<byte>> Buffers { get; }
-    }
+    //     public string Address { get; }
+    //     public IObservable<IEnumerable<byte>> Buffers { get; }
+    // }
 
     public class Writer
     {
@@ -45,28 +45,20 @@ namespace WSr.Socket
 
     public static class Functions
     {
-        public static IObservable<Frame> ReadFrames(
-            this IObservable<IEnumerable<byte>> buffers,
-            string origin)
+        public static IObservable<IEnumerable<byte>> Receive(
+            this IConnectedSocket socket,
+            byte[] buffer, 
+            IScheduler scheduler = null)
         {
-            return buffers
-                .Select(x => x.ToObservable())
-                .Concat()
-                .ParseFrames(origin);
-        }
+            if (scheduler == null) scheduler = Scheduler.Default;
 
-        public static Func<IConnectedSocket, IObservable<KeyValuePair<string, IEnumerable<byte>>>> Reads(
-            byte[] buffer,
-            IScheduler s = null)
-        {
-            if (s == null) s = Scheduler.Default;
-
-            return socket => Observable
-                .Return(new Reader(
-                    address: socket.Address,
-                    buffers: socket.Receive(buffer, s)))
-                .SelectMany(r => r.Buffers
-                    .Select(x => new KeyValuePair<string, IEnumerable<byte>>(r.Address, x)));
+            return Observable.Return(socket)
+                .SelectMany(x => x.Read(buffer, scheduler))
+                .Repeat()
+                .TakeWhile(x => x > 0)
+                //.Do(x => Console.WriteLine($"read {x} bytes from {socket.Address}"))
+                .Select(r => buffer.Take(r).ToArray())
+                .Catch<byte[], ObjectDisposedException>(e => Observable.Empty<byte[]>());
         }
 
         public static IObservable<Writer> Writers(
@@ -76,7 +68,7 @@ namespace WSr.Socket
             return Observable
                 .Return(new Writer(
                     address: socket.Address,
-                    writes: b => b.SelectMany(x => socket.Send(x, s))));
+                    writes: b => b.SelectMany(x => socket.Write(x, s))));
         }
 
         public static Func<IConnectedSocket, IObservable<IMessage>> ReadMessages(

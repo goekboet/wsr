@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using WSr.Messaging;
 using WSr.Protocol;
-using WSr.Socket;
+using WSr.Serving;
 
 using static WSr.Tests.Functions.Debug;
 using static WSr.Deciding.Functions;
@@ -31,7 +31,7 @@ namespace WSr.Tests.Deciding
         {
             var socket = new Mock<IConnectedSocket>();
             socket.Setup(x => x.Address).Returns(address);
-            socket.Setup(x => x.Send(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+            socket.Setup(x => x.Write(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
                 .Returns(Observable.Return(Unit.Default))
                 .Callback<byte[], IScheduler>((b, s) => writeTo.Add(b));
 

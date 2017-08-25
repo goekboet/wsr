@@ -9,10 +9,10 @@ using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using WSr.Deciding;
-using WSr.Socket;
+using WSr.Serving;
 
 using static WSr.Tests.Functions.Debug;
-using static WSr.Socket.Functions;
+using static WSr.Serving.Functions;
 
 namespace WSr.Tests.Socket
 {
@@ -21,14 +21,18 @@ namespace WSr.Tests.Socket
     {
         private byte[] Buffer(string s) => Encoding.UTF8.GetBytes(s);
 
-        private IConnectedSocket Create(
+        private IConnectedSocket CreateReceivers(
             Mock<IConnectedSocket> mock,
             string address,
-            IObservable<IEnumerable<byte>> buffers)
+            IObservable<IEnumerable<byte>> reads)
         {
             mock.Setup(x => x.Address).Returns(address);
-            mock.Setup(x => x.Receive(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
-                .Returns(buffers);
+            mock.Setup(x => x.Read(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+                .Returns(reads.Select(x => x.Count()).Take(1))
+                .Callback<byte[], IScheduler>((bs, s) => 
+                {
+                    reads.Take(1).Do(x => x.ToArray().CopyTo(bs, 0)).Subscribe();
+                });
 
             return mock.Object;
         }
@@ -39,7 +43,7 @@ namespace WSr.Tests.Socket
             IList<string> writes)
         {
             mock.Setup(x => x.Address).Returns(address);
-            mock.Setup(x => x.Send(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
+            mock.Setup(x => x.Write(It.IsAny<byte[]>(), It.IsAny<IScheduler>()))
                 .Returns<byte[], IScheduler>((b, s) => Observable.Return(Unit.Default, s))
                 .Callback<byte[], IScheduler>((b, s) => writes.Add($"{address}: {Encoding.UTF8.GetString(b)}"));
 
@@ -47,35 +51,66 @@ namespace WSr.Tests.Socket
         }
 
         [TestMethod]
-        public void MapToReadBuffers()
+        public void ReceiveUntilStreamReports0bytesRead()
         {
             var run = new TestScheduler();
 
-            var reads = run.CreateColdObservable(
-                OnNext(100, Buffer("aaa")),
-                OnNext(200, Buffer("bbb"))
+            var reads = run.CreateHotObservable(
+                OnNext(150, Buffer("aaa")),
+                OnNext(200, Buffer("bbb")),
+                OnNext(250, Buffer("")),
+                OnNext(300, Buffer("ccc"))
             );
 
-            var sockets = run.CreateColdObservable(
-                OnNext(50, Create(new Mock<IConnectedSocket>(), "socket 1", reads)),
-                OnNext(100, Create(new Mock<IConnectedSocket>(), "socket 2", reads))
-            );
+            var socket = CreateReceivers(new Mock<IConnectedSocket>(), "testsocket", reads);
 
             var expected = run.CreateHotObservable(
-                OnNext(151, "socket 1: aaa"),
-                OnNext(201, "socket 2: aaa"),
-                OnNext(251, "socket 1: bbb"),
-                OnNext(301, "socket 2: bbb")
+                OnNext(150, "aaa"),
+                OnNext(200, "bbb"),
+                OnCompleted<string>(250)
             );
 
             var actual = run.Start(
-                create: () => sockets
-                    .SelectMany(Reads(new byte[1024], run))
-                    .Select(x => $"{x.Key}: " + Encoding.UTF8.GetString(x.Value.ToArray())),
+                create: () => socket
+                    .Receive(new byte[1024], run)
+                    .Select(x => Encoding.UTF8.GetString(x.ToArray())),
                 created: 0,
                 subscribed: 0,
-                disposed: 1000
+                disposed: 1000);
+
+            ReactiveAssert.AreElementsEqual(
+               expected: expected.Messages,
+               actual: actual.Messages,
+               message: debugElementsEqual(expected.Messages, actual.Messages));
+        }
+
+        [TestMethod]
+        public void ReceiveSwallowsObjectDisposedException()
+        {
+            var run = new TestScheduler();
+
+            var reads = run.CreateHotObservable(
+                OnNext(150, Buffer("aaa")),
+                OnNext(200, Buffer("bbb")),
+                OnError<byte[]>(250, new ObjectDisposedException("")),
+                OnNext(300, Buffer("ccc"))
             );
+
+            var socket = CreateReceivers(new Mock<IConnectedSocket>(), "testsocket", reads);
+
+            var expected = run.CreateHotObservable(
+                OnNext(150, "aaa"),
+                OnNext(200, "bbb"),
+                OnCompleted<string>(250)
+            );
+
+            var actual = run.Start(
+                create: () => socket
+                    .Receive(new byte[1024], run)
+                    .Select(x => Encoding.UTF8.GetString(x.ToArray())),
+                created: 0,
+                subscribed: 0,
+                disposed: 1000);
 
             ReactiveAssert.AreElementsEqual(
                expected: expected.Messages,
