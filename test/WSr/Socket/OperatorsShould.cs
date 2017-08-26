@@ -6,12 +6,12 @@ using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using WSr.Messaging;
-using WSr.Serving;
+using WSr.Socketing;
 
-using static WSr.Listening.Functions;
 using static WSr.Tests.Functions.Debug;
+using static WSr.Socketing.Operators;
 
-namespace WSr.Tests.Listening
+namespace WSr.Tests.Socketing
 {
     
     [TestClass]
@@ -73,7 +73,5 @@ namespace WSr.Tests.Listening
 
             AssertAsExpected<string>(expected, actual);
         }
-
-        
     }
 }

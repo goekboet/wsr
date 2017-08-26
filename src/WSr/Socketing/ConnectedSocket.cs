@@ -14,7 +14,7 @@ using System.Threading;
 using System.Reactive.Subjects;
 using WSr.Messaging;
 
-namespace WSr.Serving
+namespace WSr.Socketing
 {
     public interface IConnectedSocket : IDisposable
     {

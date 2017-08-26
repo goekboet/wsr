@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Subjects;
 
-using static WSr.Listening.Functions;
+using static WSr.Socketing.Operators;
 
 namespace App.WSr
 {

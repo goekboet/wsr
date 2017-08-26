@@ -4,7 +4,8 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using WSr.Framing;
 using WSr.Protocol;
-using WSr.Serving;
+using WSr.Socketing;
+
 using static WSr.Messaging.Functions;
 
 namespace WSr.Messaging

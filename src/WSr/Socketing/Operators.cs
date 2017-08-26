@@ -12,7 +12,7 @@ using static WSr.Framing.Functions;
 
 using System.Reactive;
 
-namespace WSr.Serving
+namespace WSr.Socketing
 {
     public class Writer
     {
@@ -28,17 +28,69 @@ namespace WSr.Serving
         public Func<IObservable<byte[]>, IObservable<Unit>> Write { get; }
     }
 
-    public static class Functions
+    public static class Operators
     {
+        public static IObservable<IConnectedSocket> Serve(
+                string ip,
+                int port,
+                IObservable<Unit> eof,
+                IScheduler s = null) => Serve(eof, new TcpSocket(ip, port), s);
+
+        public static IObservable<IConnectedSocket> Serve(
+            IObservable<Unit> eof,
+            IListeningSocket host,
+            IScheduler s = null)
+        {
+            if (s == null) s = Scheduler.Default;
+
+            return Observable.Using(
+                resourceFactory: () => host,
+                observableFactory: l => l.Connect(s).Repeat().TakeUntil(eof));
+        }
+
+        public static IObservable<IMessage> Incoming(
+            this IObservable<IConnectedSocket> cs,
+            byte[] buffer,
+            IScheduler s = null)
+        {
+            if (s == null) s = Scheduler.Default;
+
+            return cs
+                .SelectMany(ReadMessages(buffer, s));
+        }
+
+        public static IObservable<ICommand> WebSocketHandling(
+            this IObservable<IMessage> ms,
+            IScheduler s = null)
+        {
+            if (s == null) s = Scheduler.Default;
+
+            return ms.FromMessage();
+        }
+
+        public static IObservable<ProcessResult> Transmit(
+            this IObservable<IConnectedSocket> cs,
+            IObservable<ICommand> cmds,
+            IScheduler s = null)
+        {
+            return cs
+                .GroupJoin(
+                    right: cmds,
+                    leftDurationSelector: _ => Observable.Never<Unit>(),
+                    rightDurationSelector: _ => Observable.Return(Unit.Default),
+                    resultSelector: (c, cmdswndw) => cmdswndw.Write(c))
+                .Merge();
+        }
+
         public static IObservable<IEnumerable<byte>> Receive(
             this IConnectedSocket socket,
-            byte[] buffer, 
+            byte[] buffer,
             IScheduler scheduler = null)
         {
             if (scheduler == null) scheduler = Scheduler.Default;
 
             return Observable.Return(socket)
-                .SelectMany(x => 
+                .SelectMany(x =>
                     x.Read(buffer, scheduler)
                     .Catch<int, ObjectDisposedException>(e => Observable.Return(0, scheduler)))
                 .Repeat()

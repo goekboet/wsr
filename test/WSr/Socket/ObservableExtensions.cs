@@ -9,10 +9,10 @@ using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using WSr.Messaging;
-using WSr.Serving;
+using WSr.Socketing;
 
 using static WSr.Tests.Functions.Debug;
-using static WSr.Serving.Functions;
+using static WSr.Socketing.Operators;
 
 namespace WSr.Tests.Socket
 {

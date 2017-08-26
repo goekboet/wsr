@@ -9,10 +9,9 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
 using System.Reactive;
-using WSr.Serving;
 using WSr.Messaging;
 
-namespace WSr.Listening
+namespace WSr.Socketing
 {
     internal class TcpSocket : IListeningSocket
     {
