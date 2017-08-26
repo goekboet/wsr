@@ -23,4 +23,4 @@ artifacts/
 !.vscode/launch.json
 !.vscode/extensions.json
 
-*.html
+src/App.WSr/test/
