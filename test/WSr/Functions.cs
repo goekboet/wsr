@@ -15,22 +15,7 @@ namespace WSr.Tests.Functions
 {
     public static class StringEncoding
     {
-        public static IEnumerable<byte> BytesFrom(Encoding enc, string str)
-        {
-            return Forever(str).SelectMany(s => enc.GetBytes(s));
-        }
-
-        public static byte[] BytesFrom(Encoding enc, string str, int byteCount) =>
-        BytesFrom(enc, str)
-            .Take(byteCount)
-            .ToArray();
-
-        public static byte[] BytesFromAscii(string str) =>
-        BytesFrom(Encoding.ASCII, str)
-            .Take(Encoding.ASCII.GetByteCount(str))
-            .ToArray();
-
-        
+        public static byte[] BytesFromUTF8(string str) => Encoding.UTF8.GetBytes(str);
     }
 
     public static class Debug
@@ -40,10 +25,16 @@ namespace WSr.Tests.Functions
             return $"{Environment.NewLine} expected: {string.Join(", ", expected)} {Environment.NewLine} actual: {string.Join(", ", actual)}";
         }
 
-        public static string Showlist<T>(IEnumerable<T> list) 
+        public static string Showlist<T>(IEnumerable<T> list)
         {
             return string.Join(", ", list.Select(x => x.ToString()));
         }
+
+        public static IEnumerable<T> OnNextValues<T>(IList<Recorded<Notification<T>>> ns) => ns
+            .Select(x => x.Value)
+            .Where(x => x.Kind == NotificationKind.OnNext)
+            .Select(x => x.Value);
+
 
         public static void AssertAsExpected<T>(
             ITestableObservable<T> expected,
@@ -51,7 +42,7 @@ namespace WSr.Tests.Functions
         {
             ReactiveAssert.AreElementsEqual(
                 expected: expected.Messages,
-                actual:actual.Messages,
+                actual: actual.Messages,
                 message: debugElementsEqual(expected.Messages, actual.Messages)
             );
         }
@@ -60,6 +51,10 @@ namespace WSr.Tests.Functions
     public static class FrameCreator
     {
         public static ParsedFrame MakeFrame(string origin, IEnumerable<byte> bitfield) =>
-            new ParsedFrame(origin, bitfield.ToArray(), new byte[0], new byte[0], new byte[0] );
+            MakeFrameWithPayload(origin, bitfield, string.Empty);
+
+        public static ParsedFrame MakeFrameWithPayload(string origin, IEnumerable<byte> bitfield, string Payload) =>
+            new ParsedFrame(origin, bitfield.ToArray(), new byte[0], new byte[0], StringEncoding.BytesFromUTF8(Payload));
+
     }
 }

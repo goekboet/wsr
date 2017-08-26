@@ -18,8 +18,8 @@ namespace WSr.Messaging
             {
                 case BadFrame b:
                     return ToInvalidFrameMessage(b);
-                case ParsedFrame f:
-                    switch (f.GetOpCode())
+                case Defragmented f:
+                    switch (f.OpCode)
                     {
                         case OpCode.Ping:
                             return ToPingMessage(f);
@@ -33,7 +33,7 @@ namespace WSr.Messaging
                             return ToBinaryMessage(f);
                         default:
                             return ToInvalidFrameMessage(
-                                BadFrame.MessageMapperError($"OpCode {f.GetOpCode()} has no defined message"));
+                                BadFrame.MessageMapperError($"OpCode {f.OpCode} has no defined message"));
                     }
                 default:
                     return ToInvalidFrameMessage(BadFrame.ParserError);
@@ -45,32 +45,33 @@ namespace WSr.Messaging
             return new InvalidFrame(f.Origin, f.Reason);
         }
 
-        private static IMessage ToBinaryMessage(ParsedFrame frame)
+        private static IMessage ToBinaryMessage(
+            Defragmented frame)
         {
-            return new BinaryMessage(frame.Origin, frame.UnMaskedPayload());
+            return new BinaryMessage(frame.Origin, frame.Payload);
         }
 
         public static IMessage ToTextMessage(
-            ParsedFrame frame)
+            Defragmented frame)
         {
-            return new TextMessage(frame.Origin, frame.GetOpCode(), frame.UnMaskedPayload());
+            return new TextMessage(frame.Origin, frame.OpCode, frame.Payload);
         }
 
         public static IMessage ToCloseMessage(
-            ParsedFrame frame)
+            Defragmented frame)
         {
-            return new Close(frame.Origin, frame.UnMaskedPayload());
+            return new Close(frame.Origin, frame.Payload);
         }
 
         public static IMessage ToPingMessage(
-            ParsedFrame frame)
+            Defragmented frame)
         {
-            return new Ping(frame.Origin, frame.UnMaskedPayload());
+            return new Ping(frame.Origin, frame.Payload);
         }
         public static IMessage ToPongMessage(
-            ParsedFrame frame)
+            Defragmented frame)
         {
-            return new Pong(frame.Origin, frame.UnMaskedPayload());
+            return new Pong(frame.Origin, frame.Payload);
         }
 
         public static byte[] NormalClose { get; } = new byte[] { 0x88, 0x02, 0x03, 0xe8 };

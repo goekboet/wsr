@@ -26,56 +26,30 @@ namespace WSr.Socketing
                 observableFactory: l => l.Connect(s).Repeat().TakeUntil(eof));
         }
 
-        // public static IObservable<IMessage> Incoming(
-        //     this IObservable<IConnectedSocket> cs,
-        //     byte[] buffer,
-        //     IScheduler s = null)
-        // {
-        //     if (s == null) s = Scheduler.Default;
-
-        //     return cs
-        //         .SelectMany(ReadMessages(buffer, s));
-        // }
-
-        // public static IObservable<ICommand> WebSocketHandling(
-        //     this IObservable<IMessage> ms,
-        //     IScheduler s = null)
-        // {
-        //     if (s == null) s = Scheduler.Default;
-
-        //     return ms.FromMessage();
-        // }
-
-        // public static IObservable<ProcessResult> Transmit(
-        //     this IObservable<IConnectedSocket> cs,
-        //     IObservable<ICommand> cmds,
-        //     IScheduler s = null)
-        // {
-        //     return cs
-        //         .GroupJoin(
-        //             right: cmds,
-        //             leftDurationSelector: _ => Observable.Never<Unit>(),
-        //             rightDurationSelector: _ => Observable.Return(Unit.Default),
-        //             resultSelector: (c, cmdswndw) => cmdswndw.Write(c))
-        //         .Merge();
-        // }
-
         public static IObservable<IEnumerable<byte>> Receive(
             this IConnectedSocket socket,
-            byte[] buffer,
+            Func<byte[]> bufferfactory,
             IScheduler scheduler = null)
         {
             if (scheduler == null) scheduler = Scheduler.Default;
 
             return Observable.Return(socket)
-                .SelectMany(x =>
-                    x.Read(buffer, scheduler)
-                    .Catch<int, ObjectDisposedException>(e => Observable.Return(0, scheduler)))
+                .Select(x => (socket: x, buffer: bufferfactory()))
+                .SelectMany(x => x.socket
+                    .Read(x.buffer, scheduler)
+                    .Select(r => r < 1 ? new byte[0] : x.buffer.Take(r).ToArray()))
                 .Repeat()
-                .TakeWhile(x => x > 0)
-                //.Do(x => Console.WriteLine($"read {x} bytes from {socket.Address}"))
-                .Select(r => buffer.Take(r).ToArray());
+                .TakeWhile(x => x.Count() > 0)
+                .Do(x => Console.WriteLine($"read {x.Length} bytes from {socket.Address}"))
+                .Catch<byte[], Exception>(ex => Observable.Empty<byte[]>());
+                
+                //.Catch<IEnumerable<byte>, ObjectDisposedException>(ex => Observable.Empty<IEnumerable<byte>>());
         }
+
+        // public static Func<IConnectedSocket, IObservable<IEnumerable<byte>>> Reader = s =>
+        // {
+
+        // }
 
         public static IObservable<Writer> Writers(
             IConnectedSocket socket,
@@ -96,7 +70,7 @@ namespace WSr.Socketing
             return socket =>
             {
                 var bytes = socket
-                    .Receive(buffer, scheduler)
+                    .Receive(() => new byte[8192], scheduler)
                     .SelectMany(x => x.ToObservable());
 
                 var handshake = bytes
@@ -105,7 +79,7 @@ namespace WSr.Socketing
                     .Take(1);
 
                 var frames = bytes
-                    .ToFrames(socket.Address)
+                    .ToFrames(socket.Address, scheduler)
                     .ToMessage();
 
                 return handshake.Concat(frames);

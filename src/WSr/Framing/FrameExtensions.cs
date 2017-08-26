@@ -19,7 +19,7 @@ namespace WSr.Framing
             OpCode.Pong
         });
 
-        public static bool Fin(this ParsedFrame frame) => (frame.Bitfield.ElementAt(0) & 0x80) != 0;
+        public static bool IsFinal(this ParsedFrame frame) => (frame.Bitfield.ElementAt(0) & 0x80) != 0;
         public static bool Rsv1(this ParsedFrame frame) => (frame.Bitfield.ElementAt(0) & 0x40) != 0;
         public static bool Rsv2(this ParsedFrame frame) => (frame.Bitfield.ElementAt(0) & 0x20) != 0;
         public static bool Rsv3(this ParsedFrame frame) => (frame.Bitfield.ElementAt(0) & 0x10) != 0;
@@ -40,9 +40,12 @@ namespace WSr.Framing
             : frame.Payload;
 
         public static bool IsControlCode(this ParsedFrame frame) => ((byte)frame.GetOpCode() & (byte)0b0000_1000) != 0;
+        public static bool IsContinuation(this ParsedFrame frame) => frame.GetOpCode() == OpCode.Continuation;
+        public static bool HasContinuation(this ParsedFrame frame) => !(frame.IsContinuation() || frame.IsControlCode());
         public static bool OpCodeLengthLessThan126(this ParsedFrame f) =>
             f.IsControlCode() && (BitFieldLength(f.Bitfield) > 125); 
         public static bool ReservedBitsSet(this ParsedFrame frame) => (frame.Bitfield.ElementAt(0) & 0x70) != 0;
         public static bool BadOpcode(this ParsedFrame frame) => !ValidOpCodes.Contains(frame.GetOpCode());
+        public static bool ControlframeNotFinal(this ParsedFrame f) => f.IsControlCode() && !f.IsFinal();
     }
 }

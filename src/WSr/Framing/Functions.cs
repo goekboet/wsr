@@ -64,6 +64,8 @@ namespace WSr.Framing
                 return new BadFrame(frame.Origin, "RSV-bit is set");
             if (frame.BadOpcode())
                 return new BadFrame(frame.Origin, "Not a valid opcode");
+            if (frame.ControlframeNotFinal())
+                return new BadFrame(frame.Origin, "Control-frame must be final");
 
             return frame;
         }
@@ -172,6 +174,13 @@ namespace WSr.Framing
         public static bool Validate(IDictionary<string, string> headers)
         {
             return RequiredHeaders.IsSubsetOf(new HashSet<string>(headers.Keys));
+        }
+
+        public static (OpCode code, IEnumerable<byte> payload) Defragment(
+            (OpCode code, IEnumerable<byte> payload) acc,
+            (OpCode code, IEnumerable<byte> payload) nxt)
+        {
+            return (acc.code | nxt.code, acc.payload.Concat(nxt.payload));
         }
     }
 }

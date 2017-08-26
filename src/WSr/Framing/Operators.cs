@@ -68,14 +68,59 @@ namespace WSr.Framing
             });
         }
 
+        public static IObservable<Frame> Defrag(
+            this IObservable<Frame> fragmented,
+            IScheduler scheduler)
+        {
+            return Observable.Create<Frame>(o =>
+            {
+                var buffer = new List<(OpCode, IEnumerable<byte>)>();
+                return fragmented.Subscribe(
+                    onNext: f =>
+                    {
+                        if (f is BadFrame) o.OnNext(f);
+                        else if (f is ParsedFrame p)
+                        {
+                            if(p.IsContinuation() && buffer.Count() == 0)
+                            {
+                                o.OnNext(new BadFrame(p.Origin, "not expecting continuation"));
+                            }
+                            else if (p.HasContinuation() && buffer.Count() > 0)
+                            {
+                                o.OnNext(new BadFrame(p.Origin, "expecting continuation"));
+                            }
+                            else if (p.IsControlCode())
+                            {
+                                o.OnNext(new Defragmented(p.Origin, p.GetOpCode(), p.UnMaskedPayload()));
+                            }
+                            else
+                            {
+                                buffer.Add((p.GetOpCode(), p.UnMaskedPayload()));
+                                if (p.IsFinal())
+                                {
+                                    var (code, payload) = buffer.Aggregate(Defragment);
+                                    o.OnNext(new Defragmented(p.Origin, code, payload));
+                                    buffer.Clear();
+                                }
+                            }
+                        }
+                    },
+                    onError: o.OnError,
+                    onCompleted: o.OnCompleted
+                );
+            });
+        }
+
         public static IObservable<Frame> ToFrames(
             this IObservable<byte> bytes,
-            string origin)
+            string origin,
+            IScheduler scheduler)
         {
             return bytes
                 .ChopToFrames(origin)
                 .Select(ToFrame)
-                .Select(IsValid);
+                .Select(IsValid)
+                .Defrag(scheduler);
         }
     }
 }

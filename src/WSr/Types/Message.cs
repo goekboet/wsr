@@ -318,7 +318,7 @@ namespace WSr
             {
                 "InvalidFrame", 
                 $"Origin: {Origin}", 
-                $"Errors: {string.Join(", ", Reason.ToArray())}"
+                $"Errors: {Reason}"
             });
         }
     }

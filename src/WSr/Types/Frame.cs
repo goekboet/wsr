@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using WSr.Framing;
 
 namespace WSr
 {
@@ -8,7 +9,7 @@ namespace WSr
     {
         public abstract string Origin { get; }
     }
-    
+
     /// <summary>
     /// Represents a websocket frame according to specification.
     /// </summary>
@@ -45,6 +46,8 @@ namespace WSr
         /// <returns></returns>
         public bool Equals(ParsedFrame other)
         {
+            if (other == null) return false;
+
             return this.Payload.SequenceEqual(other.Payload) &&
                 this.Mask.SequenceEqual(other.Mask) &&
                 this.Length.SequenceEqual(other.Length) &&
@@ -67,6 +70,54 @@ namespace WSr
         public override int GetHashCode() => 0;
     }
 
+    public class Defragmented : Frame
+    {
+        public Defragmented(ParsedFrame parse) 
+            : this(parse.Origin, parse.GetOpCode(), parse.UnMaskedPayload()) 
+        {
+        }
+        
+        public Defragmented(
+            string origin,
+            OpCode opCode,
+            IEnumerable<byte> payload)
+        {
+            Origin = origin;
+            OpCode = opCode;
+            Payload = payload;
+        }
+
+        public OpCode OpCode { get; }
+        public IEnumerable<byte> Payload { get; }
+        public override string Origin { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Defragmented d)
+            {
+                return Origin.Equals(d.Origin) &&
+                       OpCode.Equals(d.OpCode) &&
+                       Payload.SequenceEqual(d.Payload);
+            }
+
+            return false;
+        }  
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+
+                hash = hash * 31 * Origin.GetHashCode();
+                hash = hash * 31 * OpCode.GetHashCode();
+                hash = hash * 31 * Payload.Count();
+
+                return hash;
+            }
+        }      
+    }
+
     public class BadFrame : Frame
     {
         public static BadFrame ParserError => new BadFrame("", "Parsererror");
@@ -81,5 +132,29 @@ namespace WSr
         }
         public override string Origin { get; }
         public string Reason { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is BadFrame b)
+            {
+                return Origin.Equals(b.Origin) &&
+                       Reason.Equals(b.Reason);
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+
+                hash = hash * 31 * Origin.GetHashCode();
+                hash = hash * 31 * Reason.GetHashCode();
+
+                return hash;
+            }
+        }
     }
 }

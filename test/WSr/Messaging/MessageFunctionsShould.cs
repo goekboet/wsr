@@ -19,8 +19,8 @@ namespace WSr.Tests.Messaging
         [TestMethod]
         public void TransformRawFrameToTextMessage()
         {
-            var frame = SpecExamples.SingleFrameMaskedTextFrame(Origin);
-            var expected = new TextMessage(Origin, frame.GetOpCode(), frame.UnMaskedPayload());
+            var frame = new Defragmented(SpecExamples.SingleFrameMaskedTextFrame(Origin));
+            var expected = new TextMessage(Origin, frame.OpCode, frame.Payload);
 
             var result = ToMessage(frame);
             
@@ -31,8 +31,8 @@ namespace WSr.Tests.Messaging
         public void TransformRawFrameToCloseMessage()
         {
 
-            var frame = SpecExamples.MaskedGoingAwayCloseFrame(Origin);
-            var expected = new Close(Origin, frame.UnMaskedPayload());
+            var frame = new Defragmented(SpecExamples.MaskedGoingAwayCloseFrame(Origin));
+            var expected = new Close(Origin, frame.Payload);
 
             var result = ToMessage(frame);
             
@@ -46,6 +46,17 @@ namespace WSr.Tests.Messaging
 
             var frame = new BadFrame(Origin, "test");
             var expected = new InvalidFrame(Origin, "test");
+
+            var result = ToMessage(frame);
+
+            Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
+        }
+
+        [TestMethod]
+        public void ParsedFrameMapsToInvalid()
+        {
+            var frame = SpecExamples.SingleFrameMaskedTextFrame(Origin);
+            var expected = new InvalidFrame(string.Empty, "Parsererror");
 
             var result = ToMessage(frame);
 

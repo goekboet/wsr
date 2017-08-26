@@ -31,7 +31,10 @@ namespace WSr.Tests.Socket
                 .Returns(reads.Select(x => x.Count()).Take(1))
                 .Callback<byte[], IScheduler>((bs, s) => 
                 {
-                    reads.Take(1).Do(x => x.ToArray().CopyTo(bs, 0)).Subscribe();
+                    reads.Take(1).Do(x => x.ToArray().CopyTo(bs, 0)).Subscribe(
+                        onNext:x => {}, 
+                        onError:e => {}, 
+                        onCompleted:() => {});
                 });
 
             return mock.Object;
@@ -72,7 +75,7 @@ namespace WSr.Tests.Socket
 
             var actual = run.Start(
                 create: () => socket
-                    .Receive(new byte[1024], run)
+                    .Receive(() => new byte[1024], run)
                     .Select(x => Encoding.UTF8.GetString(x.ToArray())),
                 created: 0,
                 subscribed: 0,
@@ -84,7 +87,7 @@ namespace WSr.Tests.Socket
                message: debugElementsEqual(expected.Messages, actual.Messages));
         }
 
-        [Ignore] //Dont know whats going on with the moq code
+        //[Ignore] //Dont know whats going on with the moq code
         [TestMethod]
         public void ReceiveSwallowsObjectDisposedException()
         {
@@ -107,7 +110,7 @@ namespace WSr.Tests.Socket
 
             var actual = run.Start(
                 create: () => socket
-                    .Receive(new byte[1024], run)
+                    .Receive(() => new byte[1024], run)
                     .Select(x => Encoding.UTF8.GetString(x.ToArray())),
                 created: 0,
                 subscribed: 0,
