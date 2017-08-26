@@ -1,66 +1,56 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Linq;
-using System.Text;
-using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using WSr.Handshake;
+using System;
+using WSr.Framing;
 using WSr.Messaging;
-using static WSr.Handshake.Functions;
-using static WSr.Tests.Functions.Debug;
 
-namespace WSr.Tests.Handshake
+using static WSr.Tests.Bytes;
+using static WSr.Framing.Functions;
+
+namespace WSr.Tests.Framing
 {
     [TestClass]
-    public class HandshakeFunctionsShouldShould : ReactiveTest
+    public class FunctionsShould
     {
-        [TestMethod]
-        public void ReadHeaders()
+        public static string Origin { get; } = "o";
+        public static (string, bool, int, IEnumerable<byte>)[] parses =
         {
-            var run = new TestScheduler();
+            (Origin, false, 0, L0UMasked),
+            (Origin,true, 0, L0Masked),
+            (Origin,false, 28, L28UMasked),
+            (Origin,true, 28, L28Masked),
+            (Origin,false, 2, L2UMasked),
+            (Origin,false, 126, L128UMasked),
+            (Origin,true, 126, L128Masked),
+            (Origin,false, 127, L65536UMasked),
+            (Origin,true, 127, L65536Masked)
+        };
 
-            var bytes = Encoding.ASCII
-                .GetBytes("one\r\ntwo\r\n\r\nthree\r\nfour\r\n\r\n")
-                .ToObservable(run);
+        public static (int, int, int, int)[] frames =
+        {
+            (2, 0, 0, 0),
+            (2, 0, 4, 0),
+            (2, 0, 0, 28),
+            (2, 0, 4, 28),
+            (2, 0, 0, 2),
+            (2, 2, 0, 128),
+            (2, 2, 4, 128),
+            (2, 8, 0, 65536),
+            (2, 8, 4, 65536)
+        };
 
-            var actual = run.Start(
-                create: () => bytes
-                    .ChopUpgradeRequest()
-                    .Select(x => string.Join(", ", x)),
-                created: 0,
-                subscribed: 0,
-                disposed: 100
-            );
-            
-            var expected = run.CreateColdObservable(
-                OnNext(13, "one, two"),
-                OnNext(28, "three, four"),
-                OnCompleted<string>(29)
-            );
-
-            ReactiveAssert.AreElementsEqual(
-               expected: expected.Messages,
-               actual: actual.Messages,
-               message: debugElementsEqual(expected.Messages, actual.Messages));
-        }
+        public Func<ParsedFrame, (int, int, int, int)> byteCounts = f =>
+            (f.Bitfield.Count(), f.Length.Count(), f.Mask.Count(), f.Payload.Count());
 
         [TestMethod]
-        public void ChopCallsOnError()
+        public void MakeCorrectFrames()
         {
-            var run = new TestScheduler();
-            var es = Observable.Range(0, 10, run);
-            Func<IEnumerable<int>, bool> errors = i => throw new NotImplementedException();
+            var result = parses
+                .Select(ToFrame)
+                .Select(byteCounts);
 
-            var actual = run.Start(
-                create: () => es.Chop(new[]{5}, errors),
-                created: 0,
-                subscribed: 0,
-                disposed: 100
-            );
-            
-            Assert.IsTrue(actual.Messages.Single().Value.Kind.Equals(NotificationKind.OnError));
+            Assert.IsTrue(result.SequenceEqual(frames));
         }
 
         [TestMethod]
@@ -183,4 +173,5 @@ namespace WSr.Tests.Handshake
             Assert.AreEqual(expected, actual);
         }
     }
+
 }

@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using WSr.Framing;
 
 using static WSr.ListConstruction;
 using static WSr.IntegersFromByteConverter;
-using static WSr.Handshake.Functions;
-using WSr.Framing;
 
 namespace WSr.Messaging
 {

@@ -8,7 +8,7 @@ using WSr.Protocol;
 using WSr.Framing;
 
 using static WSr.Messaging.Functions;
-using static WSr.Handshake.Functions;
+using static WSr.Framing.Functions;
 
 using System.Reactive;
 
