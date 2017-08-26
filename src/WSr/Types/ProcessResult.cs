@@ -1,7 +1,7 @@
 using System;
 using WSr.Messaging;
 
-namespace WSr.Protocol
+namespace WSr
 {
     public class ProcessResult : IEquatable<ProcessResult>
     {

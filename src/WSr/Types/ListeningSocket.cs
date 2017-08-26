@@ -11,7 +11,7 @@ using System.Linq;
 using System.Reactive;
 using WSr.Messaging;
 
-namespace WSr.Socketing
+namespace WSr
 {
     internal class TcpSocket : IListeningSocket
     {

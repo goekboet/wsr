@@ -1,41 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using WSr.Messaging;
-using WSr.Protocol;
 using WSr.Framing;
 
 using static WSr.Messaging.Functions;
 using static WSr.Framing.Functions;
 
-using System.Reactive;
-
 namespace WSr.Socketing
 {
-    public class Writer
-    {
-        public Writer(
-            string address,
-            Func<IObservable<byte[]>, IObservable<Unit>> writes)
-        {
-            Address = address;
-            Write = writes;
-        }
-
-        public string Address { get; }
-        public Func<IObservable<byte[]>, IObservable<Unit>> Write { get; }
-    }
-
     public static class Operators
     {
-        public static IObservable<IConnectedSocket> Serve(
-                string ip,
-                int port,
-                IObservable<Unit> eof,
-                IScheduler s = null) => Serve(eof, new TcpSocket(ip, port), s);
-
         public static IObservable<IConnectedSocket> Serve(
             IObservable<Unit> eof,
             IListeningSocket host,
@@ -48,39 +26,39 @@ namespace WSr.Socketing
                 observableFactory: l => l.Connect(s).Repeat().TakeUntil(eof));
         }
 
-        public static IObservable<IMessage> Incoming(
-            this IObservable<IConnectedSocket> cs,
-            byte[] buffer,
-            IScheduler s = null)
-        {
-            if (s == null) s = Scheduler.Default;
+        // public static IObservable<IMessage> Incoming(
+        //     this IObservable<IConnectedSocket> cs,
+        //     byte[] buffer,
+        //     IScheduler s = null)
+        // {
+        //     if (s == null) s = Scheduler.Default;
 
-            return cs
-                .SelectMany(ReadMessages(buffer, s));
-        }
+        //     return cs
+        //         .SelectMany(ReadMessages(buffer, s));
+        // }
 
-        public static IObservable<ICommand> WebSocketHandling(
-            this IObservable<IMessage> ms,
-            IScheduler s = null)
-        {
-            if (s == null) s = Scheduler.Default;
+        // public static IObservable<ICommand> WebSocketHandling(
+        //     this IObservable<IMessage> ms,
+        //     IScheduler s = null)
+        // {
+        //     if (s == null) s = Scheduler.Default;
 
-            return ms.FromMessage();
-        }
+        //     return ms.FromMessage();
+        // }
 
-        public static IObservable<ProcessResult> Transmit(
-            this IObservable<IConnectedSocket> cs,
-            IObservable<ICommand> cmds,
-            IScheduler s = null)
-        {
-            return cs
-                .GroupJoin(
-                    right: cmds,
-                    leftDurationSelector: _ => Observable.Never<Unit>(),
-                    rightDurationSelector: _ => Observable.Return(Unit.Default),
-                    resultSelector: (c, cmdswndw) => cmdswndw.Write(c))
-                .Merge();
-        }
+        // public static IObservable<ProcessResult> Transmit(
+        //     this IObservable<IConnectedSocket> cs,
+        //     IObservable<ICommand> cmds,
+        //     IScheduler s = null)
+        // {
+        //     return cs
+        //         .GroupJoin(
+        //             right: cmds,
+        //             leftDurationSelector: _ => Observable.Never<Unit>(),
+        //             rightDurationSelector: _ => Observable.Return(Unit.Default),
+        //             resultSelector: (c, cmdswndw) => cmdswndw.Write(c))
+        //         .Merge();
+        // }
 
         public static IObservable<IEnumerable<byte>> Receive(
             this IConnectedSocket socket,

@@ -10,7 +10,6 @@ using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using WSr.Messaging;
-using WSr.Protocol;
 using WSr.Socketing;
 
 using static WSr.Tests.Functions.Debug;

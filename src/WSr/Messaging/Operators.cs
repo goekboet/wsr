@@ -3,7 +3,6 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using WSr.Framing;
-using WSr.Protocol;
 using WSr.Socketing;
 
 using static WSr.Messaging.Functions;

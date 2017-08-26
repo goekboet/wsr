@@ -7,7 +7,7 @@ using WSr.Framing;
 using static WSr.ListConstruction;
 using static WSr.IntegersFromByteConverter;
 
-namespace WSr.Messaging
+namespace WSr
 {
     public interface IMessage
     {
