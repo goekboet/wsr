@@ -15,9 +15,7 @@ namespace WSr.Deciding
     {
         IObservable<IConnectedSocket> Connect(IScheduler on);
     }
-    
-    
-    
+
     public static class Operators
     {
         public static IObservable<ICommand> FromMessage(
@@ -58,7 +56,7 @@ namespace WSr.Deciding
         public static ICommand ProtocolError(
             InvalidFrame f)
         {
-            return new IOCommand(f, CommandName.CloseHandshakeStarted, ProtocolErrorClose);
+            return new IOCommand(f, ProtocolErrorClose);
         }
 
         private static IObservable<ICommand> EndTransmission(
@@ -70,32 +68,32 @@ namespace WSr.Deciding
 
         private static IOCommand AcceptCloseHandshake(Close cl)
         {
-            return new IOCommand(cl, CommandName.CloseHandshakeFinished, NormalClose);
+            return new IOCommand(cl, NormalClose);
         }
 
         private static IOCommand SendPong(Ping pi)
         {
-            return new IOCommand(pi, CommandName.PongSent, Pong(pi));
+            return new IOCommand(pi, Pong(pi));
         }
 
         private static IOCommand EchoPayload(TextMessage tm)
         {
-            return new IOCommand(tm, CommandName.PayloadEcho, Echo(tm));
+            return new IOCommand(tm, Echo(tm));
         }
 
         private static IOCommand EchoPayload(BinaryMessage bm)
         {
-            return new IOCommand(bm, CommandName.PayloadEcho, Echo(bm));
+            return new IOCommand(bm, Echo(bm));
         }
 
         private static IOCommand RejectOpenHandshake(BadUpgradeRequest br)
         {
-            return new IOCommand(br, CommandName.UnSuccessfulOpeningHandshake, DoNotUpgrade(br));
+            return new IOCommand(br, DoNotUpgrade(br));
         }
 
         public static IOCommand AcceptOpenHandshake(UpgradeRequest r)
         {
-            return new IOCommand(r, CommandName.SuccessfulOpeningHandshake, Upgrade(r));
+            return new IOCommand(r, Upgrade(r));
         }
 
         public static Func<IOCommand, IObservable<ProcessResult>> Transmit(
@@ -128,7 +126,5 @@ namespace WSr.Deciding
                     .Select(Transmit(output, s))
                     .Concat());
         }
-
-        
     }
 }

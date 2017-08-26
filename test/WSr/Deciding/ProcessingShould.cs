@@ -46,12 +46,12 @@ namespace WSr.Tests.Deciding
             return mock.Object;
         }
 
-        public ICommand Print(string o, string s) => 
-            new IOCommand(withOrigin(o), CommandName.PayloadEcho, Encoding.UTF8.GetBytes(s));
+        public ICommand Print(string o, string s) =>
+            new IOCommand(withOrigin(o), Encoding.UTF8.GetBytes(s));
 
         public ICommand End(string o) => new EOF(o);
 
-        public DateTimeOffset Ticks(long t) => DateTimeOffset.MinValue.AddTicks(t); 
+        public DateTimeOffset Ticks(long t) => DateTimeOffset.MinValue.AddTicks(t);
 
         [TestMethod]
         public void EchoProcessSendsSuccessfulOpenHandshake()
@@ -91,21 +91,21 @@ namespace WSr.Tests.Deciding
             Assert.IsTrue(actualWrites.Count() == 3);
         }
 
-        public static Dictionary<string, string> WSKey => 
-            new Dictionary<string, string> {["Sec-WebSocket-Key"] = "key"};
+        public static Dictionary<string, string> WSKey =>
+            new Dictionary<string, string> { ["Sec-WebSocket-Key"] = "key" };
         public static IMessage UpgradeRequest => new UpgradeRequest(Origin, "", WSKey);
 
         public static IMessage Invalid => new InvalidFrame(Origin, "");
-        public static IEnumerable<IMessage> Messages  {get; } = new []
+        public static IEnumerable<IMessage> Messages { get; } = new[]
         {
             UpgradeRequest,
             Invalid
         };
 
-        public static ICommand WriteMe(byte[] bs) => 
-            new IOCommand(withOrigin(Origin), CommandName.CloseHandshakeFinished, bs);
+        public static ICommand WriteMe(byte[] bs) =>
+            new IOCommand(withOrigin(Origin), bs);
 
-        public static IEnumerable<IEnumerable<ICommand>> Commands{get;} = new[]
+        public static IEnumerable<IEnumerable<ICommand>> Commands { get; } = new[]
         {
             new [] {WriteMe(new byte[] { 0x02, 0x42})},
             new [] {WriteMe(new byte[0]), new EOF(Origin)}
@@ -122,13 +122,13 @@ namespace WSr.Tests.Deciding
             var messages = Observable.Return(Messages.ElementAt(caseno), run);
             var expected = Commands.ElementAt(caseno).ToObservable(run);
             var record = run.CreateObserver<bool>();
-            
+
             var actual = expected
                 .SequenceEqual(messages.FromMessage(run))
                 .Subscribe(record);
 
             run.Start();
-            
+
             var result = record.Messages
                 .Where(x => x.Value.Kind == NotificationKind.OnNext)
                 .Select(x => x.Value.Value)

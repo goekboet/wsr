@@ -4,34 +4,20 @@ using WSr.Messaging;
 
 namespace WSr.Deciding
 {
-    public enum CommandName
-    {
-        UnSuccessfulOpeningHandshake,
-        SuccessfulOpeningHandshake,
-        PayloadEcho,
-        CloseHandshakeFinished,
-        PongSent,
-        CloseHandshakeStarted
-    }
-
     public interface ICommand
     {
-        string Origin { get; } 
+        string Origin { get; }
     }
 
     public class IOCommand : ICommand, IEquatable<ICommand>
     {
         public IOCommand(
             IMessage message,
-            CommandName name, 
             IEnumerable<byte> outbound)
         {
             OutBound = outbound;
             Message = message;
-            Name = name;
         }
-
-        public CommandName Name { get; }
 
         public IMessage Message { get; }
         public IEnumerable<byte> OutBound { get; }
