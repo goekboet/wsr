@@ -26,6 +26,7 @@ namespace WSr.Listening
 
         public virtual void Dispose()
         {
+            Console.WriteLine("Stopping Listener.");
             _listeningSocket.Stop();
         }
 

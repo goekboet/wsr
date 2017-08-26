@@ -24,3 +24,4 @@ artifacts/
 !.vscode/extensions.json
 
 src/App.WSr/test/
+aliases
