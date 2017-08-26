@@ -1,5 +1,5 @@
 using System;
-using WSr.Deciding;
+using WSr.Messaging;
 
 namespace WSr.Protocol
 {

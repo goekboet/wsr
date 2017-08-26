@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using WSr.Messaging;
 
-namespace WSr.Deciding
+namespace WSr.Messaging
 {
     public interface ICommand
     {

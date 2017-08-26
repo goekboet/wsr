@@ -5,7 +5,7 @@ using System.Reactive.Linq;
 using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using WSr.Deciding;
+using WSr.Messaging;
 using WSr.Serving;
 
 using static WSr.Listening.Functions;

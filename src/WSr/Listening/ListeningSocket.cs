@@ -10,7 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive;
 using WSr.Serving;
-using WSr.Deciding;
+using WSr.Messaging;
 
 namespace WSr.Listening
 {

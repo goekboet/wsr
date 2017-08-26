@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using WSr.Deciding;
 using WSr.Messaging;
 using WSr.Protocol;
 using WSr.Framing;
 
 using static WSr.Messaging.Functions;
 using static WSr.Handshake.Functions;
-using static WSr.Deciding.Functions;
+
 using System.Reactive;
 
 namespace WSr.Serving

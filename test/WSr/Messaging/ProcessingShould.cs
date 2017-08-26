@@ -13,12 +13,9 @@ using WSr.Protocol;
 using WSr.Serving;
 
 using static WSr.Tests.Functions.Debug;
-using static WSr.Deciding.Functions;
-using WSr.Deciding;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace WSr.Tests.Deciding
+namespace WSr.Tests.Messaging
 {
     [TestClass]
     public class ObservableExtensionsShould : ReactiveTest
@@ -54,7 +51,7 @@ namespace WSr.Tests.Deciding
         public DateTimeOffset Ticks(long t) => DateTimeOffset.MinValue.AddTicks(t);
 
         [TestMethod]
-        public void EchoProcessSendsSuccessfulOpenHandshake()
+        public void MapHandshakeRequestToSuccessful()
         {
             var run = new TestScheduler();
 
@@ -83,11 +80,7 @@ namespace WSr.Tests.Deciding
                 disposed: 1000
             );
 
-            ReactiveAssert.AreElementsEqual(
-               expected: expected.Messages,
-               actual: actual.Messages,
-               message: debugElementsEqual(expected.Messages, actual.Messages));
-
+            AssertAsExpected(expected, actual);
             Assert.IsTrue(actualWrites.Count() == 3);
         }
 

@@ -2,7 +2,6 @@ using System;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using WSr.Deciding;
 using WSr.Messaging;
 using WSr.Protocol;
 using WSr.Serving;

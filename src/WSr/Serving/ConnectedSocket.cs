@@ -12,7 +12,7 @@ using System.Reactive;
 using System.Collections.Generic;
 using System.Threading;
 using System.Reactive.Subjects;
-using WSr.Deciding;
+using WSr.Messaging;
 
 namespace WSr.Serving
 {
