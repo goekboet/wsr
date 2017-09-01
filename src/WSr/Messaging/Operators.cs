@@ -17,10 +17,11 @@ namespace WSr.Messaging
     public static class Operators
     {
         public static IObservable<IMessage> ToMessage(
-            this IObservable<Frame> frames)
+            this IObservable<Frame> frames,
+            string origin)
         {
             return frames
-                .Select(Functions.ToMessage);
+                .Select(Functions.ToMessage(origin));
         }
 
         public static IObservable<ICommand> FromMessage(
@@ -49,19 +50,10 @@ namespace WSr.Messaging
                     case Close cl:
                         return Observable.Return(AcceptCloseHandshake(cl))
                             .Concat(EndTransmission(cl.Origin, scheduler));
-                    case InvalidFrame i:
-                        return Observable.Return(ProtocolError(i), scheduler)
-                            .Concat(EndTransmission(i.Origin, scheduler));
                     default:
                         throw new ArgumentException($"{m.GetType().Name} not mapped to result. {m.ToString()}");
                 }
             }).Concat();
-        }
-
-        public static ICommand ProtocolError(
-            InvalidFrame f)
-        {
-            return new IOCommand(f, ProtocolErrorClose);
         }
 
         private static IObservable<ICommand> EndTransmission(
@@ -73,7 +65,7 @@ namespace WSr.Messaging
 
         private static IOCommand AcceptCloseHandshake(Close cl)
         {
-            return new IOCommand(cl, NormalClose);
+            return new IOCommand(cl, Echo(cl));
         }
 
         private static IOCommand SendPong(Ping pi)

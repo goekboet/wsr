@@ -79,8 +79,8 @@ namespace WSr.Socketing
                     .Take(1);
 
                 var frames = bytes
-                    .ToFrames(socket.Address, scheduler)
-                    .ToMessage();
+                    .ToFrames(scheduler)
+                    .ToMessage(socket.Address);
 
                 return handshake.Concat(frames);
             };

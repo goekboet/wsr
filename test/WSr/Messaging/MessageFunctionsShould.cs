@@ -8,6 +8,7 @@ using WSr.Messaging;
 
 using static WSr.Tests.Functions.FrameCreator;
 using static WSr.Messaging.Functions;
+using System.Text;
 
 namespace WSr.Tests.Messaging
 {
@@ -16,51 +17,50 @@ namespace WSr.Tests.Messaging
     {
         private static string Origin => "o";
 
-        [TestMethod]
-        public void TransformRawFrameToTextMessage()
-        {
-            var frame = new Defragmented(SpecExamples.SingleFrameMaskedTextFrame(Origin));
-            var expected = new TextMessage(Origin, frame.OpCode, frame.Payload);
+        private string FromBytes(IEnumerable<byte> bs) => Encoding.UTF8.GetString(bs.ToArray());
 
-            var result = ToMessage(frame);
-            
-            Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
+        private Dictionary<string, (Frame input, Message expected)> testcases
+          = new Dictionary<string, (Frame input, Message expected)>()
+          {
+              ["BadFrame"] = (
+                  input: Bad.ProtocolError("test"),
+                  expected: new Close(Origin, 1002, "test")),
+              ["Textparse"] = (
+                  input: new TextParse(new byte[] { 0x81, 0x00 }, "one"),
+                  expected: new TextMessage(Origin, "one")),
+              ["CloseCodeAndReason"] = (
+                  input: new Parse(new byte[] { 0x88, 0x00 }, new byte[] { 0x03, 0xe8, 0x36, 0x36, 0x36 }),
+                  expected: new Close(Origin, 1000, "")),
+              ["CloseCodeAndNoReason"] = (
+                  input: new Parse(new byte[] { 0x88, 0x00 }, new byte[] { 0x03, 0xe8 }),
+                  expected: new Close(Origin, 1000, string.Empty)),
+              ["CloseNoCodeAndNoReason"] = (
+                  input: new Parse(new byte[] { 0x88, 0x00 }, new byte[0]),
+                  expected: new Close(Origin, 1000, string.Empty))
+          };
+
+        [DataRow("BadFrame")]
+        [DataRow("Textparse")]
+        [DataRow("CloseCodeAndReason")]
+        [DataRow("CloseCodeAndNoReason")]
+        [DataRow("CloseNoCodeAndNoReason")]
+        [TestMethod]
+        public void TransformRawFrameToCloseMessage(string label)
+        {
+            var t = testcases[label];
+
+            var result = new[] { t.input }.Select(ToMessage(Origin)).Single();
+
+            Assert.IsTrue(result.Equals(t.expected), $"\nExpected: {t.expected}\nActual: {result}");
         }
 
         [TestMethod]
-        public void TransformRawFrameToCloseMessage()
+        public void MakeCorrectCloseByteSequence()
         {
+            var message = new Close(Origin, 1002, "close");
+            var expected = new byte[] {0x03, 0xea, 0x63, 0x6c, 0x6f, 0x73, 0x65};
 
-            var frame = new Defragmented(SpecExamples.MaskedGoingAwayCloseFrame(Origin));
-            var expected = new Close(Origin, frame.Payload);
-
-            var result = ToMessage(frame);
-            
-            Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
-        }
-
-        [TestMethod]
-        public void TransformInvalidFrame()
-        {
-            var errors = new [] { "problem" };
-
-            var frame = new BadFrame(Origin, "test");
-            var expected = new InvalidFrame(Origin, "test");
-
-            var result = ToMessage(frame);
-
-            Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
-        }
-
-        [TestMethod]
-        public void ParsedFrameMapsToInvalid()
-        {
-            var frame = SpecExamples.SingleFrameMaskedTextFrame(Origin);
-            var expected = new InvalidFrame(string.Empty, "Parsererror");
-
-            var result = ToMessage(frame);
-
-            Assert.IsTrue(result.Equals(expected), $"\nExpected: {expected}\nActual: {result}");
+            Assert.IsTrue(expected.SequenceEqual(message.Buffer));
         }
 
         string show(byte[] bytes) => new string(bytes.Select(Convert.ToChar).ToArray());
@@ -68,10 +68,10 @@ namespace WSr.Tests.Messaging
         [TestMethod]
         public void EchoTextMessageOfLengthLessThan126()
         {
-            var expected = new byte[] {0x82, 0x04, 0x74, 0x65, 0x73, 0x74};
+            var expected = new byte[] { 0x82, 0x04, 0x74, 0x65, 0x73, 0x74 };
 
             var message = new BinaryMessage(Origin, expected.Skip(2));
-            
+
             var actual = Echo(message);
 
             Assert.IsTrue(expected.SequenceEqual(actual));
@@ -80,10 +80,10 @@ namespace WSr.Tests.Messaging
         [TestMethod]
         public void EchoBinaryMessageOfLengthLessThan126()
         {
-            var expected = new byte[] {0x81, 0x04, 0x74, 0x65, 0x73, 0x74};
+            var expected = new byte[] { 0x81, 0x04, 0x74, 0x65, 0x73, 0x74 };
 
-            var message = new TextMessage(Origin, (OpCode)0x1, expected.Skip(2));
-            
+            var message = new TextMessage(Origin, FromBytes(expected.Skip(2)));
+
             var actual = Echo(message);
 
             Assert.IsTrue(expected.SequenceEqual(actual));
@@ -93,10 +93,10 @@ namespace WSr.Tests.Messaging
         public void EchoTextMessageOfLength126()
         {
             var text = new string(Enumerable.Repeat('x', 126).ToArray());
-            var expected = new byte[] {0x81, 0x7e, 0x00, 0x7e}
+            var expected = new byte[] { 0x81, 0x7e, 0x00, 0x7e }
                 .Concat(Enumerable.Repeat((byte)0x78, 126));
 
-            var message = new TextMessage(Origin, (OpCode)0x1, expected.Skip(4));
+            var message = new TextMessage(Origin, FromBytes(expected.Skip(4)));
 
 
             var actual = Echo(message);
@@ -108,10 +108,10 @@ namespace WSr.Tests.Messaging
         public void EchoTextMessageOfLengthMoreThan65535()
         {
             var text = new string(Enumerable.Repeat('x', 65536).ToArray());
-            var expected = new byte[] {0x81, 0x7f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00}
+            var expected = new byte[] { 0x81, 0x7f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00 }
                 .Concat(Enumerable.Repeat((byte)0x78, 65536));
 
-            var message = new TextMessage(Origin, (OpCode)0x1, expected.Skip(10));
+            var message = new TextMessage(Origin, FromBytes(expected.Skip(10)));
             var actual = Echo(message);
 
             Assert.IsTrue(expected.SequenceEqual(actual));

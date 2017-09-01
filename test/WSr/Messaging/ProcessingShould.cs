@@ -87,11 +87,9 @@ namespace WSr.Tests.Messaging
             new Dictionary<string, string> { ["Sec-WebSocket-Key"] = "key" };
         public static IMessage UpgradeRequest => new UpgradeRequest(Origin, "", WSKey);
 
-        public static IMessage Invalid => new InvalidFrame(Origin, "");
         public static IEnumerable<IMessage> Messages { get; } = new[]
         {
             UpgradeRequest,
-            Invalid
         };
 
         public static ICommand WriteMe(byte[] bs) =>
@@ -100,12 +98,10 @@ namespace WSr.Tests.Messaging
         public static IEnumerable<IEnumerable<ICommand>> Commands { get; } = new[]
         {
             new [] {WriteMe(new byte[] { 0x02, 0x42})},
-            new [] {WriteMe(new byte[0]), new EOF(Origin)}
         };
 
         //[Ignore]
         [DataRow(0)]
-        [DataRow(1)]
         [TestMethod]
         public void MapMessagesToWrites(int caseno)
         {

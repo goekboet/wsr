@@ -46,15 +46,36 @@ namespace WSr.Tests.Functions
                 message: debugElementsEqual(expected.Messages, actual.Messages)
             );
         }
+
+        public static ITestableObservable<T> EvenlySpaced<T>(
+            this TestScheduler s, 
+            long start, 
+            int distance, 
+            IEnumerable<T> es) =>
+            TestStream(s, es.Select((x, i) => (start + (i * distance), x)));
+
+        public static ITestableObservable<T> TestStream<T>(
+            this TestScheduler s, 
+            IEnumerable<(long t, T v)> es)
+        {
+            return s.CreateColdObservable<T>(
+                es
+                .Select(e => ReactiveTest.OnNext(e.t, e.v))
+                .Concat(new [] {ReactiveTest.OnCompleted<T>(es.Max(x => x.t))})
+                .ToArray());
+        }
     }
 
     public static class FrameCreator
     {
-        public static ParsedFrame MakeFrame(string origin, IEnumerable<byte> bitfield) =>
-            MakeFrameWithPayload(origin, bitfield, string.Empty);
+        public static Parse MakeParse(IEnumerable<byte> bitfield)
+        {
+            return new Parse(bitfield, new byte[0]);
+        }
+        public static TextParse MakeFrame(IEnumerable<byte> bitfield) =>
+            MakeTextParse(bitfield, string.Empty);
 
-        public static ParsedFrame MakeFrameWithPayload(string origin, IEnumerable<byte> bitfield, string Payload) =>
-            new ParsedFrame(origin, bitfield.ToArray(), new byte[0], new byte[0], StringEncoding.BytesFromUTF8(Payload));
-
+        public static TextParse MakeTextParse(IEnumerable<byte> bitfield, string Payload) =>
+            new TextParse(bitfield, Payload);
     }
 }

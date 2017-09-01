@@ -11,67 +11,82 @@ namespace WSr.Messaging
 {
     public static class Functions
     {
-        public static Func<Frame, IMessage> ToMessage =
+        public static Func<Frame, IMessage> ToMessage(string origin) =>
             frame =>
         {
             switch (frame)
             {
-                case BadFrame b:
-                    return ToInvalidFrameMessage(b);
-                case Defragmented f:
-                    switch (f.OpCode)
+                case Bad b:
+                    return ToCloseMessage(origin, b);
+                case TextParse t:
+                    return ToTextMessage(origin, t);
+                case Parse p:
+                    switch (p.GetOpCode())
                     {
                         case OpCode.Ping:
-                            return ToPingMessage(f);
+                            return ToPingMessage(origin, p);
                         case OpCode.Pong:
-                            return ToPongMessage(f);
-                        case OpCode.Text:
-                            return ToTextMessage(f);
+                            return ToPongMessage(origin, p);
                         case OpCode.Close:
-                            return ToCloseMessage(f);
+                            return ToCloseMessage(origin, p);
                         case OpCode.Binary:
-                            return ToBinaryMessage(f);
+                            return ToBinaryMessage(origin, p);
                         default:
-                            return ToInvalidFrameMessage(
-                                BadFrame.MessageMapperError($"OpCode {f.OpCode} has no defined message"));
+                            return ToCloseMessage(origin, 1011, "");
                     }
                 default:
-                    return ToInvalidFrameMessage(BadFrame.ParserError);
+                    return ToCloseMessage(origin, 1011, "");
             }
         };
 
-        private static IMessage ToInvalidFrameMessage(BadFrame f)
-        {
-            return new InvalidFrame(f.Origin, f.Reason);
-        }
-
         private static IMessage ToBinaryMessage(
-            Defragmented frame)
+            string origin,
+            Parse frame)
         {
-            return new BinaryMessage(frame.Origin, frame.Payload);
+            return new BinaryMessage(origin, frame.Payload);
         }
 
         public static IMessage ToTextMessage(
-            Defragmented frame)
+            string origin,
+            TextParse t)
         {
-            return new TextMessage(frame.Origin, frame.OpCode, frame.Payload);
+            return new TextMessage(origin, t.Payload);
         }
 
         public static IMessage ToCloseMessage(
-            Defragmented frame)
+            string origin,
+            Bad b)
         {
-            return new Close(frame.Origin, frame.Payload);
+            return new Close(origin, b.Code, b.Reason);
         }
 
-        public static IMessage ToPingMessage(
-            Defragmented frame)
+        private static ushort CloseCode(IEnumerable<byte> bs) => bs.Count() > 1 
+            ? FromNetwork2Bytes(bs.Take(2))
+            : (ushort)1000;
+
+        public static IMessage ToCloseMessage(
+            string origin,
+            Parse p)
         {
-            return new Ping(frame.Origin, frame.Payload);
+            return new Close(origin, CloseCode(p.Payload), "");
+        }
+
+        public static Close ToCloseMessage(
+            string origin,
+            ushort code,
+            string reason) => new Close(origin, code, reason);
+
+        public static IMessage ToPingMessage(
+            string origin,
+            Parse p)
+        {
+            return new Ping(origin, p.Payload);
         }
         public static IMessage ToPongMessage(
-            Defragmented frame)
+            string origin,
+            Parse p)
         {
-            return new Pong(frame.Origin, frame.Payload);
+            return new Pong(origin, p.Payload);
         }
 
         public static byte[] NormalClose { get; } = new byte[] { 0x88, 0x02, 0x03, 0xe8 };
@@ -96,9 +111,9 @@ namespace WSr.Messaging
             return Convert.ToBase64String(hash(requestKey + ws));
         }
 
-        public static byte[] Echo(FrameMessage message)
+        public static byte[] Echo(ITransmits message)
         {
-            var payload = message.FramePayload.ToArray();
+            var payload = message.Buffer;
 
             byte secondByte = 0x00;
             IEnumerable<byte> lengthbytes = null;
@@ -142,14 +157,14 @@ namespace WSr.Messaging
 
         public static byte[] Ping(Pong pong) =>
             PingHead
-                .Concat(new[] { (byte)pong.FramePayload.Count() })
-                .Concat(pong.FramePayload)
+                .Concat(new[] { (byte)pong.Payload.Count() })
+                .Concat(pong.Payload)
                 .ToArray();
 
         public static byte[] Pong(Ping ping) =>
             PongHead
-                .Concat(new[] { (byte)ping.FramePayload.Count() })
-                .Concat(ping.FramePayload)
+                .Concat(new[] { (byte)ping.Payload.Count() })
+                .Concat(ping.Payload)
                 .ToArray();
     }
 }

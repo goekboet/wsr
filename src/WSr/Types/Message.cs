@@ -13,154 +13,169 @@ namespace WSr
     {
         string Origin { get; }
     }
-    
-    public abstract class FrameMessage : IMessage, IEquatable<FrameMessage>
+
+    public abstract class Message : IMessage
     {
-        public FrameMessage(
-            string origin,
-            OpCode opCode, 
-            IEnumerable<byte> payload)
+        public Message(
+            string origin)
         {
             Origin = origin;
-            OpCode = opCode;
-            FramePayload = payload;
         }
 
-        public IEnumerable<byte> FramePayload { get; }
-        public OpCode OpCode { get; } 
         public string Origin { get; }
-
-        public bool Equals(FrameMessage other)
-        {
-            if (other == null) return false;
-
-            return FramePayload.SequenceEqual(other.FramePayload) &&
-                Origin.Equals(other.Origin) &&
-                OpCode.Equals(other.OpCode);
-        }
-
-        public override bool Equals(object obj) => Equals(obj as FrameMessage);
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = 17;
-
-                hash = hash * 31 * Origin.GetHashCode();
-                hash = hash * 31 * OpCode.GetHashCode();
-                hash = hash * 31 * BitConverter.ToInt32(Pad(FramePayload, 4).ToArray(), 0);
-
-                return hash;
-            }
-        }
     }
 
-    public class TextMessage : FrameMessage
+    public interface ITransmits
+    {
+        OpCode OpCode {get;}
+        byte[] Buffer {  get; }
+    }
+
+    public class TextMessage : Message, ITransmits
     {
         public TextMessage(
             string origin,
-            OpCode opCode, 
-            IEnumerable<byte> payload) : base(origin, opCode, payload)
+            string text) : base(origin)
         {
+            Text = text;
         }
 
-        public string Text => Encoding.UTF8.GetString(FramePayload.ToArray());
+        public string Text { get; }
 
-        public override string ToString()
-        {
-            return string.Join(Environment.NewLine, new[] 
-            {
-                "Textmessage", 
-                $"Origin: {Origin}", 
-                $"Text: {new string(Text.Take(10).ToArray())} ({Text.Length})"
-            });
-        }
+        public byte[] Buffer => Encoding.UTF8.GetBytes(Text);
+        public OpCode OpCode => OpCode.Text;
+
+        public override string ToString() => 
+        $@"
+        Textmessage
+        Origin: {Origin}
+        Text: {new string(Text.Take(10).ToArray())} ({Text.Length})
+        ";
+        
+
+        public override bool Equals(object obj) => obj is TextMessage m ? Text.Equals(m.Text) : false;
+
+        public override int GetHashCode() => Text.GetHashCode();
     }
 
-    public class BinaryMessage : FrameMessage
+    public class BinaryMessage : Message, ITransmits
     {
         public BinaryMessage(
             string origin,
-            IEnumerable<byte> payload) : base(origin, OpCode.Binary, payload)
+            IEnumerable<byte> payload) : base(origin)
         {
+            Payload = payload;
         }
 
-        public IEnumerable<byte> Payload => FramePayload;
+        public IEnumerable<byte> Payload { get; }
 
-        public override string ToString()
-        {
-            return string.Join(Environment.NewLine, new[] 
-            {
-                "BinaryMessage", 
-                $"Origin: {Origin}", 
-                $"Text: {Show(Payload)})"
-            });
-        }
+        public byte[] Buffer => Payload.ToArray();
+
+        public OpCode OpCode => OpCode.Binary;
+
+        public override string ToString() =>
+        $@"
+        Binarymessage
+        Origin: {Origin}
+        Text: {Show(Payload)} ({Payload.Count()})
+        ";
+
+        public override bool Equals(object obj) => obj is BinaryMessage b 
+            && Payload.SequenceEqual(b.Payload) && Origin.Equals(b.Origin);
+
+        public override int GetHashCode() => Origin.GetHashCode() + Payload.Count();
     }
 
-    public class Close : FrameMessage
+    public class Close : Message, ITransmits
     {
         public Close(
             string origin,
-            IEnumerable<byte> payload) : base(origin, OpCode.Close, payload)
+            uint code,
+            string reason) : base(origin)
         {
+            Code = (ushort)code;
+            Reason = reason;
         }
 
-        private IEnumerable<byte> CodeBytes => FramePayload.Take(2);
-        private IEnumerable<byte> ReasonBytes => FramePayload.Skip(2);
+        public ushort Code {get;}
+        public string Reason {get;}
 
-        public ushort Code => CodeBytes.Count() == 2 ? FromNetwork2Bytes(CodeBytes) : (ushort)0;
-        public string Reason => Encoding.UTF8.GetString(ReasonBytes.ToArray());
+        public byte[] Buffer => ToNetwork2Bytes(Code)
+            .Concat(Encoding.UTF8.GetBytes(Reason)).ToArray();
 
-        public override string ToString()
-        {
-            return string.Join(Environment.NewLine, new[] 
-            {
-                "Closemessage", 
-                $"Origin: {Origin}", 
-                $"Code: {Code}",
-                $"Reason: {Reason}"
-            });
-        }
+        public OpCode OpCode => OpCode.Close;
+
+        public override string ToString() =>
+        $@"
+        CloseMessage
+        Origin: {Origin}
+        Code: {Code}
+        Reason: {Reason} 
+        ";
+
+        public override bool Equals(object obj) => obj is Close c 
+            && Origin.Equals(c.Origin) 
+            && Code.Equals(c.Code) 
+            && Reason.Equals(c.Reason);
+
+        public override int GetHashCode() => Origin.GetHashCode() + Code + Reason.GetHashCode();
     }
 
-    public class Ping : FrameMessage
+    public class Ping : Message, ITransmits
     {
         public Ping(
             string origin,
-            IEnumerable<byte> payload) : base(origin, OpCode.Ping, payload)
+            IEnumerable<byte> payload) : base(origin)
         {
+            Payload = payload;
         }
 
-        public override string ToString()
-        {
-            return string.Join(Environment.NewLine, new[] 
-            {
-                "Pingmessage", 
-                $"Origin: {Origin}", 
-                $"Payload: {Show(FramePayload)}",
-            });
-        }
+        public IEnumerable<byte> Payload { get; }
+
+        public byte[] Buffer => Payload.ToArray();
+        public OpCode OpCode => OpCode.Ping;
+
+        public override string ToString() =>
+        $@"
+        Ping
+        Origin: {Origin}
+        Payload: {Show(Payload)}
+        ";
+
+        public override bool Equals(object obj) => obj is Ping p
+            && Origin.Equals(p.Origin)
+            && Payload.SequenceEqual(p.Payload);
+
+        public override int GetHashCode() => Origin.GetHashCode() + Payload.Count();
     }
 
-    public class Pong : FrameMessage
+    public class Pong : Message, ITransmits
     {
         public Pong(
             string origin,
-            IEnumerable<byte> payload) : base(origin, OpCode.Pong, payload)
+            IEnumerable<byte> payload) : base(origin)
         {
+            Payload = payload;
         }
 
-        public override string ToString()
-        {
-            return string.Join(Environment.NewLine, new[] 
-            {
-                "Pongmessage", 
-                $"Origin: {Origin}", 
-                $"Payload: {Show(FramePayload)}",
-            });
-        }
+        public IEnumerable<byte> Payload { get; }
+
+        public byte[] Buffer => Payload.ToArray();
+
+        public OpCode OpCode => OpCode.Pong;
+
+        public override string ToString() =>
+        $@"
+        Pong
+        Origin: {Origin}
+        Payload: {Show(Payload)}
+        ";
+
+        public override bool Equals(object obj) => obj is Ping p
+            && Origin.Equals(p.Origin)
+            && Payload.SequenceEqual(p.Payload);
+
+        public override int GetHashCode() => Origin.GetHashCode() + Payload.Count();
     }
 
     public class UpgradeRequest : IMessage, IEquatable<UpgradeRequest>
@@ -210,10 +225,10 @@ namespace WSr
 
         public override string ToString()
         {
-            return string.Join(Environment.NewLine, new[] 
+            return string.Join(Environment.NewLine, new[]
             {
-                "UpgradeRequest", 
-                $"Origin: {Origin}", 
+                "UpgradeRequest",
+                $"Origin: {Origin}",
                 $"Url: {Url}",
                 $"RequestKey: {RequestKey}"
             });
@@ -231,7 +246,7 @@ namespace WSr
     {
         public BadUpgradeRequest(
             string origin,
-            UpgradeFail reason) 
+            UpgradeFail reason)
         {
             Origin = origin;
             Reason = reason;
@@ -263,65 +278,15 @@ namespace WSr
                 return hash;
             }
         }
- 
+
         public override string ToString()
         {
-            return string.Join(Environment.NewLine, new[] 
+            return string.Join(Environment.NewLine, new[]
             {
-                "UpgradeFail", 
-                $"Origin: {Origin}", 
+                "UpgradeFail",
+                $"Origin: {Origin}",
                 $"Reason: {Reason}"
             });
         }
     }
-
-    public class InvalidFrame : IMessage, IEquatable<InvalidFrame>
-    {
-        public InvalidFrame(
-            string origin,
-            string reason)
-        {
-            Origin = origin;  
-            Reason = reason;
-        }
-
-        public string Origin {get; }
-
-        public string Reason { get; }
-
-        public override bool Equals(object obj) => Equals(obj as InvalidFrame);
-
-        public bool Equals(InvalidFrame other)
-        {
-            if (other == null) return false;
-
-            return Origin.Equals(other.Origin) &&
-                Reason.Count().Equals(other.Reason.Count());
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = 17;
-
-                hash = hash * 31 * Origin.GetHashCode();
-                hash = hash * 31 * Reason.Count();
-
-                return hash;
-            }
-        }
-
-        public override string ToString()
-        {
-            return string.Join(Environment.NewLine, new[] 
-            {
-                "InvalidFrame", 
-                $"Origin: {Origin}", 
-                $"Errors: {Reason}"
-            });
-        }
-    }
-
-
 }

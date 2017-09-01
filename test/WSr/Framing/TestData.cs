@@ -19,23 +19,4 @@ namespace WSr.Tests
         internal static IEnumerable<byte> L65536Masked { get; } = new byte[] { 0x81, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x06, 0xa2, 0xa0, 0x74 }.Concat(Forever<byte>(0x66).Take(0x010000));
         internal static IEnumerable<byte> L65536UMasked { get; } = new byte[] { 0x81, 0x7f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00 }.Concat(Forever<byte>(0x66).Take(0x010000));
     }
-
-    public static class SpecExamples
-    {
-        internal static ParsedFrame SingleFrameMaskedTextFrame(string origin) => new ParsedFrame(
-                origin: origin,
-                bitfield: new byte[] { 0x81, 0x85 },
-                length: new byte[0],
-                mask: new byte[] { 0x37, 0xfa, 0x21, 0x3d },
-                payload: new byte[] { 0x7f, 0x9f, 0x4d, 0x51, 0x58 }
-        );
-
-        internal static ParsedFrame MaskedGoingAwayCloseFrame(string origin) => new ParsedFrame(
-                origin: origin,
-                bitfield: new byte[] { 0x88, 0x8c },
-                length: new byte[0],
-                mask: new byte[] { 0x05, 0xbc, 0x3a, 0x6c },
-                payload: new byte[] { 0x06, 0x55, 0x7d, 0x03, 0x6c, 0xd2, 0x5d, 0x4c, 0x44, 0xcb, 0x5b, 0x15 }
-        );
-    }
 }

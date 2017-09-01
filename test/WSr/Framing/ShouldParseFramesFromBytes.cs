@@ -18,7 +18,7 @@ namespace WSr.Tests.Framing
     public class ParseBytesToFrames : ReactiveTest
     {
         private static string Origin { get; } = "o";
-        private string show((string origin, bool masked, int bitfieldLength, IEnumerable<byte> frame) parse) => $"{parse.bitfieldLength} {(parse.masked ? 'm' : '-')} {parse.frame.Count()}";
+        private string show((bool masked, int bitfieldLength, IEnumerable<byte> frame) parse) => $"{parse.bitfieldLength} {(parse.masked ? 'm' : '-')} {parse.frame.Count()}";
 
         private static IEnumerable<byte>[] bytes = new[]
         {
@@ -69,7 +69,7 @@ namespace WSr.Tests.Framing
             );
 
             var actual = run.Start(
-                create: () => byteStream.ChopToFrames(Origin).Select(show),
+                create: () => byteStream.Parse().Select(show),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000000
@@ -94,7 +94,7 @@ namespace WSr.Tests.Framing
                 subscribed: 0,
                 disposed: 100
             );
-            
+
             var expected = run.CreateColdObservable(
                 OnNext(13, "one, two"),
                 OnNext(28, "three, four"),
@@ -112,43 +112,42 @@ namespace WSr.Tests.Framing
             Func<IEnumerable<int>, bool> errors = i => throw new NotImplementedException();
 
             var actual = run.Start(
-                create: () => es.Chop(new[]{5}, errors),
+                create: () => es.Chop(new[] { 5 }, errors),
                 created: 0,
                 subscribed: 0,
                 disposed: 100
             );
-            
+
             Assert.IsTrue(actual.Messages.Single().Value.Kind.Equals(NotificationKind.OnError));
         }
 
-        public static (string, bool, int, IEnumerable<byte>)[] parses =
+        public static (bool, int, IEnumerable<byte>)[] parses =
         {
-            (Origin, false, 0, L0UMasked),
-            (Origin,true, 0, L0Masked),
-            (Origin,false, 28, L28UMasked),
-            (Origin,true, 28, L28Masked),
-            (Origin,false, 2, L2UMasked),
-            (Origin,false, 126, L128UMasked),
-            (Origin,true, 126, L128Masked),
-            (Origin,false, 127, L65536UMasked),
-            (Origin,true, 127, L65536Masked)
+            ( false, 0, L0UMasked),
+            (true, 0, L0Masked),
+            (false, 28, L28UMasked),
+            (true, 28, L28Masked),
+            (false, 2, L2UMasked),
+            (false, 126, L128UMasked),
+            (true, 126, L128Masked),
+            (false, 127, L65536UMasked),
+            (true, 127, L65536Masked)
         };
 
-        public static (int, int, int, int)[] frames =
+        public static int[] frames =
         {
-            (2, 0, 0, 0),
-            (2, 0, 4, 0),
-            (2, 0, 0, 28),
-            (2, 0, 4, 28),
-            (2, 0, 0, 2),
-            (2, 2, 0, 128),
-            (2, 2, 4, 128),
-            (2, 8, 0, 65536),
-            (2, 8, 4, 65536)
+            0,
+            0,
+            28,
+            28,
+            2,
+            128,
+            128,
+            65536,
+            65536
         };
 
-        public Func<ParsedFrame, (int, int, int, int)> byteCounts = f =>
-            (f.Bitfield.Count(), f.Length.Count(), f.Mask.Count(), f.Payload.Count());
+        public Func<Parse, int> byteCounts = p => p.Payload.Count();
 
         [TestMethod]
         public void MakeCorrectFrames()

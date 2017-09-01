@@ -5,14 +5,15 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
+using static WSr.Framing.Functions;
+using static WSr.ListConstruction;
+using static WSr.IntegersFromByteConverter;
+
 namespace WSr.Framing
 {
     public static class Functions
     {
-        public static int BitFieldLength(IEnumerable<byte> bitfield)
-        {
-            return bitfield.Skip(1).Select(b => b & 0x7f).Take(1).Single();
-        }
+        
 
         public static bool IsMasked(IEnumerable<byte> bitfield)
         {
@@ -30,8 +31,13 @@ namespace WSr.Framing
             return BitConverter.ToUInt64(bytes.ToArray(), 0);
         }
 
-        public static ParsedFrame ToFrame(
-            (string origin, bool masked, int bitfieldLength, IEnumerable<byte> frame) parse)
+        public static IEnumerable<byte> UnMask(IEnumerable<byte> mask, IEnumerable<byte> payload)
+        {
+            return payload.Zip(Forever(mask).SelectMany(x => x), (p, m) => (byte)(p ^ m));
+        }
+        
+        public static Parse ToFrame(
+            (bool masked, int bitfieldLength, IEnumerable<byte> frame) parse)
         {
             var bitfield = parse.frame.Take(2);
 
@@ -48,24 +54,22 @@ namespace WSr.Framing
 
             var payload = parse.frame.Skip(2 + lenghtBytes + (parse.masked ? 4 : 0));
 
-            return new ParsedFrame(
-                origin: parse.origin,
-                bitfield: bitfield.ToArray(),
-                length: length.ToArray(),
-                mask: mask.ToArray(),
-                payload: payload.ToArray());
+            return new Parse(
+                bitfield: bitfield,
+                payload: parse.masked ? UnMask(mask, payload) : payload
+            );
         }
 
-        public static Frame IsValid(ParsedFrame frame)
+        public static Frame IsValid(Parse frame)
         {
             if (frame.OpCodeLengthLessThan126())
-                return new BadFrame(frame.Origin, "Opcode payloadlength must be < 125");
+                return Bad.ProtocolError("Opcode payloadlength must be < 125");
             if (frame.ReservedBitsSet())
-                return new BadFrame(frame.Origin, "RSV-bit is set");
+                return Bad.ProtocolError("RSV-bit is set");
             if (frame.BadOpcode())
-                return new BadFrame(frame.Origin, "Not a valid opcode");
+                return Bad.ProtocolError("Not a valid opcode");
             if (frame.ControlframeNotFinal())
-                return new BadFrame(frame.Origin, "Control-frame must be final");
+                return Bad.ProtocolError("Control-frame must be final");
 
             return frame;
         }
@@ -174,13 +178,6 @@ namespace WSr.Framing
         public static bool Validate(IDictionary<string, string> headers)
         {
             return RequiredHeaders.IsSubsetOf(new HashSet<string>(headers.Keys));
-        }
-
-        public static (OpCode code, IEnumerable<byte> payload) Defragment(
-            (OpCode code, IEnumerable<byte> payload) acc,
-            (OpCode code, IEnumerable<byte> payload) nxt)
-        {
-            return (acc.code | nxt.code, acc.payload.Concat(nxt.payload));
         }
     }
 }

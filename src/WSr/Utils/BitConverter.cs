@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace WSr
 {
@@ -33,5 +34,14 @@ namespace WSr
 
         public static string Show(IEnumerable<byte> bytes) => 
             $"{HexDump(bytes.Take(10))} ({bytes.Count()}";
+
+        public static (bool valid, string text) IsValidUTF8(IEnumerable<byte> bs)
+        {
+            var text = Encoding.UTF8.GetString(bs.ToArray());
+            var valid = !text.Contains('\uFFFD');
+            
+            return (valid, text);
+        }
     }
+
 }
