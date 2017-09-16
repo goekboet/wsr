@@ -22,15 +22,16 @@ namespace WSr.Tests.Framing
 
         private static IEnumerable<byte>[] bytes = new[]
         {
-            L0UMasked,
-            L0Masked,
-            L28UMasked,
-            L28Masked,
-            L2UMasked,
-            L128UMasked,
-            L128Masked,
-            L65536UMasked,
-            L65536Masked
+            // L0UMasked,
+            // L0Masked,
+            // L28UMasked,
+            // L28Masked,
+            // L2UMasked,
+            // L128UMasked,
+            // L128Masked,
+            // L65536UMasked,
+            // L65536Masked,
+            new byte[] {0x00, 0x84, 0x48, 0x27, 0x53, 0xc7, 0xbc, 0xb7, 0xd3, 0x47}
         };
 
         private static string[] chops = new[]
@@ -56,15 +57,16 @@ namespace WSr.Tests.Framing
                 .ToObservable(run);
 
             var expected = run.CreateColdObservable(
-                OnNext(3, "0 - 2"),
-                OnNext(9, "0 m 6"),
-                OnNext(39, "28 - 30"),
-                OnNext(73, "28 m 34"),
-                OnNext(77, "2 - 4"),
-                OnNext(209, "126 - 132"),
-                OnNext(345, "126 m 136"),
-                OnNext(65891, "127 - 65546"),
-                OnNext(131441, "127 m 65550"),
+                // OnNext(3, "0 - 2"),
+                // OnNext(9, "0 m 6"),
+                // OnNext(39, "28 - 30"),
+                // OnNext(73, "28 m 34"),
+                // OnNext(77, "2 - 4"),
+                // OnNext(209, "126 - 132"),
+                // OnNext(345, "126 m 136"),
+                // OnNext(65891, "127 - 65546"),
+                // OnNext(131441, "127 m 65550"),
+                OnNext(131441 + 10, "4 m 10"),
                 OnCompleted<string>(131442)
             );
 

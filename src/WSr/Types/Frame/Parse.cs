@@ -8,9 +8,9 @@ namespace WSr
     {
         public static Parse Empty => new Parse(new byte[2], new byte[0]);
 
-        public Parse Concat(Parse p) => 
+        public Parse Concat(Parse p) =>
             new Parse(
-                bitfield: Bits.Zip(p.Bits, (l, r) => (byte)(l | r)), 
+                bitfield: Bits.Zip(p.Bits, (l, r) => (byte)(l | r)),
                 payload: Payload.Concat(p.Payload));
 
         public Parse(
@@ -27,7 +27,7 @@ namespace WSr
         public override string ToString() => $@"
         Parsed Frame
         Bitfield : {Show(Bits)}
-        Payload  : {Show(Payload.Take(10))}";
+        Payload  : {Show(Payload.Take(10))} ({Payload.Count()})";
 
         public override bool Equals(object obj)
         {
@@ -52,27 +52,28 @@ namespace WSr
                 return hash;
             }
         }
-
     }
 
     public class Bad : Frame
     {
         public static Bad ProtocolError(string reason) => new Bad(1002, reason);
+        public static Bad Utf8 { get; } = new Bad(1007, "");
+        
         private Bad(uint code, string reason)
         {
             Code = code;
             Reason = reason;
         }
 
-        public uint Code {get;}
-        public string Reason {get;}
+        public uint Code { get; }
+        public string Reason { get; }
 
         public override string ToString() => $@"
         Badframe:
         Code:   {Code}
         Reason: {Reason}";
 
-        public override bool Equals(object obj) => 
+        public override bool Equals(object obj) =>
             obj is Bad b && Code.Equals(b.Code) && Reason.Equals(b.Reason);
 
         public override int GetHashCode() => (int)Code;
@@ -82,27 +83,27 @@ namespace WSr
     {
         public static TextParse Empty => new TextParse(new byte[2], string.Empty);
 
-        public TextParse Concat(TextParse p) => 
+        public TextParse Concat(TextParse p) =>
             new TextParse(
-                bitfield: Bits.Zip(p.Bits, (l, r) => (byte)(l | r)), 
-                payload: string.Join(string.Empty, new[] {Payload, p.Payload}));
+                bitfield: Bits.Zip(p.Bits, (l, r) => (byte)(l | r)),
+                payload: string.Join(string.Empty, new[] { Payload, p.Payload }));
 
         public TextParse(
-            IEnumerable<byte> bitfield, 
+            IEnumerable<byte> bitfield,
             string payload)
         {
             Bits = bitfield;
             Payload = payload;
         }
         public IEnumerable<byte> Bits { get; }
-        
+
         public string Payload { get; }
 
         public override string ToString() => $@"
         TextParse:
         Bitfield: {Show(Bits)}
         Payload: {Payload.Substring(0, Payload.Length > 10 ? 10 : Payload.Length)}";
-        
+
         public override bool Equals(object obj)
         {
             if (obj is TextParse tp)

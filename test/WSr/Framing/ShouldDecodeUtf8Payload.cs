@@ -6,6 +6,7 @@ using WSr.Framing;
 
 using static WSr.Tests.Functions.FrameCreator;
 using static WSr.Tests.Functions.Debug;
+using static WSr.Tests.Bytes;
 using System.Text;
 using System.Linq;
 
@@ -24,15 +25,20 @@ namespace WSr.Tests.Framing
                         expected: new Parse(b(0x82, 0x00), new byte[0])),
                        ["DecodeEmptyTextFrame"] = (
                         input: new Parse(b(0x81, 0x00), new byte[0]),
-                        expected: new TextParse(b(0x81, 0x80), string.Empty)),
-                       ["DecodeEmptyTextFrame"] = (
+                        expected: new TextParse(b(0x81, 0x00), string.Empty)),
+                       ["DecodeTextFrame"] = (
                         input: new Parse(b(0x81, 0x03), Encoding.UTF8.GetBytes("abc")),
                         expected: new TextParse(b(0x81, 0x03), "abc")),
+                       ["RejectBadUtf8"] = (
+                        input: new Parse(b(0x81, 0x00), InvalidUtf8()),
+                        expected: Bad.Utf8
+                        )
                    };
 
         [DataRow("IgnoreNonTextFrame")]
         [DataRow("DecodeEmptyTextFrame")]
-        [DataRow("DecodeEmptyTextFrame")]
+        [DataRow("DecodeTextFrame")]
+        [DataRow("RejectBadUtf8")]
         [TestMethod]
         public void HandleNoContinuationCases(string label)
         {
@@ -63,28 +69,65 @@ namespace WSr.Tests.Framing
                         new Parse(b(0x80, 0x00), new byte[] { 0x61 }),
                         new Parse(b(0x81, 0x00), new byte[] { 0x62 })
                     },
-                    expected: new Frame []
+                    expected: new Frame[]
                     {
                         new Parse(b(0x80, 0x00), new byte[] { 0x61 }),
                         new TextParse(b(0x81, 0x00), "b")
-                    } 
+                    }
                 ),
                 ["Simple"] = (
-                parses: new[] 
-                { 
-                    new Parse(b(0x01, 0x00), new byte[] { 0x61 }), 
+                parses: new[]
+                {
+                    new Parse(b(0x01, 0x00), new byte[] { 0x61 }),
                     new Parse(b(0x80, 0x00), new byte[] { 0x62 }),
                 },
-                expected: new[] 
-                { 
-                    new TextParse(b(0x01, 0x00), "a"), 
-                    new TextParse(b(0x80, 0x00), "b") 
+                expected: new[]
+                {
+                    new TextParse(b(0x01, 0x00), "a"),
+                    new TextParse(b(0x80, 0x00), "b")
                 }
-            )
+            ),
+                ["CodepointSplitByContinuation"] = (
+                    parses: new []
+                    {
+                        new Parse(b(0x01, 0x00), new byte[]{0xe1}),
+                        new Parse(b(0x00, 0x00), new byte[]{0x9b}),
+                        new Parse(b(0x80, 0x00), new byte[]{0x92})
+                    },
+                    expected: new[]
+                    {
+                        new TextParse(b(0x01, 0x00), ""),
+                        new TextParse(b(0x00, 0x00), ""),
+                        new TextParse(b(0x80, 0x00), "ᛒ")
+                    }
+                ),
+                ["LongText"] = (
+                    parses: new[]
+                    {
+                        new Parse(b(0x81, 0x00), Enumerable.Repeat((byte)0x2a, 65535))
+                    },
+                    expected: new []
+                    {
+                        new TextParse(b(0x81, 0x00), new string('*', 65535))
+                    }
+                ),
+                ["Fuzzer6.4.1"] = (
+                    parses: new[]
+                    {
+                        new Parse(b(0x01, 0x00), new byte[] {0xce, 0xba, 0xe1, 0xbd, 0xb9, 0xcf, 0x83, 0xce, 0xbc, 0xce, 0xb5})
+                    },
+                    expected: new[]
+                    {
+                        new TextParse(b(0x01, 0x00), "κόσμε")
+                    }
+                )
             };
 
         [DataRow("IgnoreBadContinuation")]
         [DataRow("Simple")]
+        [DataRow("CodepointSplitByContinuation")]
+        [DataRow("LongText")]
+       // [DataRow("Fuzzer6.4.1")]
         [TestMethod]
         public void HandleContinuationCases(string label)
         {

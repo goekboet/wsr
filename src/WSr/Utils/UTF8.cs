@@ -12,10 +12,17 @@ namespace WSr
         }
 
         private IList<char> Decoded;
-        public string Result => new string(Decoded.ToArray());
+        public string Result()
+        {
+            var decoded = new string (Decoded.ToArray());
+            Decoded.Clear();
+
+            return decoded;
+        }
+        
         public bool IsValid = true;
 
-        private static Decoder decoder = Encoding.UTF8.GetDecoder();
+        private Decoder decoder = Encoding.UTF8.GetDecoder();
 
         private char notRepesented = (char)0xfffd;
         private char[] glyph = new char[1];
@@ -47,7 +54,7 @@ namespace WSr
             }
             else if (last && c < 1) IsValid = false;
             else atByte++;
-            
+
             return this;
         }
     }
@@ -59,8 +66,9 @@ namespace WSr
             IEnumerable<byte> bs,
             bool final)
         {
+            var c = bs.Count();
             var run = bs.Zip(
-                bs.Select((_, i) => i == bs.Count() - 1 ? final : false),
+                bs.Select((_, i) => i == c - 1 ? final : false),
                 (b, last) => new { b, last })
                 .Aggregate(state, (acc, nxt) => acc.Next(nxt.b, nxt.last));
 

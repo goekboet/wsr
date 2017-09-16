@@ -68,7 +68,7 @@ namespace WSr.Tests.Framing
             {
                 MakeTextParse(new byte[] {0x01, 0x00}, "1 Text ->"),
                 MakeTextParse(new byte[] {0x81, 0x00}, "2 Text ->")
-            }
+            },
         };
 
         private static Dictionary<string, Frame[]> Expected = new Dictionary<string, Frame[]>()

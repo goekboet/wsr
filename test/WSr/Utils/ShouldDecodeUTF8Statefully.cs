@@ -3,6 +3,8 @@ using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+using static WSr.Tests.Bytes;
+
 namespace WSr.Tests
 {
     [TestClass]
@@ -12,29 +14,33 @@ namespace WSr.Tests
             new Dictionary<string, (byte[] encoded, string expect, bool final, bool valid)>()
         {
             ["OneByteChars"] = (Encoding.UTF8.GetBytes("asciichars"),"asciichars", true, true),
-            ["ManyByteChars"] = (Encoding.UTF8.GetBytes("åke jävel"), "åke jävel", true, true),
+            ["ManyByteChars"] = (Encoding.UTF8.GetBytes("åke ᛒråke"), "åke ᛒråke", true, true),
             ["FinalSplitsCodepoint"] = (SplitCodepoint(), "a", true, false),
             ["ContinuationSplitCodepoint"] = (SplitCodepoint(), "a", false, true),
-            ["BadUtf8"] = (InvalidUtf8(), "�", true, false)
+            ["BadUtf8"] = (InvalidUtf8(), "κόσμε�", true, false),
+            ["LongText"] = (Enumerable.Repeat((byte)0x2a, 65535).ToArray(), new string('*', 65535), true, true)
         };
 
         [DataRow("OneByteChars")]
         [DataRow("ManyByteChars")]
         [DataRow("FinalSplitsCodepoint")]
         [DataRow("BadUtf8")]
+        [DataRow("LongText")]
         [TestMethod]
         public void DecodeOneByteChars(string label)
         {
             var testcase = cases[label];
 
             var actual = new UTF8DecoderState().Decode(testcase.encoded, testcase.final);
+            var result = actual.Result();
+            var valid = actual.IsValid;
 
             Assert.IsTrue(
-                actual.Result.Equals(testcase.expect) && actual.IsValid.Equals(testcase.valid),
+                result.Equals(testcase.expect) && valid.Equals(testcase.valid),
                 $@"
                 Testcase: {label}
                 Expected: >{testcase.expect}< ({testcase.valid})
-                Got:      >{actual.Result} ({actual.IsValid})<");
+                Got:      >{result}< ({valid})");
         }
 
         private static byte[] SplitCodepoint()
@@ -44,9 +50,6 @@ namespace WSr.Tests
             return utf8.Take(utf8.Length - 1).ToArray();
         }
 
-        private static byte[] InvalidUtf8()
-        {
-            return new byte[] {0xce, 0xba, 0xe1, 0xbd, 0xb9, 0xcf, 0x83, 0xce, 0xbc, 0xce, 0xb5, 0xed, 0xa0, 0x80, 0x65, 0x64, 0x69, 0x74, 0x65, 0x64};
-        }
+        
     }
 }

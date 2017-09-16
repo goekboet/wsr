@@ -13,8 +13,6 @@ namespace WSr.Framing
 {
     public static class Functions
     {
-        
-
         public static bool IsMasked(IEnumerable<byte> bitfield)
         {
             return bitfield.Skip(1).Select(b => (b & 0x80) != 0).Take(1).Single();

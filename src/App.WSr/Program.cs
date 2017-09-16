@@ -12,7 +12,7 @@ namespace App.WSr
     {
         static void WriteLine(object s) => Console.WriteLine($"{s.ToString()}{Environment.NewLine}");
 
-        static void WriteError(Exception e) => Console.WriteLine($"error: {e.Message} {e.Source} {e.StackTrace}");
+        static void WriteError(Exception e) => Console.WriteLine($"error: {e.GetType()} {e.Message} {e.Source} {e.StackTrace}");
         const int bufferSize = 8192;
         static void Main(string[] args)
         {

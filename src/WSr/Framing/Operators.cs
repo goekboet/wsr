@@ -15,12 +15,15 @@ namespace WSr.Framing
             IScheduler scheduler)
         {
             return bytes
+                //.Do(x => Console.WriteLine(HexDump(new[]{x})))
                 .Parse()
                 .Select(ToFrame)
                 .Select(IsValid)
                 .DecodeUtf8Payload(scheduler)
+                //.Do(x => Console.WriteLine($"Decoded: {x}"))
                 .Defrag(scheduler)
-                .Do(x => Console.WriteLine(x));
+                //.Do(x => Console.WriteLine(x))
+                ;
         }
     }
 }
