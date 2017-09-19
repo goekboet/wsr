@@ -4,16 +4,16 @@ using static WSr.IntegersFromByteConverter;
 
 namespace WSr
 {
-    public class Parse : Frame, IBitfield
+    public class ParsedFrame : Frame, IBitfield
     {
-        public static Parse Empty => new Parse(new byte[2], new byte[0]);
+        public static ParsedFrame Empty => new ParsedFrame(new byte[2], new byte[0]);
 
-        public Parse Concat(Parse p) =>
-            new Parse(
+        public ParsedFrame Concat(ParsedFrame p) =>
+            new ParsedFrame(
                 bitfield: Bits.Zip(p.Bits, (l, r) => (byte)(l | r)),
                 payload: Payload.Concat(p.Payload));
 
-        public Parse(
+        public ParsedFrame(
             IEnumerable<byte> bitfield,
             IEnumerable<byte> payload)
         {
@@ -31,7 +31,7 @@ namespace WSr
 
         public override bool Equals(object obj)
         {
-            if (obj is Parse p)
+            if (obj is ParsedFrame p)
             {
                 return Bits.SequenceEqual(p.Bits) &&
                     Payload.SequenceEqual(p.Payload);
@@ -54,12 +54,12 @@ namespace WSr
         }
     }
 
-    public class Bad : Frame
+    public class BadFrame : Frame
     {
-        public static Bad ProtocolError(string reason) => new Bad(1002, reason);
-        public static Bad Utf8 { get; } = new Bad(1007, "");
+        public static BadFrame ProtocolError(string reason) => new BadFrame(1002, reason);
+        public static BadFrame Utf8 { get; } = new BadFrame(1007, "");
         
-        private Bad(uint code, string reason)
+        private BadFrame(uint code, string reason)
         {
             Code = code;
             Reason = reason;
@@ -74,21 +74,21 @@ namespace WSr
         Reason: {Reason}";
 
         public override bool Equals(object obj) =>
-            obj is Bad b && Code.Equals(b.Code) && Reason.Equals(b.Reason);
+            obj is BadFrame b && Code.Equals(b.Code) && Reason.Equals(b.Reason);
 
         public override int GetHashCode() => (int)Code;
     }
 
-    public class TextParse : Frame, IBitfield
+    public class TextFrame : Frame, IBitfield
     {
-        public static TextParse Empty => new TextParse(new byte[2], string.Empty);
+        public static TextFrame Empty => new TextFrame(new byte[2], string.Empty);
 
-        public TextParse Concat(TextParse p) =>
-            new TextParse(
+        public TextFrame Concat(TextFrame p) =>
+            new TextFrame(
                 bitfield: Bits.Zip(p.Bits, (l, r) => (byte)(l | r)),
                 payload: string.Join(string.Empty, new[] { Payload, p.Payload }));
 
-        public TextParse(
+        public TextFrame(
             IEnumerable<byte> bitfield,
             string payload)
         {
@@ -106,7 +106,7 @@ namespace WSr
 
         public override bool Equals(object obj)
         {
-            if (obj is TextParse tp)
+            if (obj is TextFrame tp)
             {
                 return Bits.SequenceEqual(tp.Bits) &&
                     Payload.Equals(tp.Payload);

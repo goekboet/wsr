@@ -23,19 +23,19 @@ namespace WSr.Tests.Messaging
           = new Dictionary<string, (Frame input, Message expected)>()
           {
               ["BadFrame"] = (
-                  input: Bad.ProtocolError("test"),
+                  input: BadFrame.ProtocolError("test"),
                   expected: new Close(Origin, 1002, "test")),
               ["Textparse"] = (
-                  input: new TextParse(new byte[] { 0x81, 0x00 }, "one"),
+                  input: new TextFrame(new byte[] { 0x81, 0x00 }, "one"),
                   expected: new TextMessage(Origin, "one")),
               ["CloseCodeAndReason"] = (
-                  input: new Parse(new byte[] { 0x88, 0x00 }, new byte[] { 0x03, 0xe8, 0x36, 0x36, 0x36 }),
+                  input: new ParsedFrame(new byte[] { 0x88, 0x00 }, new byte[] { 0x03, 0xe8, 0x36, 0x36, 0x36 }),
                   expected: new Close(Origin, 1000, "")),
               ["CloseCodeAndNoReason"] = (
-                  input: new Parse(new byte[] { 0x88, 0x00 }, new byte[] { 0x03, 0xe8 }),
+                  input: new ParsedFrame(new byte[] { 0x88, 0x00 }, new byte[] { 0x03, 0xe8 }),
                   expected: new Close(Origin, 1000, string.Empty)),
               ["CloseNoCodeAndNoReason"] = (
-                  input: new Parse(new byte[] { 0x88, 0x00 }, new byte[0]),
+                  input: new ParsedFrame(new byte[] { 0x88, 0x00 }, new byte[0]),
                   expected: new Close(Origin, 1000, string.Empty))
           };
 

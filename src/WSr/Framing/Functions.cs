@@ -33,41 +33,40 @@ namespace WSr.Framing
         {
             return payload.Zip(Forever(mask).SelectMany(x => x), (p, m) => (byte)(p ^ m));
         }
-        
-        public static Parse ToFrame(
-            (bool masked, int bitfieldLength, IEnumerable<byte> frame) parse)
+
+        public static Frame ToFrame(
+            (bool masked, int lb, IEnumerable<byte> frame) parse)
         {
+            if (!parse.masked) return BadFrame.ProtocolError("Unmasked frame");
+
             var bitfield = parse.frame.Take(2);
 
-            int lenghtBytes = 0;
-            if (parse.bitfieldLength == 126)
-                lenghtBytes = 2;
-            else if (parse.bitfieldLength == 127)
-                lenghtBytes = 8;
+            var length = parse.frame.Skip(2).Take(parse.lb);
 
-            var length = parse.frame.Skip(2).Take(lenghtBytes);
-            var mask = parse.masked
-                ? parse.frame.Skip(2 + lenghtBytes).Take(4)
-                : Enumerable.Empty<byte>();
+            var mask = parse.frame.Skip(2 + parse.lb).Take(4);
 
-            var payload = parse.frame.Skip(2 + lenghtBytes + (parse.masked ? 4 : 0));
+            var payload = parse.frame.Skip(2 + parse.lb + 4);
 
-            return new Parse(
+            return new ParsedFrame(
                 bitfield: bitfield,
-                payload: parse.masked ? UnMask(mask, payload) : payload
+                payload: UnMask(mask, payload)
             );
         }
 
-        public static Frame IsValid(Parse frame)
+        public static Frame IsValid(Frame frame)
         {
-            if (frame.OpCodeLengthLessThan126())
-                return Bad.ProtocolError("Opcode payloadlength must be < 125");
-            if (frame.ReservedBitsSet())
-                return Bad.ProtocolError("RSV-bit is set");
-            if (frame.BadOpcode())
-                return Bad.ProtocolError("Not a valid opcode");
-            if (frame.ControlframeNotFinal())
-                return Bad.ProtocolError("Control-frame must be final");
+            if (frame is ParsedFrame p)
+            {
+                if (p.OpCodeLengthLessThan126())
+                    return BadFrame.ProtocolError("Opcode payloadlength must be < 125");
+                if (p.ReservedBitsSet())
+                    return BadFrame.ProtocolError("RSV-bit is set");
+                if (p.BadOpcode())
+                    return BadFrame.ProtocolError("Not a valid opcode");
+                if (p.ControlframeNotFinal())
+                    return BadFrame.ProtocolError("Control-frame must be final");
+
+            }
 
             return frame;
         }

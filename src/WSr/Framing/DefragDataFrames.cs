@@ -16,13 +16,13 @@ namespace WSr.Framing
             return Observable.Create<Frame>(o =>
             {
                 OpCode? continuingOn = null;
-                var binary = Parse.Empty;
-                var text = TextParse.Empty;
+                var binary = ParsedFrame.Empty;
+                var text = TextFrame.Empty;
 
                 return fragmented.Subscribe(
                     onNext: f =>
                     {
-                        if (f is Bad) o.OnNext(f);
+                        if (f is BadFrame) o.OnNext(f);
                         else if (f is IBitfield b)
                         {
                             if (b.IsControlCode())
@@ -32,9 +32,9 @@ namespace WSr.Framing
                             else
                             {
                                 if (b.IsContinuation() && !continuingOn.HasValue)
-                                    o.OnNext(Bad.ProtocolError("not expecting continuation"));
+                                    o.OnNext(BadFrame.ProtocolError("not expecting continuation"));
                                 if (!b.IsContinuation() && continuingOn.HasValue)
-                                    o.OnNext(Bad.ProtocolError("expecting continuation"));
+                                    o.OnNext(BadFrame.ProtocolError("expecting continuation"));
 
                                 if (b.IsFinal() && !continuingOn.HasValue)
                                 {
@@ -45,11 +45,11 @@ namespace WSr.Framing
                                     if (b.ExpectContinuation())
                                         continuingOn = b.GetOpCode();
 
-                                    if (continuingOn == OpCode.Text && f is TextParse t)
+                                    if (continuingOn == OpCode.Text && f is TextFrame t)
                                     {
                                         text = text.Concat(t);
                                     }
-                                    else if (f is Parse p)
+                                    else if (f is ParsedFrame p)
                                     {
                                         binary = binary.Concat(p);
                                     }
@@ -59,12 +59,12 @@ namespace WSr.Framing
                                         if (continuingOn == OpCode.Text)
                                         {
                                             o.OnNext(text);
-                                            text = TextParse.Empty;
+                                            text = TextFrame.Empty;
                                         }
                                         else
                                         {
                                             o.OnNext(binary);
-                                            binary = Parse.Empty;
+                                            binary = ParsedFrame.Empty;
                                         }
                                         continuingOn = null;
                                     }

@@ -68,14 +68,14 @@ namespace WSr.Tests.Functions
 
     public static class FrameCreator
     {
-        public static Parse MakeParse(IEnumerable<byte> bitfield)
+        public static ParsedFrame MakeParse(IEnumerable<byte> bitfield)
         {
-            return new Parse(bitfield, new byte[0]);
+            return new ParsedFrame(bitfield, new byte[0]);
         }
-        public static TextParse MakeFrame(IEnumerable<byte> bitfield) =>
+        public static TextFrame MakeFrame(IEnumerable<byte> bitfield) =>
             MakeTextParse(bitfield, string.Empty);
 
-        public static TextParse MakeTextParse(IEnumerable<byte> bitfield, string Payload) =>
-            new TextParse(bitfield, Payload);
+        public static TextFrame MakeTextParse(IEnumerable<byte> bitfield, string Payload) =>
+            new TextFrame(bitfield, Payload);
     }
 }

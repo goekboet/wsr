@@ -16,11 +16,11 @@ namespace WSr.Messaging
         {
             switch (frame)
             {
-                case Bad b:
+                case BadFrame b:
                     return ToCloseMessage(origin, b);
-                case TextParse t:
+                case TextFrame t:
                     return ToTextMessage(origin, t);
-                case Parse p:
+                case ParsedFrame p:
                     switch (p.GetOpCode())
                     {
                         case OpCode.Ping:
@@ -41,21 +41,21 @@ namespace WSr.Messaging
 
         private static IMessage ToBinaryMessage(
             string origin,
-            Parse frame)
+            ParsedFrame frame)
         {
             return new BinaryMessage(origin, frame.Payload);
         }
 
         public static IMessage ToTextMessage(
             string origin,
-            TextParse t)
+            TextFrame t)
         {
             return new TextMessage(origin, t.Payload);
         }
 
         public static IMessage ToCloseMessage(
             string origin,
-            Bad b)
+            BadFrame b)
         {
             return new Close(origin, b.Code, b.Reason);
         }
@@ -66,7 +66,7 @@ namespace WSr.Messaging
 
         public static IMessage ToCloseMessage(
             string origin,
-            Parse p)
+            ParsedFrame p)
         {
             return new Close(origin, CloseCode(p.Payload), "");
         }
@@ -78,13 +78,13 @@ namespace WSr.Messaging
 
         public static IMessage ToPingMessage(
             string origin,
-            Parse p)
+            ParsedFrame p)
         {
             return new Ping(origin, p.Payload);
         }
         public static IMessage ToPongMessage(
             string origin,
-            Parse p)
+            ParsedFrame p)
         {
             return new Pong(origin, p.Payload);
         }

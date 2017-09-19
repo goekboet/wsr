@@ -22,18 +22,18 @@ namespace WSr.Framing
                 return frames.Subscribe(
                     onNext: f => 
                     {
-                        if (f is Bad b) o.OnNext(b);
+                        if (f is BadFrame b) o.OnNext(b);
 
-                        else if (f is Parse p)
+                        else if (f is ParsedFrame p)
                         {
                             if (p.GetOpCode() == OpCode.Text)
                             {
                                 if(p.ExpectContinuation()) continuingText = true;
                                 utf8 = utf8.Decode(p.Payload, !continuingText);
                                 if(utf8.IsValid)
-                                    o.OnNext(new TextParse(p.Bits, utf8.Result()));
+                                    o.OnNext(new TextFrame(p.Bits, utf8.Result()));
                                 else
-                                    o.OnNext(Bad.Utf8);
+                                    o.OnNext(BadFrame.Utf8);
                             }
                             else if (p.GetOpCode() == OpCode.Continuation && continuingText)
                             {
@@ -41,9 +41,9 @@ namespace WSr.Framing
                                 utf8 = utf8.Decode(p.Payload, !continuingText);
 
                                 if(utf8.IsValid)
-                                    o.OnNext(new TextParse(p.Bits, utf8.Result()));
+                                    o.OnNext(new TextFrame(p.Bits, utf8.Result()));
                                 else
-                                    o.OnNext(Bad.Utf8);
+                                    o.OnNext(BadFrame.Utf8);
                             }
                             else o.OnNext(p);
                         }

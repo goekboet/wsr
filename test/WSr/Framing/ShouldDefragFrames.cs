@@ -27,12 +27,12 @@ namespace WSr.Tests.Framing
             },
             ["UnfragmentedBinaryFrame"] = new[]
             {
-                new Parse(new byte[] { 0x82, 0x00 }, Encoding.ASCII.GetBytes("one")),
-                new Parse(new byte[] { 0x82, 0x00 }, Encoding.ASCII.GetBytes("two"))
+                new ParsedFrame(new byte[] { 0x82, 0x00 }, Encoding.ASCII.GetBytes("one")),
+                new ParsedFrame(new byte[] { 0x82, 0x00 }, Encoding.ASCII.GetBytes("two"))
             },
             ["BadFrame"] = new[]
             {
-                Bad.ProtocolError("")
+                BadFrame.ProtocolError("")
             },
             ["FragmentedTextFrame"] = new[]
             {
@@ -43,15 +43,15 @@ namespace WSr.Tests.Framing
             },
             ["FragmentedBinFrame"] = new[]
             {
-                new Parse(new byte[] {0x02, 0x00}, Encoding.ASCII.GetBytes("Frag -> ")),
-                new Parse(new byte[] {0x80, 0x00}, Encoding.ASCII.GetBytes("mented")),
-                new Parse(new byte[] {0x02, 0x00}, Encoding.ASCII.GetBytes("Bin -> ")),
-                new Parse(new byte[] {0x80, 0x00}, Encoding.ASCII.GetBytes("frame"))
+                new ParsedFrame(new byte[] {0x02, 0x00}, Encoding.ASCII.GetBytes("Frag -> ")),
+                new ParsedFrame(new byte[] {0x80, 0x00}, Encoding.ASCII.GetBytes("mented")),
+                new ParsedFrame(new byte[] {0x02, 0x00}, Encoding.ASCII.GetBytes("Bin -> ")),
+                new ParsedFrame(new byte[] {0x80, 0x00}, Encoding.ASCII.GetBytes("frame"))
             },
             ["FragmentedAroundControlCode"] = new Frame []
             {
                 MakeTextParse(new byte[] {0x01, 0x00}, "Text -> "),
-                new Parse(new byte[] {0x89, 0x00}, Encoding.ASCII.GetBytes("Ping")),
+                new ParsedFrame(new byte[] {0x89, 0x00}, Encoding.ASCII.GetBytes("Ping")),
                 MakeTextParse(new byte[] {0x80, 0x00}, "end"),
             },
             ["NotExpectingContinuation"] = new []
@@ -75,17 +75,17 @@ namespace WSr.Tests.Framing
         {
             ["UnfragmentedTextFrame"] = new[]
             {
-                new TextParse(new byte[] { 0x81, 0x00 },"one"),
-                new TextParse(new byte[] { 0x81, 0x00 },"two")
+                new TextFrame(new byte[] { 0x81, 0x00 },"one"),
+                new TextFrame(new byte[] { 0x81, 0x00 },"two")
             },
             ["UnfragmentedBinaryFrame"] = new[]
             {
-                new Parse(new byte[] { 0x82, 0x00 }, Encoding.ASCII.GetBytes("one")),
-                new Parse(new byte[] { 0x82, 0x00 }, Encoding.ASCII.GetBytes("two"))
+                new ParsedFrame(new byte[] { 0x82, 0x00 }, Encoding.ASCII.GetBytes("one")),
+                new ParsedFrame(new byte[] { 0x82, 0x00 }, Encoding.ASCII.GetBytes("two"))
             },
             ["BadFrame"] = new[]
             {
-                Bad.ProtocolError("")
+                BadFrame.ProtocolError("")
             },
             ["FragmentedTextFrame"] = new[]
             {
@@ -94,26 +94,26 @@ namespace WSr.Tests.Framing
             },
             ["FragmentedBinFrame"] = new[]
             {
-                new Parse(new byte[] {0x82, 0x00}, Encoding.ASCII.GetBytes("Frag -> mented")),
-                new Parse(new byte[] {0x82, 0x00}, Encoding.ASCII.GetBytes("Bin -> frame")),
+                new ParsedFrame(new byte[] {0x82, 0x00}, Encoding.ASCII.GetBytes("Frag -> mented")),
+                new ParsedFrame(new byte[] {0x82, 0x00}, Encoding.ASCII.GetBytes("Bin -> frame")),
             },
             ["FragmentedAroundControlCode"] = new Frame []
             {
-                new Parse(new byte[] {0x89, 0x00}, Encoding.ASCII.GetBytes("Ping")),
+                new ParsedFrame(new byte[] {0x89, 0x00}, Encoding.ASCII.GetBytes("Ping")),
                 MakeTextParse(new byte[] {0x81, 0x00}, "Text -> end")
             },
             ["NotExpectingContinuation"] = new Frame []
             {
-                Bad.ProtocolError("not expecting continuation"),
+                BadFrame.ProtocolError("not expecting continuation"),
                 MakeTextParse(new byte[] {0x81, 0x00}, "Text")
             },
             ["ExpectingContinuation1"] = new []
             {
-                Bad.ProtocolError("expecting continuation")
+                BadFrame.ProtocolError("expecting continuation")
             },
             ["ExpectingContinuation2"] = new []
             {
-                Bad.ProtocolError("expecting continuation")
+                BadFrame.ProtocolError("expecting continuation")
             }
         };
 
