@@ -25,7 +25,7 @@ namespace WSr
         private Decoder decoder = Encoding.UTF8.GetDecoder();
 
         private char notRepesented = (char)0xfffd;
-        private char[] glyph = new char[1];
+        private char[] glyph = new char[2];
         private byte[] encoded = new byte[4];
         private int atByte = 0;
         public UTF8DecoderState Next(byte b, bool last)
@@ -39,7 +39,7 @@ namespace WSr
                 byteCount: 1,
                 chars: glyph,
                 charIndex: 0,
-                charCount: 1,
+                charCount: 2,
                 flush: false,
                 bytesUsed: out int _,
                 charsUsed: out int c,
@@ -49,7 +49,8 @@ namespace WSr
             if (c > 0)
             {
                 atByte = 0;
-                Decoded.Add(glyph[0]);
+                for(int i = 0; i < c; i++) Decoded.Add(glyph[i]);
+                
                 if (glyph[0] == notRepesented) IsValid = false;
             }
             else if (last && c < 1) IsValid = false;

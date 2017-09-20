@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+
 using static WSr.IntegersFromByteConverter;
 
 namespace WSr
@@ -24,59 +26,37 @@ namespace WSr
         public IEnumerable<byte> Bits { get; }
         public IEnumerable<byte> Payload { get; }
 
-        public override string ToString() => $@"
-        Parsed Frame
-        Bitfield : {Show(Bits)}
-        Payload  : {Show(Payload.Take(10))} ({Payload.Count()})";
+        public override string ToString() => $"Parsed Frame {Show(Bits)}-{Show(Payload.Take(10))} ({Payload.Count()})";
 
-        public override bool Equals(object obj)
-        {
-            if (obj is ParsedFrame p)
-            {
-                return Bits.SequenceEqual(p.Bits) &&
-                    Payload.SequenceEqual(p.Payload);
-            }
+        public override bool Equals(object obj) => obj is ParsedFrame p
+            && Bits.SequenceEqual(p.Bits)
+            && Payload.SequenceEqual(p.Payload);
 
-            return false;
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = 17;
-
-                hash = hash * 31 * FromNetwork2Bytes(Bits);
-                hash = hash * 31 * Payload.Count();
-
-                return hash;
-            }
-        }
+        public override int GetHashCode() => Payload.Count();
     }
 
     public class BadFrame : Frame
     {
-        public static BadFrame ProtocolError(string reason) => new BadFrame(1002, reason);
-        public static BadFrame Utf8 { get; } = new BadFrame(1007, "");
-        
-        private BadFrame(uint code, string reason)
+        public static BadFrame ProtocolError(string reason) => new BadFrame(ToBytes(1002, reason));
+        public static BadFrame Utf8 { get; } = new BadFrame(ToBytes(1007, ""));
+        public static BadFrame BadHandshake { get; } =  new BadFrame(Encoding.ASCII.GetBytes("400 Bad Request"));
+
+        private BadFrame(IEnumerable<byte> payload)
         {
-            Code = code;
-            Reason = reason;
+            Payload = payload;
         }
 
-        public uint Code { get; }
-        public string Reason { get; }
+        public IEnumerable<byte> Payload { get; }
 
-        public override string ToString() => $@"
-        Badframe:
-        Code:   {Code}
-        Reason: {Reason}";
+        public static IEnumerable<byte> ToBytes(ushort code, string reason) => ToNetwork2Bytes(code).Concat(Encoding.UTF8.GetBytes(reason));
+
+        public override string ToString() => $"Badframe: {Show(Payload.Take(10))}";
 
         public override bool Equals(object obj) =>
-            obj is BadFrame b && Code.Equals(b.Code) && Reason.Equals(b.Reason);
+            obj is BadFrame b 
+            && Payload.SequenceEqual(b.Payload);
 
-        public override int GetHashCode() => (int)Code;
+        public override int GetHashCode() => Payload.Count();
     }
 
     public class TextFrame : Frame, IBitfield
@@ -99,33 +79,36 @@ namespace WSr
 
         public string Payload { get; }
 
-        public override string ToString() => $@"
-        TextParse:
-        Bitfield: {Show(Bits)}
-        Payload: {Payload.Substring(0, Payload.Length > 10 ? 10 : Payload.Length)}";
+        public override string ToString() => $"TextParse {Show(Bits)}-{Payload.Substring(0, Payload.Length > 10 ? 10 : Payload.Length)}";
 
-        public override bool Equals(object obj)
+        public override bool Equals(object obj) => obj is TextFrame t
+            && Bits.SequenceEqual(t.Bits)
+            && Payload.Equals(t.Payload);
+
+        public override int GetHashCode() => Bits.Count();
+    }
+
+    public class HandshakeParse : Frame
+    {
+        public HandshakeParse(
+            string url,
+            IDictionary<string, string> headers)
         {
-            if (obj is TextFrame tp)
-            {
-                return Bits.SequenceEqual(tp.Bits) &&
-                    Payload.Equals(tp.Payload);
-            }
-
-            return false;
+            Url = url;
+            Headers = headers;
         }
 
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = 17;
+        public string Url { get; }
+        public IDictionary<string, string> Headers { get; }
 
-                hash = hash * 31 * FromNetwork2Bytes(Bits);
-                hash = hash * 31 * Payload.Count();
+        public override string ToString() => $"HandshakeParse: url: {Url}";
 
-                return hash;
-            }
-        }
+        public override bool Equals(object obj) => obj is HandshakeParse p
+            && p.Url.Equals(Url)
+            && p.Headers.Count.Equals(Headers.Count)
+            //&& p.Headers.OrderBy(x => x.Key).SequenceEqual(Headers.OrderBy(x => x.Key))
+            ;
+        
+        public override int GetHashCode() => Url.GetHashCode() + Headers.Count();
     }
 }

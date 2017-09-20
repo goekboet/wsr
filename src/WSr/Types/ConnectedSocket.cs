@@ -21,7 +21,7 @@ namespace WSr
         string Address { get; }
 
         IObservable<Unit> Write(
-            IEnumerable<byte> buffer,
+            byte[] buffer,
             IScheduler scheduler);
         IObservable<int> Read(
             byte[] buffer,
@@ -41,36 +41,32 @@ namespace WSr
 
         private Stream Stream => _socket.GetStream();
 
-        private Func<IScheduler, byte[], IObservable<Unit>> CreateWriter()
-        {
-            return (scheduler, buffer) => FromAsync(() => Stream.WriteAsync(buffer, 0, buffer.Length), scheduler);
-        }
-
         public virtual void Dispose()
         {
-            Console.WriteLine($"{Address} disposed.");
             _socket.Dispose();
         }
 
         public override string ToString()
         {
-            return Address;
+            return "Connected to" + Address;
         }
 
         public IObservable<Unit> Write(
-            IEnumerable<byte> buffer,
-            IScheduler scheduler)
-        {
-            var writer = CreateWriter();
-
-            return writer(scheduler, buffer.ToArray())
-                .Do(x => Console.WriteLine($"Wrote {buffer.Count()} on {Address}"));
-        }
-
-        public IObservable<int> Read(byte[] buffer, IScheduler scheduler)
+            byte[] buffer,
+            IScheduler s)
         {
             return Observable
-                .FromAsync(() => Stream.ReadAsync(buffer, 0, buffer.Count()), scheduler);
+                .FromAsync(() => Stream.WriteAsync(buffer, 0, buffer.Length), s)
+                ;
+        }
+
+        public IObservable<int> Read(
+            byte[] buffer, 
+            IScheduler s)
+        {
+            return Observable
+                .FromAsync(() => Stream.ReadAsync(buffer, 0, buffer.Count()), s)
+                ;
         }
     }
 

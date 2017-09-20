@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using static WSr.Tests.Bytes;
+using static WSr.Framing.Functions;
 
 namespace WSr.Tests
 {
@@ -18,7 +19,8 @@ namespace WSr.Tests
             ["FinalSplitsCodepoint"] = (SplitCodepoint(), "a", true, false),
             ["ContinuationSplitCodepoint"] = (SplitCodepoint(), "a", false, true),
             ["BadUtf8"] = (InvalidUtf8(), "κόσμε�", true, false),
-            ["LongText"] = (Enumerable.Repeat((byte)0x2a, 65535).ToArray(), new string('*', 65535), true, true)
+            ["LongText"] = (Enumerable.Repeat((byte)0x2a, 65535).ToArray(), new string('*', 65535), true, true),
+            ["CodeBeyond0xFFFFFF"] = (CodeBeyond0xFFFFFF, "\U00024b62", true, true)
         };
 
         [DataRow("OneByteChars")]
@@ -26,6 +28,7 @@ namespace WSr.Tests
         [DataRow("FinalSplitsCodepoint")]
         [DataRow("BadUtf8")]
         [DataRow("LongText")]
+        [DataRow("CodeBeyond0xFFFFFF")]
         [TestMethod]
         public void DecodeOneByteChars(string label)
         {
@@ -42,14 +45,14 @@ namespace WSr.Tests
                 Expected: >{testcase.expect}< ({testcase.valid})
                 Got:      >{result}< ({valid})");
         }
-
+        // the bytesequence ends in a utf8-code continuation
         private static byte[] SplitCodepoint()
         {
             var chars = "aå";
             var utf8 = Encoding.UTF8.GetBytes(chars);
             return utf8.Take(utf8.Length - 1).ToArray();
         }
-
-        
+        // .net will represent as two chars
+        private static byte[] CodeBeyond0xFFFFFF => new byte[] {0xF0, 0xA4, 0xAD, 0xA2};
     }
 }

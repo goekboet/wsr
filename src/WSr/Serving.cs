@@ -1,52 +1,72 @@
 using System;
+using System.Linq;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using WSr.Messaging;
-using static WSr.Socketing.Operators;
+
+using static WSr.Socketing.ReadFunctions;
+using static WSr.Socketing.WriteFunctions;
+using static WSr.IntegersFromByteConverter;
+using static WSr.LogFunctions;
+
+using WSr.Framing;
 
 namespace WSr
 {
     public static class Serving
     {
-        public static IObservable<IConnectedSocket> Serve(
+        public static IObservable<IConnectedSocket> Host(
                 string ip,
                 int port,
                 IObservable<Unit> eof,
-                IScheduler s = null) => WSr.Socketing.Operators.Serve(eof, new TcpSocket(ip, port), s);
+                IScheduler s = null) => Host(eof, new TcpSocket(ip, port), s);
 
-        public static IObservable<IMessage> Incoming(
-            this IObservable<IConnectedSocket> cs,
-            byte[] buffer,
+        public static IObservable<IConnectedSocket> Host(
+            IObservable<Unit> eof,
+            IListeningSocket host,
             IScheduler s = null)
         {
             if (s == null) s = Scheduler.Default;
 
-            return cs
-                .SelectMany(ReadMessages(buffer, s));
+            return Observable.Using(
+                resourceFactory: () => host,
+                observableFactory: l => l.Connect(s).Repeat().TakeUntil(eof))
+                ;
         }
 
-        public static IObservable<ICommand> WebSocketHandling(
-            this IObservable<IMessage> ms,
+        public static IObservable<Unit> Serve(
+            IConnectedSocket socket,
+            Func<byte[]> bufferfactory,
+            Action<string> log,
             IScheduler s = null)
         {
             if (s == null) s = Scheduler.Default;
 
-            return ms.FromMessage();
-        }
-
-        public static IObservable<ProcessResult> Transmit(
-            this IObservable<IConnectedSocket> cs,
-            IObservable<ICommand> cmds,
-            IScheduler s = null)
-        {
-            return cs
-                .GroupJoin(
-                    right: cmds,
-                    leftDurationSelector: _ => Observable.Never<Unit>(),
-                    rightDurationSelector: _ => Observable.Return(Unit.Default),
-                    resultSelector: (c, cmdswndw) => cmdswndw.Write(c))
-                .Merge();
+            return Observable.Using(
+                resourceFactory: () => socket,
+                observableFactory: c =>
+                {
+                    var ctx = AddContext(c.ToString(), log);
+                    
+                    return c
+                        .Receive(
+                            bufferfactory: bufferfactory,
+                            log: ctx,
+                            s: s)
+                        .Do(x => ctx($"Incoming bytes: {Show(x)} {(x.Count())}"))
+                        .Select(x => x.ToObservable())
+                        .Concat()
+                        //.Do(x => Show(new[] { x }))
+                        .Deserialize(s, ctx)
+                        .Do(x => ctx("Parsed message: " + x.ToString()))
+                        .Process()
+                        .Do(x => ctx("Processed message: " + x.ToString()))
+                        .Serialize()
+                        .Do(x => ctx("Outgoing bytes: " + Show(x)))
+                        .Transmit(c, s)
+                        ;
+                });
         }
     }
 }

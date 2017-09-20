@@ -136,7 +136,7 @@ namespace WSr.Tests.Framing
 
             var actual = run.Start(
                 create: () => input
-                    .ToObservable(run).Defrag(run),
+                    .ToObservable(run).Defrag(),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000

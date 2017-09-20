@@ -7,6 +7,7 @@ using WSr.Framing;
 using static WSr.Tests.Functions.FrameCreator;
 using static WSr.Tests.Functions.Debug;
 using static WSr.Tests.Bytes;
+using static WSr.Framing.Functions;
 using System.Text;
 using System.Linq;
 
@@ -51,7 +52,7 @@ namespace WSr.Tests.Framing
                 OnCompleted<Frame>(1)
             );
             var actual = run.Start(
-                create: () => input.DecodeUtf8Payload(run).Take(1),
+                create: () => input.Take(1, run).DecodeUtf8Payload(),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000
@@ -138,7 +139,7 @@ namespace WSr.Tests.Framing
             var expected = s.EvenlySpaced(start: 11, distance: 10, es: testcase.expected);
 
             var actual = s.Start(
-                create: () => input.DecodeUtf8Payload(s),
+                create: () => input.DecodeUtf8Payload(),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000
