@@ -20,7 +20,7 @@ namespace WSr.Framing
                 .Select(ToFrame)
                 .Select(IsValid)
                 .DecodeUtf8Payload(scheduler)
-                //.Do(x => Console.WriteLine($"Decoded: {x}"))
+                .Do(x => Console.WriteLine($"Decoded: {x}"))
                 .Defrag(scheduler)
                 //.Do(x => Console.WriteLine(x))
                 ;

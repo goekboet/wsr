@@ -7,6 +7,7 @@ using WSr.Framing;
 using static WSr.Tests.Functions.FrameCreator;
 using static WSr.Tests.Functions.Debug;
 using static WSr.Tests.Bytes;
+using static WSr.Framing.Functions;
 using System.Text;
 using System.Linq;
 

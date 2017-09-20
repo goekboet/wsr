@@ -29,7 +29,7 @@ namespace WSr.Framing
             return BitConverter.ToUInt64(bytes.ToArray(), 0);
         }
 
-        public static IEnumerable<byte> UnMask(IEnumerable<byte> mask, IEnumerable<byte> payload)
+        public static IEnumerable<byte> Unmask(IEnumerable<byte> mask, IEnumerable<byte> payload)
         {
             return payload.Zip(Forever(mask).SelectMany(x => x), (p, m) => (byte)(p ^ m));
         }
@@ -49,7 +49,7 @@ namespace WSr.Framing
 
             return new ParsedFrame(
                 bitfield: bitfield,
-                payload: UnMask(mask, payload)
+                payload: Unmask(mask, payload)
             );
         }
 
