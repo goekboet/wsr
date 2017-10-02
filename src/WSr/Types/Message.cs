@@ -9,33 +9,12 @@ using static WSr.IntegersFromByteConverter;
 
 namespace WSr
 {
-    public interface IMessage
-    {
-        string Origin { get; }
-    }
+    public abstract class Message { }
 
-    public abstract class Message : IMessage
-    {
-        public Message(
-            string origin)
-        {
-            Origin = origin;
-        }
-
-        public string Origin { get; }
-    }
-
-    public interface ITransmits
-    {
-        OpCode OpCode {get;}
-        byte[] Buffer {  get; }
-    }
-
-    public class TextMessage : Message, ITransmits
+    public class TextMessage : Message
     {
         public TextMessage(
-            string origin,
-            string text) : base(origin)
+            string text)
         {
             Text = text;
         }
@@ -45,24 +24,18 @@ namespace WSr
         public byte[] Buffer => Encoding.UTF8.GetBytes(Text);
         public OpCode OpCode => OpCode.Text;
 
-        public override string ToString() => 
-        $@"
-        Textmessage
-        Origin: {Origin}
-        Text: {new string(Text.Take(10).ToArray())} ({Text.Length})
-        ";
-        
+        public override string ToString() => $"Textmessage t: {new string(Text.Take(10).ToArray())} ({ Text.Length })";
 
-        public override bool Equals(object obj) => obj is TextMessage m ? Text.Equals(m.Text) : false;
+        public override bool Equals(object obj) => obj is TextMessage m 
+            && Text.Equals(m.Text);
 
         public override int GetHashCode() => Text.GetHashCode();
     }
 
-    public class BinaryMessage : Message, ITransmits
+    public class BinaryMessage : Message
     {
         public BinaryMessage(
-            string origin,
-            IEnumerable<byte> payload) : base(origin)
+            IEnumerable<byte> payload)
         {
             Payload = payload;
         }
@@ -73,220 +46,88 @@ namespace WSr
 
         public OpCode OpCode => OpCode.Binary;
 
-        public override string ToString() =>
-        $@"
-        Binarymessage
-        Origin: {Origin}
-        Text: {Show(Payload)} ({Payload.Count()})
-        ";
+        public override string ToString() => $@"Binarymessage p: {Show(Payload.Take(20))} ({Payload.Count()})";
 
-        public override bool Equals(object obj) => obj is BinaryMessage b 
-            && Payload.SequenceEqual(b.Payload) && Origin.Equals(b.Origin);
+        public override bool Equals(object obj) => obj is BinaryMessage b
+            && Payload.SequenceEqual(b.Payload);
 
-        public override int GetHashCode() => Origin.GetHashCode() + Payload.Count();
+        public override int GetHashCode() => Payload.Count();
     }
 
-    public class Close : Message, ITransmits
+    public class OpcodeMessage : Message
     {
-        public Close(
-            string origin,
-            uint code,
-            string reason) : base(origin)
+        public OpcodeMessage(
+            OpCode opCode,
+            IEnumerable<byte> buffer)
         {
-            Code = (ushort)code;
-            Reason = reason;
+            Opcode = opCode;
+            Buffer = buffer;
         }
+        public OpCode Opcode { get; }
+        public IEnumerable<byte> Buffer { get; }
 
-        public ushort Code {get;}
-        public string Reason {get;}
+        public override string ToString() => $"OpCodeMessage c: {Opcode} bc: {Show(Buffer.Take(20))} ({Buffer.Count()})";
 
-        public byte[] Buffer => ToNetwork2Bytes(Code)
-            .Concat(Encoding.UTF8.GetBytes(Reason)).ToArray();
+        public override bool Equals(object obj) => obj is OpcodeMessage m
+            && m.Opcode == Opcode
+            && m.Buffer.SequenceEqual(Buffer);
 
-        public OpCode OpCode => OpCode.Close;
-
-        public override string ToString() =>
-        $@"
-        CloseMessage
-        Origin: {Origin}
-        Code: {Code}
-        Reason: {Reason} 
-        ";
-
-        public override bool Equals(object obj) => obj is Close c 
-            && Origin.Equals(c.Origin) 
-            && Code.Equals(c.Code) 
-            && Reason.Equals(c.Reason);
-
-        public override int GetHashCode() => Origin.GetHashCode() + Code + Reason.GetHashCode();
+        public override int GetHashCode() => Opcode.GetHashCode() * 13 * Buffer.Count();
     }
 
-    public class Ping : Message, ITransmits
+    public class Empty : Message
     {
-        public Ping(
-            string origin,
-            IEnumerable<byte> payload) : base(origin)
-        {
-            Payload = payload;
-        }
+        public static Empty Message { get; } = new Empty();
+        private Empty() { }
 
-        public IEnumerable<byte> Payload { get; }
-
-        public byte[] Buffer => Payload.ToArray();
-        public OpCode OpCode => OpCode.Ping;
-
-        public override string ToString() =>
-        $@"
-        Ping
-        Origin: {Origin}
-        Payload: {Show(Payload)}
-        ";
-
-        public override bool Equals(object obj) => obj is Ping p
-            && Origin.Equals(p.Origin)
-            && Payload.SequenceEqual(p.Payload);
-
-        public override int GetHashCode() => Origin.GetHashCode() + Payload.Count();
+        public override string ToString() => $"Empty Message";
     }
 
-    public class Pong : Message, ITransmits
+    public class Eof : Message
     {
-        public Pong(
-            string origin,
-            IEnumerable<byte> payload) : base(origin)
-        {
-            Payload = payload;
-        }
+        public static Eof Message { get; } = new Eof();
+        private Eof() { }
 
-        public IEnumerable<byte> Payload { get; }
-
-        public byte[] Buffer => Payload.ToArray();
-
-        public OpCode OpCode => OpCode.Pong;
-
-        public override string ToString() =>
-        $@"
-        Pong
-        Origin: {Origin}
-        Payload: {Show(Payload)}
-        ";
-
-        public override bool Equals(object obj) => obj is Ping p
-            && Origin.Equals(p.Origin)
-            && Payload.SequenceEqual(p.Payload);
-
-        public override int GetHashCode() => Origin.GetHashCode() + Payload.Count();
+        public override string ToString() => $"End of file";
     }
 
-    public class UpgradeRequest : IMessage, IEquatable<UpgradeRequest>
+    public class UpgradeRequest : Message
     {
-        private IDictionary<string, string> Headers { get; }
-
+        public HandshakeParse Parse { get;}
         public UpgradeRequest(
-            string origin,
-            string url,
-            IDictionary<string, string> headers)
+            HandshakeParse parse)
         {
-            Origin = origin;
-            Url = url;
-            Headers = headers;
+            Parse = parse;
         }
 
-        public string Url { get; }
+        public IDictionary<string, string> Headers => Parse.Headers;
+        public string Url => Parse.Url;
 
-        public string RequestKey => Headers["Sec-WebSocket-Key"];
 
-        public string Origin { get; }
+        public override bool Equals(object o) => o is UpgradeRequest m
+            && m.Parse.Url.Equals(Parse.Url)
+            && m.Parse.Headers.Count.Equals(Parse.Headers.Count);
 
-        public bool Equals(UpgradeRequest other)
-        {
-            if (other == null) return false;
+        public override string ToString() => "Message for " + Parse.ToString();
 
-            return other.Url.Equals(Url) &&
-                other.Origin.Equals(Origin) &&
-                other.RequestKey.Equals(RequestKey);
-        }
-
-        public override bool Equals(object obj) => Equals(obj as UpgradeRequest);
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = 17;
-
-                hash = hash * 31 * Url.GetHashCode();
-                hash = hash * 31 * Origin.GetHashCode();
-                hash = hash * 31 * RequestKey.GetHashCode();
-
-                return hash;
-            }
-        }
-
-        public override string ToString()
-        {
-            return string.Join(Environment.NewLine, new[]
-            {
-                "UpgradeRequest",
-                $"Origin: {Origin}",
-                $"Url: {Url}",
-                $"RequestKey: {RequestKey}"
-            });
-        }
+        public override int GetHashCode() => Parse.GetHashCode();
     }
 
-    public enum UpgradeFail
-    {
-        MalformedRequestLine,
-        MalformedHeaderLine,
-        MissRequiredHeader
-    }
-
-    public class BadUpgradeRequest : IMessage, IEquatable<BadUpgradeRequest>
+    public class BadUpgradeRequest : Message
     {
         public BadUpgradeRequest(
-            string origin,
-            UpgradeFail reason)
+            string reason)
         {
-            Origin = origin;
             Reason = reason;
         }
 
-        public string Origin { get; }
+        public string Reason { get; }
 
-        public UpgradeFail Reason { get; }
+        public override bool Equals(object o) => o is BadUpgradeRequest m
+            && m.Reason.Equals(Reason);
 
-        public bool Equals(BadUpgradeRequest other)
-        {
-            if (other == null) return false;
+        public override int GetHashCode() => Reason.GetHashCode();
 
-            return other.Origin.Equals(Origin) &&
-                other.Reason.Equals(Reason);
-        }
-
-        public override bool Equals(object obj) => Equals(obj as BadUpgradeRequest);
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = 17;
-
-                hash = hash * 31 * Origin.GetHashCode();
-                hash = hash * 31 * Reason.GetHashCode();
-
-                return hash;
-            }
-        }
-
-        public override string ToString()
-        {
-            return string.Join(Environment.NewLine, new[]
-            {
-                "UpgradeFail",
-                $"Origin: {Origin}",
-                $"Reason: {Reason}"
-            });
-        }
+        public override string ToString() => $"UpgradeFail {Reason}";
     }
 }

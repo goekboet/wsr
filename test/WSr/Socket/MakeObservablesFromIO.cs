@@ -12,7 +12,6 @@ using WSr.Messaging;
 using WSr.Socketing;
 
 using static WSr.Tests.Functions.Debug;
-using static WSr.Socketing.Operators;
 
 namespace WSr.Tests.Socket
 {
@@ -75,7 +74,7 @@ namespace WSr.Tests.Socket
 
             var actual = run.Start(
                 create: () => socket
-                    .Receive(() => new byte[1024], run)
+                    .Receive(() => new byte[1024], x => {}, run)
                     .Select(x => Encoding.UTF8.GetString(x.ToArray())),
                 created: 0,
                 subscribed: 0,
@@ -87,7 +86,7 @@ namespace WSr.Tests.Socket
                message: debugElementsEqual(expected.Messages, actual.Messages));
         }
 
-        //[Ignore] //Dont know whats going on with the moq code
+        [Ignore] //Dont know whats going on with the moq code
         [TestMethod]
         public void ReceiveSwallowsObjectDisposedException()
         {
@@ -110,7 +109,7 @@ namespace WSr.Tests.Socket
 
             var actual = run.Start(
                 create: () => socket
-                    .Receive(() => new byte[1024], run)
+                    .Receive(() => new byte[1024], x => {}, run)
                     .Select(x => Encoding.UTF8.GetString(x.ToArray())),
                 created: 0,
                 subscribed: 0,
@@ -152,8 +151,7 @@ namespace WSr.Tests.Socket
             
             var actual = run.Start(
                 create: () => socket
-                    .SelectMany(s => Writers(s, run))
-                    .SelectMany(x => x.Write(buffers)),
+                    .SelectMany(x => buffers.SelectMany(b => x.Write(b, run))),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000

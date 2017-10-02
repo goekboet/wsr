@@ -25,3 +25,4 @@ artifacts/
 
 src/App.WSr/test/
 aliases
+*.txt

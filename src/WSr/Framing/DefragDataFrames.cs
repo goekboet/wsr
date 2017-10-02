@@ -10,8 +10,7 @@ namespace WSr.Framing
     public static class DefragDataFrames
     {
         public static IObservable<Frame> Defrag(
-            this IObservable<Frame> fragmented,
-            IScheduler scheduler)
+            this IObservable<Frame> fragmented)
         {
             return Observable.Create<Frame>(o =>
             {
@@ -75,7 +74,8 @@ namespace WSr.Framing
                     onError: o.OnError,
                     onCompleted: o.OnCompleted
                 );
-            });
+            })
+            ;
         }
     }
 }

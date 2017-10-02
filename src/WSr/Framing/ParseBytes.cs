@@ -5,6 +5,7 @@ using System.Reactive.Linq;
 
 using static WSr.Framing.Functions;
 using static WSr.Framing.Bitfield;
+using System.Reactive.Concurrency;
 
 namespace WSr.Framing
 {
@@ -19,7 +20,7 @@ namespace WSr.Framing
             return 0;
         }
 
-        public static IObservable<(bool masked, int bitfieldLength, IEnumerable<byte> frame)> Parse(
+        public static IObservable<(bool masked, int bitfieldLength, IEnumerable<byte> frame)> ParseWSFrame(
             this IObservable<byte> bytes)
         {
             return Observable.Create<(bool, int, IEnumerable<byte>)>(o =>
@@ -70,7 +71,8 @@ namespace WSr.Framing
                         }
                     }
                 }, o.OnError, o.OnCompleted);
-            });
+            })
+            ;
         }
     }
 }

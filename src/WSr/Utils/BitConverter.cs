@@ -33,7 +33,7 @@ namespace WSr
         }
 
         public static string Show(IEnumerable<byte> bytes) => 
-            $"{HexDump(bytes.Take(10))} ({bytes.Count()}";
+            $"{HexDump(bytes.Take(10))}";
 
         public static (bool valid, string text) IsValidUTF8(IEnumerable<byte> bs)
         {

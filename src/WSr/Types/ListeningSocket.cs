@@ -25,7 +25,6 @@ namespace WSr
 
         public virtual void Dispose()
         {
-            Console.WriteLine("Stopping Listener.");
             _listeningSocket.Stop();
         }
 
@@ -36,6 +35,4 @@ namespace WSr
                 .Select(c => new TcpConnection(c));
         }
     }
-
-    
 }

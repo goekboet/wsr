@@ -5,11 +5,17 @@ using System.Reactive;
 using System.Reactive.Subjects;
 
 using static WSr.Serving;
+using System.IO;
 
 namespace App.WSr
 {
     class Program
     {
+        static string Logfile = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "log.txt";
+        static Action<string> FileLog = s =>
+        {
+            File.AppendAllText(Logfile, s + Environment.NewLine);
+        };
         static void WriteLine(object s) => Console.WriteLine($"{s.ToString()}{Environment.NewLine}");
 
         static void WriteError(Exception e) => Console.WriteLine($"error: {e.GetType()} {e.Message} {e.Source} {e.StackTrace}");
@@ -21,31 +27,21 @@ namespace App.WSr
             var port = 9001;
             var terminator = new Subject<Unit>();
 
-
-            var connections = Serve(ip, port, terminator)
-                .Do(x => Console.WriteLine($"{x.Address} connected"))
-                .Publish()
-                .RefCount();
-
-            var incoming = connections
-                .Incoming(new byte[bufferSize])
-                .Do(Console.WriteLine)
-                .Publish()
-                .RefCount();
-
-            var outgoing = incoming
-                .WebSocketHandling();
-
-            var result = connections
-                .Transmit(outgoing)
+            var run = Host(ip, port, terminator)
+                .SelectMany(x => Serve(
+                    x, 
+                    () => new byte[bufferSize],
+                    y => Console.WriteLine(y)))
                 .Subscribe(
-                    onNext: WriteLine,
-                    onError: WriteError);
-            
+                    onNext: x => Console.WriteLine("onnext"),
+                    onError: WriteError,
+                    onCompleted: () => Console.WriteLine("Done.")
+                );
+
             Console.WriteLine("Any key to quit");
             Console.ReadKey();
             terminator.OnNext(Unit.Default);
-            result.Dispose();
+            run.Dispose();
             Console.ReadKey();
         }
     }

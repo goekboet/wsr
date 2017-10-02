@@ -42,15 +42,21 @@ namespace WSr.Tests.Framing
 
             var testcase = testcases[label];
 
+            var timing = run.CreateColdObservable(
+                OnNext(100000, Unit.Default),
+                OnCompleted<Unit>(100000)
+            );
+
             var expected = run.CreateColdObservable(
-                OnNext(1, testcase.expected),
-                OnCompleted<(bool, int)>(1)
+                OnNext(100001, testcase.expected),
+                OnCompleted<(bool, int)>(100001)
             );
 
             var actual = run.Start(
-                create: () => testcase.input.ToObservable()
-                    .Parse()
-                    .Select(x => { return (x.masked, x.bitfieldLength); }),
+                create: () => testcase.input.ToObservable(run)
+                    .ParseWSFrame()
+                    .Select(x => { return (x.masked, x.bitfieldLength); })
+                    .Zip(timing, (r, t) => r),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000000

@@ -10,8 +10,7 @@ namespace WSr.Framing
     public static class Utf8Decoding
     {
         public static IObservable<Frame> DecodeUtf8Payload(
-            this IObservable<Frame> frames,
-            IScheduler sceduler)
+            this IObservable<Frame> frames)
         {
             
             return Observable.Create<Frame>(o => 
@@ -51,7 +50,8 @@ namespace WSr.Framing
                     onCompleted: o.OnCompleted,
                     onError: o.OnError
                 );
-            });
+            })
+            ;
         }
     }
 }

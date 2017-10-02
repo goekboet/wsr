@@ -9,7 +9,7 @@ using WSr.Messaging;
 using WSr.Socketing;
 
 using static WSr.Tests.Functions.Debug;
-using static WSr.Socketing.Operators;
+using static WSr.Serving;
 
 namespace WSr.Tests.Socketing
 {
@@ -39,6 +39,7 @@ namespace WSr.Tests.Socketing
             return listener.Object;
         }
 
+        //[Ignore]
         [TestMethod]
         public void ServeAndDispose()
         {
@@ -64,7 +65,10 @@ namespace WSr.Tests.Socketing
             );
 
             var actual = run.Start(
-                create: () => Serve(term,host,run)
+                create: () => host
+                    .Connect(run)
+                    .Repeat()
+                    .TakeUntil(term)
                     .Select(x => x.Address),
                 created: 0,
                 subscribed: 50,
