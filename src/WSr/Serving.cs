@@ -3,14 +3,14 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using WSr.Messaging;
+using WSr.Application;
 
-using static WSr.Socketing.ReadFunctions;
-using static WSr.Socketing.WriteFunctions;
+using static WSr.IO.ReadFunctions;
+using static WSr.IO.WriteFunctions;
 using static WSr.IntegersFromByteConverter;
 using static WSr.LogFunctions;
 
-using WSr.Framing;
+using WSr.Protocol;
 
 namespace WSr
 {
@@ -54,16 +54,16 @@ namespace WSr
                             bufferfactory: bufferfactory,
                             log: ctx,
                             s: s)
-                        .Do(x => ctx($"Incoming bytes: {Show(x)} {(x.Count())}"))
+                        .Do(x => Timestamp(ctx, s.Now)($"Incoming bytes: {Show(x)} {(x.Count())}"))
                         .Select(x => x.ToObservable())
                         .Concat()
                         //.Do(x => Show(new[] { x }))
                         .Deserialize(s, ctx)
-                        .Do(x => ctx("Parsed message: " + x.ToString()))
+                        .Do(x => Timestamp(ctx, s.Now)("Parsed message: " + x.ToString()))
                         .Process()
-                        .Do(x => ctx("Processed message: " + x.ToString()))
+                        .Do(x => Timestamp(ctx, s.Now)("Processed message: " + x.ToString()))
                         .Serialize()
-                        .Do(x => ctx("Outgoing bytes: " + Show(x)))
+                        .Do(x => Timestamp(ctx, s.Now)("Outgoing bytes: " + Show(x)))
                         .Transmit(c, s)
                         ;
                 });

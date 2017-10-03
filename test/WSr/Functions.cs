@@ -1,19 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Text;
 using Microsoft.Reactive.Testing;
-
-using static WSr.ListConstruction;
-using static WSr.IntegersFromByteConverter;
-using WSr.Messaging;
-using WSr.Framing;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
 
-namespace WSr.Tests.Functions
+namespace WSr.Tests
 {
     public static class StringEncoding
     {

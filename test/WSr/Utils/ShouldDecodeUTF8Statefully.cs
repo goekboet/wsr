@@ -4,7 +4,7 @@ using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using static WSr.Tests.Bytes;
-using static WSr.Framing.Functions;
+using static WSr.Protocol.Functions;
 
 namespace WSr.Tests
 {

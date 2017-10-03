@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
 using System.Reactive;
-using WSr.Messaging;
+using WSr.Application;
 
 namespace WSr
 {
