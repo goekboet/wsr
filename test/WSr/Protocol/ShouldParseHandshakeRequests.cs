@@ -26,12 +26,6 @@ namespace WSr.Protocol.Tests
                     "a: b"},
                    expected: new HandshakeParse("/", h("a", "b"))
                ),
-               //    ["WithEmptyUrl"] = (
-               //        input: new[] {
-               //         "GET HTTP/1.1",
-               //         "a: b"},
-               //        expected: new HandshakeParse("", h("a", "b"))
-               //    ),
                ["WithWrongHttpVersion"] = (
                    input: new[] {
                     "GET /url HTTP/1.0",
@@ -41,20 +35,19 @@ namespace WSr.Protocol.Tests
                ["WithHeaderLineWhitespace1"] = (
                    input: new[] {
                     "GET /url HTTP/1.1",
-                    "a b : b"},
+                    "a b: b"},
                    expected: BadFrame.BadHandshake
                ),
                ["WithHeaderLineWhitespace2"] = (
                    input: new[] {
                     "GET /url HTTP/1.1",
-                    "a : b c"},
-                   expected: BadFrame.BadHandshake
+                    "a: b c"},
+                   expected: new HandshakeParse("/url", h("a", "b c"))
                )
            };
 
         [DataRow("WithUrl")]
         [DataRow("WithRootUrl")]
-        // [DataRow("WithEmptyUrl")]
         [DataRow("WithWrongHttpVersion")]
         [DataRow("WithHeaderLineWhitespace1")]
         [DataRow("WithHeaderLineWhitespace2")]

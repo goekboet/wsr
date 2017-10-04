@@ -121,7 +121,7 @@ namespace WSr.Protocol
         }
 
         private static string parseRequestLine = @"^GET\s(/\S*)\sHTTP/1\.1$";
-        private static string parseHeaderLine = @"^(\S*):\s(\S*)$";
+        private static string parseHeaderLine = @"^(\S*):\s(.+)$";
         private static HashSet<string> RequiredHeaders = new HashSet<string>(new[]
         {
             "Host",
