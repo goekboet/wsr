@@ -10,8 +10,6 @@ namespace WSr.Application
         {
             if (incoming is OpcodeMessage m)
             {
-                if (m.Opcode == OpCode.Ping)
-                    return Observable.Return(new OpcodeMessage(OpCode.Pong, m.Buffer));
                 if (m.Opcode == OpCode.Close)
                     return Observable.Return(m).Concat<Message>(Observable.Return(Eof.Message));
             }

@@ -41,6 +41,8 @@ namespace WSr.Protocol
                 .ParseWSFrame()
                 .Select(ToFrame)
                 .Select(IsValid)
+                .PingPongWithFrames()
+                // .PingPongWithFrames(TimeSpan.FromSeconds(10), l => AddContext("Latency", ctx)(l.ToString()))
                 .Select(CloseHandshake)
                 .DecodeUtf8Payload()
                 .Defrag()

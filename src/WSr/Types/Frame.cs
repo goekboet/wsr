@@ -18,6 +18,11 @@ namespace WSr
     public class ParsedFrame : Frame, IBitfield
     {
         public static ParsedFrame Empty => new ParsedFrame(new byte[2], new byte[0]);
+        public static ParsedFrame Ping => new ParsedFrame(b(0x80 | (byte)OpCode.Ping, 0x00), new byte[0]);
+
+        public static ParsedFrame Pong => new ParsedFrame(b(0x80 | (byte)OpCode.Pong, 0x00), new byte[0]);
+
+        public static ParsedFrame PongP(IEnumerable<byte> payload) => new ParsedFrame(b(0x80 | (byte)OpCode.Pong, 0x00), payload);
 
         public ParsedFrame Concat(ParsedFrame p) =>
             new ParsedFrame(

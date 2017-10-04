@@ -48,7 +48,7 @@ namespace WSr
 
         public override string ToString()
         {
-            return "Connected to" + Address;
+            return Address;
         }
 
         public IObservable<Unit> Write(

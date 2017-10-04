@@ -35,13 +35,8 @@ namespace WSr
         public static string Show(IEnumerable<byte> bytes) => 
             $"{HexDump(bytes.Take(10))}";
 
-        public static (bool valid, string text) IsValidUTF8(IEnumerable<byte> bs)
-        {
-            var text = Encoding.UTF8.GetString(bs.ToArray());
-            var valid = !text.Contains('\uFFFD');
-            
-            return (valid, text);
-        }
+        public static byte[] b(params byte[] bs) => bs;
+
     }
 
 }
