@@ -62,11 +62,11 @@ namespace WSr.Protocol.Tests
             }
         };
 
-        ITestableObservable<ParsedFrame> PingAt((int start, int interval) timing, int count, TestScheduler s) =>
+        ITestableObservable<Frame> PingAt((int start, int interval) timing, int count, TestScheduler s) =>
             s.EvenlySpacedHot(
                 start: timing.start,
                 distance: timing.interval,
-                es: Enumerable.Repeat(ParsedFrame.Ping, count));
+                es: Enumerable.Repeat(ParsedFrame.Ping as Frame, count));
 
         [DataRow("OnePongPerPing")]
         [DataRow("IgnoreUnsolicitedPongs")]
@@ -77,9 +77,9 @@ namespace WSr.Protocol.Tests
             var c = TestCases[t];
             var s = new TestScheduler();
             var pings = PingAt(c.PingTiming, c.OutgoingPings.Count(), s);
-            var pongs = s.TestStreamHot(c.Pongs.Select(x => (x, ParsedFrame.Pong)));
+            var pongs = s.TestStreamHot(c.Pongs.Select(x => (x, ParsedFrame.Pong as Frame)));
 
-            var expected = s.TestStream(c.OutgoingPings.Select(x => (x, ParsedFrame.Ping)));
+            var expected = s.TestStream(c.OutgoingPings.Select(x => (x, ParsedFrame.Ping as Frame)));
             var actual = s.Start(
                 create: () => Latency(
                         pings.Timestamp(s), 
@@ -102,7 +102,7 @@ namespace WSr.Protocol.Tests
             var c = TestCases[t];
             var s = new TestScheduler();
             var pings = PingAt(c.PingTiming, c.OutgoingPings.Count(), s);
-            var pongs = s.TestStreamHot(c.Pongs.Select(x => (x, ParsedFrame.Pong)));
+            var pongs = s.TestStreamHot(c.Pongs.Select(x => (x, ParsedFrame.Pong as Frame)));
 
             var expected = s.TestStream(c.Intervals);
             var actual = s.Start(
@@ -129,12 +129,12 @@ namespace WSr.Protocol.Tests
             var c = TestCases[t];
             var s = new TestScheduler();
             var pings = PingAt(c.PingTiming, c.OutgoingPings.Count(), s);
-            var pongs = s.TestStreamHot(c.Pongs.Select(x => (x, ParsedFrame.Pong)));
+            var pongs = s.TestStreamHot(c.Pongs.Select(x => (x, ParsedFrame.Pong as Frame)));
 
             var record = new List<TimeSpan>();
             Action<TimeSpan> latencyRecord = l => record.Add(l);
 
-            var expected = s.TestStream(c.OutgoingPings.Select(x => (x, ParsedFrame.Ping)));
+            var expected = s.TestStream(c.OutgoingPings.Select(x => (x, ParsedFrame.Ping as Frame)));
             var actual = s.Start(
                 create: () => OurPingPong(
                         pings.Timestamp(s), 

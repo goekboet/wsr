@@ -7,17 +7,23 @@ namespace WSr.Protocol
 {
     public static class PingPongFunctions
     {
-        public static IObservable<Timestamped<ParsedFrame>> PingAt(
-            TimeSpan interval) => Observable.Interval(interval).Select(_ => ParsedFrame.Ping).Timestamp();
+        public static Frame GetFrame(Parse<BadFrame, Frame> p)
+        {
+            (var e, var d) = p;
 
-        public static IObservable<ParsedFrame> OurPingPong(
-            IObservable<Timestamped<ParsedFrame>> pings,
-            IObservable<Timestamped<ParsedFrame>> pongs,
+            return d;
+        }
+        public static IObservable<Timestamped<Frame>> PingAt(
+            TimeSpan interval) => Observable.Interval(interval).Select(_ => ParsedFrame.Ping as Frame).Timestamp();
+
+        public static IObservable<Frame> OurPingPong(
+            IObservable<Timestamped<Frame>> pings,
+            IObservable<Timestamped<Frame>> pongs,
             Action<TimeSpan> latencyRecord)
             {
                 var (p, l) = Latency(pings, pongs);
 
-                return Observable.Create<ParsedFrame>(o =>
+                return Observable.Create<Frame>(o =>
                 {
                     return new CompositeDisposable(
                         l.Do(latencyRecord).Subscribe(),
@@ -26,9 +32,9 @@ namespace WSr.Protocol
                 });
             }
         
-        public static (IObservable<ParsedFrame> pings, IObservable<TimeSpan> latency) Latency(
-            IObservable<Timestamped<ParsedFrame>> pings, 
-            IObservable<Timestamped<ParsedFrame>> pongs)
+        public static (IObservable<Frame> pings, IObservable<TimeSpan> latency) Latency(
+            IObservable<Timestamped<Frame>> pings, 
+            IObservable<Timestamped<Frame>> pongs)
         {
             var outgoing = pings.Publish().RefCount();
             var incoming = pongs.Publish().RefCount();
@@ -45,31 +51,31 @@ namespace WSr.Protocol
             return (outgoing.Select(x => x.Value), latency);
         }
 
-        public static Func<ParsedFrame, ParsedFrame> TheirPingPong => p => ParsedFrame.PongP(p.Payload);
+        public static Func<Frame, Frame> TheirPingPong => p => ParsedFrame.PongP(p.Payload) as Frame;
 
-        public static IObservable<Frame> PingPongWithFrames(
-            this IObservable<Frame> fs,
+        public static IObservable<Parse<BadFrame, Frame>> PingPongWithFrames(
+            this IObservable<Parse<BadFrame, Frame>> fs,
             TimeSpan? interval = null,
             Action<TimeSpan> log = null)
         {
             var p = fs.Publish().RefCount();
             var pings = interval.HasValue
                 ? PingAt(interval.Value)
-                : Observable.Never<ParsedFrame>().Timestamp();
+                : Observable.Never<Frame>().Timestamp();
 
             var latencylog = log == null
                 ? t => {}
                 : log;
 
             return Observable.Merge(
-                PingPong(p.OfType<ParsedFrame>(), pings, latencylog).Cast<Frame>(),
-                p.OfType<BadFrame>()
+                PingPong(p.Where(x => !x.IsError).Select(x => GetFrame(x)), pings, latencylog).Select(x => new Parse<BadFrame, Frame>(x)),
+                p.Where(x => x.IsError)
             );
         }
 
-        public static IObservable<ParsedFrame> PingPong(
-            IObservable<ParsedFrame> fs,
-            IObservable<Timestamped<ParsedFrame>> pings,
+        public static IObservable<Frame> PingPong(
+            IObservable<Frame> fs,
+            IObservable<Timestamped<Frame>> pings,
             Action<TimeSpan> latencyRecord)
         {
             return fs.GroupBy(x => x.GetOpCode())

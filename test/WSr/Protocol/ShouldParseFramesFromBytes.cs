@@ -107,14 +107,14 @@ namespace WSr.Protocol.Tests
             Assert.IsTrue(actual.Messages.Single().Value.Kind.Equals(NotificationKind.OnError));
         }
 
-        private Dictionary<string, ((bool m, int lb, IEnumerable<byte> bs) input, Frame expected)> testcase2 =
-            new Dictionary<string, ((bool m, int lb, IEnumerable<byte> bs) input, Frame expected)>()
+        private Dictionary<string, ((bool m, int lb, IEnumerable<byte> bs) input, Parse<BadFrame, Frame> expected)> testcase2 =
+            new Dictionary<string, ((bool m, int lb, IEnumerable<byte> bs) input, Parse<BadFrame, Frame> expected)>()
             {
-                ["L0"] = ((m: true, lb: 0, L0), L0Frame),
-                ["125"] = ((m: true, lb: 0, L125), L125Frame),
-                ["126"] = ((m: true, lb: 2, L126), L126Frame),
-                ["127"] = ((m: true, lb: 8, L127), L127Frame),
-                ["Unmasked"] = ((m: false, lb: 0, L0), BadFrame.ProtocolError("Unmasked frame"))
+                ["L0"] = ((m: true, lb: 0, L0), Parse(L0Frame)),
+                ["125"] = ((m: true, lb: 0, L125), Parse(L125Frame)),
+                ["126"] = ((m: true, lb: 2, L126), Parse(L126Frame)),
+                ["127"] = ((m: true, lb: 8, L127), Parse(L127Frame)),
+                ["Unmasked"] = ((m: false, lb: 0, L0), Error(BadFrame.ProtocolError("Unmasked frame")))
             };
 
         [DataRow("L0")]
@@ -131,7 +131,7 @@ namespace WSr.Protocol.Tests
 
             var expected = run.CreateColdObservable(
                 OnNext(1, testcase.expected),
-                OnCompleted<Frame>(1)
+                OnCompleted<Parse<BadFrame, Frame>>(1)
             );
 
             var actual = run.Start(

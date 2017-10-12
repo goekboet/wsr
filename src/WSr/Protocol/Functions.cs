@@ -29,10 +29,10 @@ namespace WSr.Protocol
             return payload.Zip(Forever(mask).SelectMany(x => x), (p, m) => (byte)(p ^ m));
         }
 
-        public static Frame ToFrame(
+        public static Parse<BadFrame, Frame> ToFrame(
             (bool masked, int lb, IEnumerable<byte> frame) parse)
         {
-            if (!parse.masked) return BadFrame.ProtocolError("Unmasked frame");
+            if (!parse.masked) return new Parse<BadFrame, Frame>(BadFrame.ProtocolError("Unmasked frame"));
 
             var bitfield = parse.frame.Take(2);
 
@@ -42,28 +42,29 @@ namespace WSr.Protocol
 
             var payload = parse.frame.Skip(2 + parse.lb + 4);
 
-            return new ParsedFrame(
-                bitfield: bitfield,
-                payload: Unmask(mask, payload)
+            return new Parse<BadFrame, Frame>(
+                    new ParsedFrame(
+                        bitfield: bitfield,
+                        payload: Unmask(mask, payload))
             );
         }
 
-        public static Frame IsValid(Frame frame)
+        public static Parse<BadFrame, Frame> IsValid(Frame frame)
         {
             if (frame is ParsedFrame p)
             {
                 if (p.OpCodeLengthLessThan126())
-                    return BadFrame.ProtocolError("Opcode payloadlength must be < 125");
+                    return new Parse<BadFrame, Frame>(BadFrame.ProtocolError("Opcode payloadlength must be < 125"));
                 if (p.ReservedBitsSet())
-                    return BadFrame.ProtocolError("RSV-bit is set");
+                    return new Parse<BadFrame, Frame>(BadFrame.ProtocolError("RSV-bit is set"));
                 if (p.BadOpcode())
-                    return BadFrame.ProtocolError("Not a valid opcode");
+                    return new Parse<BadFrame, Frame>(BadFrame.ProtocolError("Not a valid opcode"));
                 if (p.ControlframeNotFinal())
-                    return BadFrame.ProtocolError("Control-frame must be final");
+                    return new Parse<BadFrame, Frame>(BadFrame.ProtocolError("Control-frame must be final"));
 
             }
 
-            return frame;
+            return new Parse<BadFrame, Frame>(frame);
         }
     }
 }

@@ -6,8 +6,16 @@ using static WSr.IntegersFromByteConverter;
 
 namespace WSr
 {
-    public abstract class Frame
+    public abstract class Frame : IBitfield
     {
+        protected Frame(IEnumerable<byte> bits)
+        {
+            Bits = bits;
+        }
+        
+        public IEnumerable<byte> Bits { get; }
+
+        public abstract IEnumerable<byte> Payload { get; }
     }
 
     public interface IBitfield
@@ -31,14 +39,12 @@ namespace WSr
 
         public ParsedFrame(
             IEnumerable<byte> bitfield,
-            IEnumerable<byte> payload)
+            IEnumerable<byte> payload) : base(bitfield)
         {
-            Bits = bitfield;
             Payload = payload;
         }
 
-        public IEnumerable<byte> Bits { get; }
-        public IEnumerable<byte> Payload { get; }
+        public override IEnumerable<byte> Payload { get; }
 
         public override string ToString() => $"Parsed Frame {Show(Bits)}-{Show(Payload.Take(10))} ({Payload.Count()})";
 
@@ -49,11 +55,10 @@ namespace WSr
         public override int GetHashCode() => Payload.Count();
     }
 
-    public class BadFrame : Frame
+    public class BadFrame
     {
         public static BadFrame ProtocolError(string reason) => new BadFrame(ToBytes(1002, reason));
         public static BadFrame Utf8 { get; } = new BadFrame(ToBytes(1007, ""));
-        public static BadFrame BadHandshake { get; } =  new BadFrame(Encoding.ASCII.GetBytes("400 Bad Request"));
 
         private BadFrame(IEnumerable<byte> payload)
         {
@@ -80,49 +85,25 @@ namespace WSr
         public TextFrame Concat(TextFrame p) =>
             new TextFrame(
                 bitfield: Bits.Zip(p.Bits, (l, r) => (byte)(l | r)),
-                payload: string.Join(string.Empty, new[] { Payload, p.Payload }));
+                payload: string.Join(string.Empty, new[] { Text, p.Text }));
 
         public TextFrame(
             IEnumerable<byte> bitfield,
-            string payload)
+            string payload) : base(bitfield)
         {
-            Bits = bitfield;
-            Payload = payload;
+            Text = payload;
         }
-        public IEnumerable<byte> Bits { get; }
 
-        public string Payload { get; }
+        public override IEnumerable<byte> Payload => Encoding.UTF8.GetBytes(Text);
 
-        public override string ToString() => $"TextParse {Show(Bits)}-{Payload.Substring(0, Payload.Length > 10 ? 10 : Payload.Length)}";
+        public string Text { get; }
+
+        public override string ToString() => $"TextParse {Show(Bits)}-{Text.Substring(0, Text.Length > 10 ? 10 : Text.Length)}";
 
         public override bool Equals(object obj) => obj is TextFrame t
             && Bits.SequenceEqual(t.Bits)
-            && Payload.Equals(t.Payload);
+            && Text.Equals(t.Text);
 
         public override int GetHashCode() => Bits.Count();
-    }
-
-    public class HandshakeParse : Frame
-    {
-        public HandshakeParse(
-            string url,
-            IDictionary<string, string> headers)
-        {
-            Url = url;
-            Headers = headers;
-        }
-
-        public string Url { get; }
-        public IDictionary<string, string> Headers { get; }
-
-        public override string ToString() => $"HandshakeParse: url: {Url}";
-
-        public override bool Equals(object obj) => obj is HandshakeParse p
-            && p.Url.Equals(Url)
-            && p.Headers.Count.Equals(Headers.Count)
-            //&& p.Headers.OrderBy(x => x.Key).SequenceEqual(Headers.OrderBy(x => x.Key))
-            ;
-        
-        public override int GetHashCode() => Url.GetHashCode() + Headers.Count();
     }
 }

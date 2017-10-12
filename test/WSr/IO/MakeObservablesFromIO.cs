@@ -84,7 +84,6 @@ namespace WSr.IO.Tests
                message: debugElementsEqual(expected.Messages, actual.Messages));
         }
 
-        [Ignore] //Dont know whats going on with the moq code
         [TestMethod]
         public void ReceiveSwallowsObjectDisposedException()
         {

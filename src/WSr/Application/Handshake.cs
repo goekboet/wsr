@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Text;
 
-
 namespace WSr.Application
 {
     public static class HandshakeFunctions

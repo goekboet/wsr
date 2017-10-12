@@ -64,7 +64,7 @@ namespace WSr.Protocol
                 .Chop(new byte[] { 0x0d, 0x0a }, bs => bs.Count() == 0)
                 .Select(x => x.Select(y => Encoding.ASCII.GetString(y.ToArray())));
 
-        public static Frame ParseHandshake(
+        public static Parse<string, HandshakeParse> ParseHandshake(
             IEnumerable<string> upgrade)
         {
             string getUrl(IEnumerable<string> u) => u.First();
@@ -79,7 +79,7 @@ namespace WSr.Protocol
             }
             catch (Exception)
             {
-                return BadFrame.BadHandshake;
+                return new Parse<string, HandshakeParse>("bad requestline");
             }
             try
             {
@@ -92,10 +92,10 @@ namespace WSr.Protocol
             }
             catch (Exception)
             {
-                return BadFrame.BadHandshake;
+                return new Parse<string, HandshakeParse>("bad headerline");
             }
 
-            return new HandshakeParse(url, headers);
+            return new Parse<string, HandshakeParse>(new HandshakeParse(url, headers));
         }
 
         private static string ws = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -104,20 +104,15 @@ namespace WSr.Protocol
 
         public static string ResponseKey(string requestKey) => Convert.ToBase64String(hash(requestKey + ws));
 
-        public static Frame AcceptKey(Frame f)
+        public static Parse<string, HandshakeParse> AcceptKey(HandshakeParse p)
         {
-            if (f is HandshakeParse h)
-            {
-                if (Validate(h.Headers))
+                if (Validate(p.Headers))
                 {
-                    h.Headers["Sec-WebSocket-Accept"] = ResponseKey(h.Headers["Sec-WebSocket-Key"]);
-                    return h;
+                    p.Headers["Sec-WebSocket-Accept"] = ResponseKey(p.Headers["Sec-WebSocket-Key"]);
+                    return new Parse<string, HandshakeParse>(p);
                 }
+                return new Parse<string, HandshakeParse>("bad headers");
 
-                return BadFrame.BadHandshake;
-            }
-
-            return f;
         }
 
         private static string parseRequestLine = @"^GET\s(/\S*)\sHTTP/1\.1$";

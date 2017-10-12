@@ -11,38 +11,38 @@ namespace WSr.Protocol.Tests
     public class FunctionsShould
     {
         static Dictionary<string, string> h(string key, string val) => new Dictionary<string, string>() { [key] = val };
-        static Dictionary<string, (string[] input, Frame expected)> handshakes =
-           new Dictionary<string, (string[] input, Frame expected)>()
+        static Dictionary<string, (string[] input, Parse<string, HandshakeParse> expected)> handshakes =
+           new Dictionary<string, (string[] input, Parse<string, HandshakeParse> expected)>()
            {
                ["WithUrl"] = (
                    input: new[] {
                     "GET /url HTTP/1.1",
                     "a: b"},
-                   expected: new HandshakeParse("/url", h("a", "b"))
+                   expected: new Parse<string, HandshakeParse>(new HandshakeParse("/url", h("a", "b")))
                ),
                ["WithRootUrl"] = (
                    input: new[] {
                     "GET / HTTP/1.1",
                     "a: b"},
-                   expected: new HandshakeParse("/", h("a", "b"))
+                   expected: new Parse<string, HandshakeParse>(new HandshakeParse("/", h("a", "b")))
                ),
                ["WithWrongHttpVersion"] = (
                    input: new[] {
                     "GET /url HTTP/1.0",
                     "a: b"},
-                   expected: BadFrame.BadHandshake
+                   expected: new Parse<string, HandshakeParse>("bad requestline")
                ),
                ["WithHeaderLineWhitespace1"] = (
                    input: new[] {
                     "GET /url HTTP/1.1",
                     "a b: b"},
-                   expected: BadFrame.BadHandshake
+                   expected: new Parse<string, HandshakeParse>("bad headerline")
                ),
                ["WithHeaderLineWhitespace2"] = (
                    input: new[] {
                     "GET /url HTTP/1.1",
                     "a: b c"},
-                   expected: new HandshakeParse("/url", h("a", "b c"))
+                   expected: new Parse<string, HandshakeParse>(new HandshakeParse("/url", h("a", "b c")))
                )
            };
 
@@ -80,16 +80,16 @@ namespace WSr.Protocol.Tests
             Assert.AreEqual(expected, actual);
         }
 
-        static Dictionary<string, (HandshakeParse input, Frame expected)> handshakeCases =
-           new Dictionary<string, (HandshakeParse input, Frame expected)>()
+        static Dictionary<string, (HandshakeParse input, Parse<string, HandshakeParse> expected)> handshakeCases =
+           new Dictionary<string, (HandshakeParse input, Parse<string, HandshakeParse> expected)>()
            {
                ["CompleteHeader"] = (
                 input: new HandshakeParse("url", CompleteHeaders),
-                expected: new HandshakeParse("url", AcceptedHeaders)
+                expected: new Parse<string, HandshakeParse>(new HandshakeParse("url", AcceptedHeaders))
             ),
                ["MissingHeaders"] = (
                 input: new HandshakeParse("url", InCompleteHeaders),
-                expected: BadFrame.BadHandshake
+                expected: new Parse<string, HandshakeParse>("bad headers")
             )
            };
 

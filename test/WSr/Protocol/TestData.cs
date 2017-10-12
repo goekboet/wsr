@@ -11,6 +11,9 @@ namespace WSr.Tests
 {
     internal static class Bytes
     {
+        public static Parse<BadFrame, Frame> Parse(Frame f) => new Parse<BadFrame, Frame>(f);
+        public static Parse<BadFrame, Frame> Error(BadFrame f) => new Parse<BadFrame, Frame>(f);
+
         static IEnumerable<byte> bs(int n) => Enumerable.Repeat((byte)0x00, n);
         static byte[] b(params byte[] bs) => bs;
         static byte[] b(OpCode o) => new byte[] { (byte)o, 0x00 };
@@ -59,7 +62,7 @@ namespace WSr.Tests
                 "\r\n"}
         ));
 
-        public static Frame AcceptedHandshake = new HandshakeParse(
+        public static HandshakeParse AcceptedHandshake = new HandshakeParse(
             url: "/chat",
             headers: new Dictionary<string, string>()
             {

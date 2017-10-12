@@ -16,6 +16,15 @@ namespace WSr.Protocol
     public static class DeserializeFunctions
     {
         private const string Context = "Deserialize";
+
+        public static IObservable<Message> DeserializeHandshake(
+            this IObservable<byte> bytes
+        ) => bytes
+                .ChopUpgradeRequest()
+                .Select(ParseHandshake)
+                .Select(x => x.Map(AcceptKey))
+                .Select(AcceptHandshake)
+                ;
         
         public static IObservable<Message> Deserialize(
             this IObservable<byte> bytes,
@@ -30,20 +39,17 @@ namespace WSr.Protocol
                 ;
 
             var handshake = incoming
-                .ChopUpgradeRequest()
+                .DeserializeHandshake()
                 .Take(1)
-                .Select(ParseHandshake)
-                .Select(AcceptKey)
-                .Select(AcceptHandshake)
                 ;
 
             var frames = incoming
                 .ParseWSFrame()
                 .Select(ToFrame)
-                .Select(IsValid)
+                .Select(p => p.Map(IsValid))
                 .PingPongWithFrames()
                 // .PingPongWithFrames(TimeSpan.FromSeconds(10), l => AddContext("Latency", ctx)(l.ToString()))
-                .Select(CloseHandshake)
+                .Select(x => x.Map(CloseHandshake))
                 .DecodeUtf8Payload()
                 .Defrag()
                 .Select(ToMessage)

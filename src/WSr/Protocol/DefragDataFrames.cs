@@ -9,10 +9,10 @@ namespace WSr.Protocol
 {
     public static class DefragDataFrames
     {
-        public static IObservable<Frame> Defrag(
-            this IObservable<Frame> fragmented)
+        public static IObservable<Parse<BadFrame, Frame>> Defrag(
+            this IObservable<Parse<BadFrame, Frame>> fragmented)
         {
-            return Observable.Create<Frame>(o =>
+            return Observable.Create<Parse<BadFrame, Frame>>(o =>
             {
                 OpCode? continuingOn = null;
                 var binary = ParsedFrame.Empty;
@@ -21,9 +21,11 @@ namespace WSr.Protocol
                 return fragmented.Subscribe(
                     onNext: f =>
                     {
-                        if (f is BadFrame) o.OnNext(f);
-                        else if (f is IBitfield b)
+                        if (f.IsError) o.OnNext(f);
+                        else
                         {
+                            (var _, var b) = f;
+
                             if (b.IsControlCode())
                             {
                                 o.OnNext(f);
@@ -31,9 +33,9 @@ namespace WSr.Protocol
                             else
                             {
                                 if (b.IsContinuation() && !continuingOn.HasValue)
-                                    o.OnNext(BadFrame.ProtocolError("not expecting continuation"));
+                                    o.OnNext(new Parse<BadFrame, Frame>(BadFrame.ProtocolError("not expecting continuation")));
                                 if (!b.IsContinuation() && continuingOn.HasValue)
-                                    o.OnNext(BadFrame.ProtocolError("expecting continuation"));
+                                    o.OnNext(new Parse<BadFrame, Frame>(BadFrame.ProtocolError("expecting continuation")));
 
                                 if (b.IsFinal() && !continuingOn.HasValue)
                                 {
@@ -44,11 +46,11 @@ namespace WSr.Protocol
                                     if (b.ExpectContinuation())
                                         continuingOn = b.GetOpCode();
 
-                                    if (continuingOn == OpCode.Text && f is TextFrame t)
+                                    if (continuingOn == OpCode.Text && b is TextFrame t)
                                     {
                                         text = text.Concat(t);
                                     }
-                                    else if (f is ParsedFrame p)
+                                    else if (b is ParsedFrame p)
                                     {
                                         binary = binary.Concat(p);
                                     }
@@ -57,12 +59,12 @@ namespace WSr.Protocol
                                     {
                                         if (continuingOn == OpCode.Text)
                                         {
-                                            o.OnNext(text);
+                                            o.OnNext(new Parse<BadFrame, Frame>(text));
                                             text = TextFrame.Empty;
                                         }
                                         else
                                         {
-                                            o.OnNext(binary);
+                                            o.OnNext(new Parse<BadFrame, Frame>(binary));
                                             binary = ParsedFrame.Empty;
                                         }
                                         continuingOn = null;

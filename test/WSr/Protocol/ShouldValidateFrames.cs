@@ -62,27 +62,27 @@ namespace WSr.Protocol.Tests
         }
 
         [TestMethod]
-        [DataRow("ConNoProblems", typeof(ParsedFrame))]
-        [DataRow("TexNoProblems", typeof(ParsedFrame))]
-        [DataRow("BinNoProblems", typeof(ParsedFrame))]
-        [DataRow("PigNoProblems", typeof(ParsedFrame))]
-        [DataRow("PonNoProblems", typeof(ParsedFrame))]
-        [DataRow("CloNoProblems", typeof(ParsedFrame))]
-        [DataRow("BadLengthPin", typeof(BadFrame))]
-        [DataRow("BadLengthPon", typeof(BadFrame))]
-        [DataRow("BadLengthClo", typeof(BadFrame))]
-        [DataRow("RSV1Set", typeof(BadFrame))]
-        [DataRow("RSV2Set", typeof(BadFrame))]
-        [DataRow("RSV3Set", typeof(BadFrame))]
-        [DataRow("BadOpCode", typeof(BadFrame))]
-        [DataRow("NonFinalControlFrame", typeof(BadFrame))]
+        [DataRow("ConNoProblems", false)]
+        [DataRow("TexNoProblems", false)]
+        [DataRow("BinNoProblems", false)]
+        [DataRow("PigNoProblems", false)]
+        [DataRow("PonNoProblems", false)]
+        [DataRow("CloNoProblems", false)]
+        [DataRow("BadLengthPin", true)]
+        [DataRow("BadLengthPon", true)]
+        [DataRow("BadLengthClo", true)]
+        [DataRow("RSV1Set", true)]
+        [DataRow("RSV2Set", true)]
+        [DataRow("RSV3Set", true)]
+        [DataRow("BadOpCode", true)]
+        [DataRow("NonFinalControlFrame", true)]
         public void ValidateFrame(
             string frameLabel,
-            Type expected)
+            bool expected)
         {
             var result = IsValid(FrameWithLabel(frameLabel));
 
-            Assert.IsInstanceOfType(result, expected);
+            Assert.AreEqual(result.IsError, expected);
         }
     }
 }

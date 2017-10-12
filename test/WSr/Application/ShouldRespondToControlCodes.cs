@@ -19,9 +19,6 @@ namespace WSr.Application.Tests
          Dictionary<string, (Message input, (long, Message)[] expected)> pingpongCases =
         new Dictionary<string, (Message input, (long, Message)[] expected)>()
         {
-            ["Ping"] = (
-                input: m(OpCode.Ping, p(0xfe, 0xff)),
-                expected:  new [] {(1L, m(OpCode.Pong, p(0xfe, 0xff)))}),
             ["Close"] = (
                 input: m(OpCode.Close, p(0xfe, 0xff)),
                 expected: new[] 
@@ -31,7 +28,6 @@ namespace WSr.Application.Tests
                 })
         };
         
-        [DataRow("Ping")]
         [DataRow("Close")]
         [TestMethod]
         public void PingPongShould(string label)
@@ -52,6 +48,5 @@ namespace WSr.Application.Tests
 
             AssertAsExpected(expected, actual);
         }
-
     }
 }

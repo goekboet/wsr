@@ -4,25 +4,23 @@ namespace WSr.Protocol
 {
     public static class MapFrameToMessageFunctions
     {
-        public static Func<Frame, Message> AcceptHandshake => f => 
-            f is HandshakeParse p 
-                ? new UpgradeRequest(p) as Message 
-                : ToMessage(f);
-        
-        public static Func<Frame, Message> ToMessage =>
+        public static Func<Parse<string, HandshakeParse>, Message> AcceptHandshake => p => 
+        {
+            (var error, var data) = p;
+
+            return string.IsNullOrEmpty(error)
+                ? new UpgradeRequest(data) as Message
+                : new BadUpgradeRequest(error);
+        };
+
+        public static Func<Parse<BadFrame, Frame>, Message> ToMessage =>
             frame =>
         {
-            switch (frame)
-            {
-                case BadFrame b:
-                    {
-                        if (b.Equals(BadFrame.BadHandshake))
-                            return new BadUpgradeRequest("");
+            (var e, var f) = frame;
 
-                        return ToOpcodeMessage(b);
-                    }
-                case HandshakeParse h:
-                    return new UpgradeRequest(h);
+            if (frame.IsError) return ToOpcodeMessage(e);
+            switch (f)
+            {
                 case TextFrame t:
                     return ToTextMessage(t);
                 case ParsedFrame p:
@@ -41,6 +39,6 @@ namespace WSr.Protocol
         private static Message ToOpcodeMessage(BadFrame f) => new OpcodeMessage(OpCode.Close, f.Payload);
         private static Message ToOpcodeMessage(ParsedFrame p) => new OpcodeMessage(p.GetOpCode(), p.Payload);
         private static Message ToBinaryMessage(ParsedFrame frame) => new BinaryMessage(frame.Payload);
-        public static Message ToTextMessage(TextFrame t) => new TextMessage(t.Payload);
+        public static Message ToTextMessage(TextFrame t) => new TextMessage(t.Text);
     }
 }

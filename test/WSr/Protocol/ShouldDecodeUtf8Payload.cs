@@ -14,21 +14,25 @@ namespace WSr.Protocol.Tests
     {
         static byte[] b(params byte[] bs) => bs;
 
-        private static Dictionary<string, (Frame input, Frame expected)> nonContinous =
-                   new Dictionary<string, (Frame input, Frame expected)>()
+        private static Dictionary<string, (Parse<BadFrame, Frame> input, Parse<BadFrame, Frame> expected)> nonContinous =
+                   new Dictionary<string, (Parse<BadFrame, Frame> input, Parse<BadFrame, Frame> expected)>()
                    {
                        ["IgnoreNonTextFrame"] = (
-                        input: new ParsedFrame(b(0x82, 0x00), new byte[0]),
-                        expected: new ParsedFrame(b(0x82, 0x00), new byte[0])),
+                        input: Parse(new ParsedFrame(b(0x82, 0x00), new byte[0])),
+                        expected: Parse(new ParsedFrame(b(0x82, 0x00), new byte[0]))),
                        ["DecodeEmptyTextFrame"] = (
-                        input: new ParsedFrame(b(0x81, 0x00), new byte[0]),
-                        expected: new TextFrame(b(0x81, 0x00), string.Empty)),
+                        input: Parse(new ParsedFrame(b(0x81, 0x00), new byte[0])),
+                        expected: Parse(new TextFrame(b(0x81, 0x00), string.Empty))),
                        ["DecodeTextFrame"] = (
-                        input: new ParsedFrame(b(0x81, 0x03), Encoding.UTF8.GetBytes("abc")),
-                        expected: new TextFrame(b(0x81, 0x03), "abc")),
+                        input: Parse(new ParsedFrame(b(0x81, 0x03), Encoding.UTF8.GetBytes("abc"))),
+                        expected: Parse(new TextFrame(b(0x81, 0x03), "abc"))),
                        ["RejectBadUtf8"] = (
-                        input: new ParsedFrame(b(0x81, 0x00), InvalidUtf8()),
-                        expected: BadFrame.Utf8
+                        input: Parse(new ParsedFrame(b(0x81, 0x00), InvalidUtf8())),
+                        expected: Error(BadFrame.Utf8)
+                        ),
+                       ["IgnoreErrorParse"] = (
+                            input: Error(BadFrame.ProtocolError("e")),
+                            expected: Error(BadFrame.ProtocolError("e"))
                         )
                    };
 
@@ -36,6 +40,7 @@ namespace WSr.Protocol.Tests
         [DataRow("DecodeEmptyTextFrame")]
         [DataRow("DecodeTextFrame")]
         [DataRow("RejectBadUtf8")]
+        [DataRow("IgnoreErrorParse")]
         [TestMethod]
         public void HandleNoContinuationCases(string label)
         {
@@ -45,7 +50,7 @@ namespace WSr.Protocol.Tests
             var run = new TestScheduler();
             var expected = run.CreateColdObservable(
                 OnNext(1, testCase.expected),
-                OnCompleted<Frame>(1)
+                OnCompleted<Parse<BadFrame, Frame>>(1)
             );
             var actual = run.Start(
                 create: () => input.Take(1, run).DecodeUtf8Payload(),
@@ -57,65 +62,65 @@ namespace WSr.Protocol.Tests
             AssertAsExpected(expected, actual);
         }
 
-        private Dictionary<string, (IEnumerable<ParsedFrame> parses, IEnumerable<Frame> expected)> continous =
-            new Dictionary<string, (IEnumerable<ParsedFrame> parses, IEnumerable<Frame> expected)>()
+        private Dictionary<string, (IEnumerable<Parse<BadFrame, Frame>> parses, IEnumerable<Parse<BadFrame, Frame>> expected)> continous =
+            new Dictionary<string, (IEnumerable<Parse<BadFrame, Frame>> parses, IEnumerable<Parse<BadFrame, Frame>> expected)>()
             {
                 ["IgnoreBadContinuation"] = (
                     parses: new[]
                     {
-                        new ParsedFrame(b(0x80, 0x00), new byte[] { 0x61 }),
-                        new ParsedFrame(b(0x81, 0x00), new byte[] { 0x62 })
+                        Parse(new ParsedFrame(b(0x80, 0x00), new byte[] { 0x61 })),
+                        Parse(new ParsedFrame(b(0x81, 0x00), new byte[] { 0x62 }))
                     },
-                    expected: new Frame[]
+                    expected: new[]
                     {
-                        new ParsedFrame(b(0x80, 0x00), new byte[] { 0x61 }),
-                        new TextFrame(b(0x81, 0x00), "b")
+                        Parse(new ParsedFrame(b(0x80, 0x00), new byte[] { 0x61 })),
+                        Parse(new TextFrame(b(0x81, 0x00), "b"))
                     }
                 ),
                 ["Simple"] = (
                 parses: new[]
                 {
-                    new ParsedFrame(b(0x01, 0x00), new byte[] { 0x61 }),
-                    new ParsedFrame(b(0x80, 0x00), new byte[] { 0x62 }),
+                    Parse(new ParsedFrame(b(0x01, 0x00), new byte[] { 0x61 })),
+                    Parse(new ParsedFrame(b(0x80, 0x00), new byte[] { 0x62 })),
                 },
                 expected: new[]
                 {
-                    new TextFrame(b(0x01, 0x00), "a"),
-                    new TextFrame(b(0x80, 0x00), "b")
+                    Parse(new TextFrame(b(0x01, 0x00), "a")),
+                    Parse(new TextFrame(b(0x80, 0x00), "b"))
                 }
             ),
                 ["CodepointSplitByContinuation"] = (
-                    parses: new []
+                    parses: new[]
                     {
-                        new ParsedFrame(b(0x01, 0x00), new byte[]{0xe1}),
-                        new ParsedFrame(b(0x00, 0x00), new byte[]{0x9b}),
-                        new ParsedFrame(b(0x80, 0x00), new byte[]{0x92})
+                        Parse(new ParsedFrame(b(0x01, 0x00), new byte[]{0xe1})),
+                        Parse(new ParsedFrame(b(0x00, 0x00), new byte[]{0x9b})),
+                        Parse(new ParsedFrame(b(0x80, 0x00), new byte[]{0x92}))
                     },
                     expected: new[]
                     {
-                        new TextFrame(b(0x01, 0x00), ""),
-                        new TextFrame(b(0x00, 0x00), ""),
-                        new TextFrame(b(0x80, 0x00), "ᛒ")
+                        Parse(new TextFrame(b(0x01, 0x00), "")),
+                        Parse(new TextFrame(b(0x00, 0x00), "")),
+                        Parse(new TextFrame(b(0x80, 0x00), "ᛒ"))
                     }
                 ),
                 ["LongText"] = (
                     parses: new[]
                     {
-                        new ParsedFrame(b(0x81, 0x00), Enumerable.Repeat((byte)0x2a, 65535))
+                        Parse(new ParsedFrame(b(0x81, 0x00), Enumerable.Repeat((byte)0x2a, 65535)))
                     },
-                    expected: new []
+                    expected: new[]
                     {
-                        new TextFrame(b(0x81, 0x00), new string('*', 65535))
+                        Parse(new TextFrame(b(0x81, 0x00), new string('*', 65535)))
                     }
                 ),
                 ["Fuzzer6.4.1"] = (
                     parses: new[]
                     {
-                        new ParsedFrame(b(0x01, 0x00), new byte[] {0xce, 0xba, 0xe1, 0xbd, 0xb9, 0xcf, 0x83, 0xce, 0xbc, 0xce, 0xb5})
+                        Parse(new ParsedFrame(b(0x01, 0x00), new byte[] {0xce, 0xba, 0xe1, 0xbd, 0xb9, 0xcf, 0x83, 0xce, 0xbc, 0xce, 0xb5}))
                     },
                     expected: new[]
                     {
-                        new TextFrame(b(0x01, 0x00), "κόσμε")
+                        Parse(new TextFrame(b(0x01, 0x00), "κόσμε"))
                     }
                 )
             };
@@ -124,7 +129,7 @@ namespace WSr.Protocol.Tests
         [DataRow("Simple")]
         [DataRow("CodepointSplitByContinuation")]
         [DataRow("LongText")]
-       // [DataRow("Fuzzer6.4.1")]
+        // [DataRow("Fuzzer6.4.1")]
         [TestMethod]
         public void HandleContinuationCases(string label)
         {

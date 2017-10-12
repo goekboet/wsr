@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+
 using static WSr.IntegersFromByteConverter;
 
 namespace WSr
@@ -85,45 +86,5 @@ namespace WSr
         private Eof() { }
 
         public override string ToString() => $"End of file";
-    }
-
-    public class UpgradeRequest : Message
-    {
-        public HandshakeParse Parse { get;}
-        public UpgradeRequest(
-            HandshakeParse parse)
-        {
-            Parse = parse;
-        }
-
-        public IDictionary<string, string> Headers => Parse.Headers;
-        public string Url => Parse.Url;
-
-
-        public override bool Equals(object o) => o is UpgradeRequest m
-            && m.Parse.Url.Equals(Parse.Url)
-            && m.Parse.Headers.Count.Equals(Parse.Headers.Count);
-
-        public override string ToString() => "Message for " + Parse.ToString();
-
-        public override int GetHashCode() => Parse.GetHashCode();
-    }
-
-    public class BadUpgradeRequest : Message
-    {
-        public BadUpgradeRequest(
-            string reason)
-        {
-            Reason = reason;
-        }
-
-        public string Reason { get; }
-
-        public override bool Equals(object o) => o is BadUpgradeRequest m
-            && m.Reason.Equals(Reason);
-
-        public override int GetHashCode() => Reason.GetHashCode();
-
-        public override string ToString() => $"UpgradeFail {Reason}";
     }
 }
