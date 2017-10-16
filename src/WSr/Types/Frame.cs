@@ -55,12 +55,12 @@ namespace WSr
         public override int GetHashCode() => Payload.Count();
     }
 
-    public class BadFrame
+    public class Fail
     {
-        public static BadFrame ProtocolError(string reason) => new BadFrame(ToBytes(1002, reason));
-        public static BadFrame Utf8 { get; } = new BadFrame(ToBytes(1007, ""));
+        public static Fail ProtocolError(string reason) => new Fail(ToBytes(1002, reason));
+        public static Fail Utf8 { get; } = new Fail(ToBytes(1007, ""));
 
-        private BadFrame(IEnumerable<byte> payload)
+        private Fail(IEnumerable<byte> payload)
         {
             Payload = payload;
         }
@@ -72,7 +72,7 @@ namespace WSr
         public override string ToString() => $"Badframe: {Show(Payload.Take(10))}";
 
         public override bool Equals(object obj) =>
-            obj is BadFrame b 
+            obj is Fail b 
             && Payload.SequenceEqual(b.Payload);
 
         public override int GetHashCode() => Payload.Count();

@@ -13,7 +13,7 @@ namespace WSr.Protocol
                 : new BadUpgradeRequest(error);
         };
 
-        public static Func<Parse<BadFrame, Frame>, Message> ToMessage =>
+        public static Func<Parse<Fail, Frame>, Message> ToMessage =>
             frame =>
         {
             (var e, var f) = frame;
@@ -36,7 +36,7 @@ namespace WSr.Protocol
             }
         };
 
-        private static Message ToOpcodeMessage(BadFrame f) => new OpcodeMessage(OpCode.Close, f.Payload);
+        private static Message ToOpcodeMessage(Fail f) => new OpcodeMessage(OpCode.Close, f.Payload);
         private static Message ToOpcodeMessage(ParsedFrame p) => new OpcodeMessage(p.GetOpCode(), p.Payload);
         private static Message ToBinaryMessage(ParsedFrame frame) => new BinaryMessage(frame.Payload);
         public static Message ToTextMessage(TextFrame t) => new TextMessage(t.Text);

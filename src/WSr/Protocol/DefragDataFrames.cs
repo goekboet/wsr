@@ -9,75 +9,63 @@ namespace WSr.Protocol
 {
     public static class DefragDataFrames
     {
-        public static IObservable<Parse<BadFrame, Frame>> Defrag(
-            this IObservable<Parse<BadFrame, Frame>> fragmented)
+        public static IObservable<Parse<Fail, Frame>> Defrag(
+            this IObservable<Parse<Fail, Frame>> fragmented) =>
+            fragmented.WithParser(x => Observable.Create<Parse<Fail, Frame>>(o =>
         {
-            return Observable.Create<Parse<BadFrame, Frame>>(o =>
-            {
-                OpCode? continuingOn = null;
-                var binary = ParsedFrame.Empty;
-                var text = TextFrame.Empty;
-
-                return fragmented.Subscribe(
-                    onNext: f =>
+            OpCode? continuingOn = null;
+            var binary = ParsedFrame.Empty;
+            var text = TextFrame.Empty;
+            
+            return x.Subscribe(
+                onNext: f =>
+                {
+                    if (f.IsControlCode())
                     {
-                        if (f.IsError) o.OnNext(f);
+                        o.OnNext(new Parse<Fail, Frame>(f));
+                    }
+                    else
+                    {
+                        if (f.IsContinuation() && !continuingOn.HasValue)
+                            o.OnNext(new Parse<Fail, Frame>(Fail.ProtocolError("not expecting continuation")));
+                        if (!f.IsContinuation() && continuingOn.HasValue)
+                            o.OnNext(new Parse<Fail, Frame>(Fail.ProtocolError("expecting continuation")));
+                        if (f.IsFinal() && !continuingOn.HasValue)
+                        {
+                            o.OnNext(new Parse<Fail, Frame>(f));
+                        }
                         else
                         {
-                            (var _, var b) = f;
-
-                            if (b.IsControlCode())
+                            if (f.ExpectContinuation())
+                                continuingOn = f.GetOpCode();
+                            if (continuingOn == OpCode.Text && f is TextFrame t)
                             {
-                                o.OnNext(f);
+                                text = text.Concat(t);
                             }
-                            else
+                            else if (f is ParsedFrame p)
                             {
-                                if (b.IsContinuation() && !continuingOn.HasValue)
-                                    o.OnNext(new Parse<BadFrame, Frame>(BadFrame.ProtocolError("not expecting continuation")));
-                                if (!b.IsContinuation() && continuingOn.HasValue)
-                                    o.OnNext(new Parse<BadFrame, Frame>(BadFrame.ProtocolError("expecting continuation")));
-
-                                if (b.IsFinal() && !continuingOn.HasValue)
+                                binary = binary.Concat(p);
+                            }
+                            if (f.EndsContinuation())
+                            {
+                                if (continuingOn == OpCode.Text)
                                 {
-                                    o.OnNext(f);
+                                    o.OnNext(new Parse<Fail, Frame>(text));
+                                    text = TextFrame.Empty;
                                 }
                                 else
                                 {
-                                    if (b.ExpectContinuation())
-                                        continuingOn = b.GetOpCode();
-
-                                    if (continuingOn == OpCode.Text && b is TextFrame t)
-                                    {
-                                        text = text.Concat(t);
-                                    }
-                                    else if (b is ParsedFrame p)
-                                    {
-                                        binary = binary.Concat(p);
-                                    }
-
-                                    if (b.EndsContinuation())
-                                    {
-                                        if (continuingOn == OpCode.Text)
-                                        {
-                                            o.OnNext(new Parse<BadFrame, Frame>(text));
-                                            text = TextFrame.Empty;
-                                        }
-                                        else
-                                        {
-                                            o.OnNext(new Parse<BadFrame, Frame>(binary));
-                                            binary = ParsedFrame.Empty;
-                                        }
-                                        continuingOn = null;
-                                    }
+                                    o.OnNext(new Parse<Fail, Frame>(binary));
+                                    binary = ParsedFrame.Empty;
                                 }
+                                continuingOn = null;
                             }
                         }
-                    },
-                    onError: o.OnError,
-                    onCompleted: o.OnCompleted
-                );
-            })
-            ;
-        }
+                    }
+                },
+                onError: o.OnError,
+                onCompleted: o.OnCompleted
+            );
+        }));
     }
 }

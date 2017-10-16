@@ -13,11 +13,11 @@ namespace WSr.Protocol.Tests
     public class ShouldMapFramesToMessages
     {
         private static IEnumerable<byte> Close(ushort code, string m) => ToNetwork2Bytes(code).Concat(Encoding.UTF8.GetBytes(m));
-        private Dictionary<string, (Parse<BadFrame, Frame> input, Message expected)> testcases
-          = new Dictionary<string, (Parse<BadFrame, Frame> input, Message expected)>()
+        private Dictionary<string, (Parse<Fail, Frame> input, Message expected)> testcases
+          = new Dictionary<string, (Parse<Fail, Frame> input, Message expected)>()
           {
               ["BadFrame"] = (
-                  input: Error(BadFrame.ProtocolError("test")),
+                  input: Error(Fail.ProtocolError("test")),
                   expected: new OpcodeMessage(OpCode.Close, Close(1002, "test"))),
               ["Textparse"] = (
                   input: Parse(new TextFrame(new byte[] { 0x81, 0x00 }, "one")),

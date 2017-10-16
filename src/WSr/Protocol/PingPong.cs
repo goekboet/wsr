@@ -7,7 +7,7 @@ namespace WSr.Protocol
 {
     public static class PingPongFunctions
     {
-        public static Frame GetFrame(Parse<BadFrame, Frame> p)
+        public static Frame GetFrame(Parse<Fail, Frame> p)
         {
             (var e, var d) = p;
 
@@ -53,11 +53,13 @@ namespace WSr.Protocol
 
         public static Func<Frame, Frame> TheirPingPong => p => ParsedFrame.PongP(p.Payload) as Frame;
 
-        public static IObservable<Parse<BadFrame, Frame>> PingPongWithFrames(
-            this IObservable<Parse<BadFrame, Frame>> fs,
+        public static IObservable<Parse<Fail, Frame>> PingPongWithFrames(
+            this IObservable<Parse<Fail, Frame>> fs,
             TimeSpan? interval = null,
             Action<TimeSpan> log = null)
         {
+            if (log == null) log = t => {};
+
             var p = fs.Publish().RefCount();
             var pings = interval.HasValue
                 ? PingAt(interval.Value)
@@ -67,10 +69,7 @@ namespace WSr.Protocol
                 ? t => {}
                 : log;
 
-            return Observable.Merge(
-                PingPong(p.Where(x => !x.IsError).Select(x => GetFrame(x)), pings, latencylog).Select(x => new Parse<BadFrame, Frame>(x)),
-                p.Where(x => x.IsError)
-            );
+            return fs.WithParser(x => PingPong(x, pings, log));
         }
 
         public static IObservable<Frame> PingPong(

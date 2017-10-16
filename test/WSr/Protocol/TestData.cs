@@ -11,8 +11,8 @@ namespace WSr.Tests
 {
     internal static class Bytes
     {
-        public static Parse<BadFrame, Frame> Parse(Frame f) => new Parse<BadFrame, Frame>(f);
-        public static Parse<BadFrame, Frame> Error(BadFrame f) => new Parse<BadFrame, Frame>(f);
+        public static Parse<Fail, Frame> Parse(Frame f) => new Parse<Fail, Frame>(f);
+        public static Parse<Fail, Frame> Error(Fail f) => new Parse<Fail, Frame>(f);
 
         static IEnumerable<byte> bs(int n) => Enumerable.Repeat((byte)0x00, n);
         static byte[] b(params byte[] bs) => bs;
