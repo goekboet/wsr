@@ -14,7 +14,7 @@ namespace WSr.Protocol.Tests
         [TestMethod]
         public void MakeCorrectCloseByteSequence()
         {
-            var bytes = Fail.ToBytes(1002, "close");
+            var bytes = FailedFrame.ToBytes(1002, "close");
             var expected = new byte[] {0x03, 0xea, 0x63, 0x6c, 0x6f, 0x73, 0x65};
 
             Assert.IsTrue(expected.SequenceEqual(bytes));

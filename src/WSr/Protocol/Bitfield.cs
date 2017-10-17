@@ -11,7 +11,7 @@ namespace WSr.Protocol
 {
     public static class Bitfield
     {
-        public static int BitFieldLength(IBitfield b) => BitFieldLength(b.Bits);
+        public static int BitFieldLength(Frame b) => BitFieldLength(b.Bits);
 
         public static int BitFieldLength(IEnumerable<byte> b)
         {
@@ -27,25 +27,25 @@ namespace WSr.Protocol
             OpCode.Pong
         });
 
-        public static bool IsFinal(this IBitfield b) => (b.Bits.ElementAt(0) & 0x80) != 0;
-        public static bool Rsv1(this IBitfield b) => (b.Bits.ElementAt(0) & 0x40) != 0;
-        public static bool Rsv2(this IBitfield b) => (b.Bits.ElementAt(0) & 0x20) != 0;
-        public static bool Rsv3(this IBitfield b) => (b.Bits.ElementAt(0) & 0x10) != 0;
-        public static OpCode GetOpCode(this IBitfield b) => (OpCode)(b.Bits.ElementAt(0) & 0x0F);
+        public static bool IsFinal(this Frame b) => (b.Bits.ElementAt(0) & 0x80) != 0;
+        public static bool Rsv1(this Frame b) => (b.Bits.ElementAt(0) & 0x40) != 0;
+        public static bool Rsv2(this Frame b) => (b.Bits.ElementAt(0) & 0x20) != 0;
+        public static bool Rsv3(this Frame b) => (b.Bits.ElementAt(0) & 0x10) != 0;
+        public static OpCode GetOpCode(this Frame b) => (OpCode)(b.Bits.ElementAt(0) & 0x0F);
 
-        public static bool Masked(this IBitfield b) => (b.Bits.ElementAt(1) & 0x80) != 0;
+        public static bool Masked(this Frame b) => (b.Bits.ElementAt(1) & 0x80) != 0;
 
-        public static bool IsDataFrame(this IBitfield b) => b.GetOpCode() == OpCode.Text || b.GetOpCode() == OpCode.Binary;
-        public static bool IsControlCode(this IBitfield b) => ((byte)b.GetOpCode() & (byte)0b0000_1000) != 0;
-        public static bool IsContinuation(this IBitfield b) => b.GetOpCode() == OpCode.Continuation;
+        public static bool IsDataFrame(this Frame b) => b.GetOpCode() == OpCode.Text || b.GetOpCode() == OpCode.Binary;
+        public static bool IsControlCode(this Frame b) => ((byte)b.GetOpCode() & (byte)0b0000_1000) != 0;
+        public static bool IsContinuation(this Frame b) => b.GetOpCode() == OpCode.Continuation;
 
-        public static bool ExpectContinuation(this IBitfield b) => !b.IsFinal() && b.IsDataFrame();
-        public static bool EndsContinuation(this IBitfield b) => b.IsContinuation() && b.IsFinal();
+        public static bool ExpectContinuation(this Frame b) => !b.IsFinal() && b.IsDataFrame();
+        public static bool EndsContinuation(this Frame b) => b.IsContinuation() && b.IsFinal();
         
-        public static bool OpCodeLengthLessThan126(this IBitfield b) =>
+        public static bool OpCodeLengthLessThan126(this Frame b) =>
             b.IsControlCode() && (BitFieldLength(b) > 125); 
-        public static bool ReservedBitsSet(this IBitfield b) => (b.Bits.ElementAt(0) & 0x70) != 0;
-        public static bool BadOpcode(this IBitfield b) => !ValidOpCodes.Contains(b.GetOpCode());
-        public static bool ControlframeNotFinal(this IBitfield b) => b.IsControlCode() && !b.IsFinal();
+        public static bool ReservedBitsSet(this Frame b) => (b.Bits.ElementAt(0) & 0x70) != 0;
+        public static bool BadOpcode(this Frame b) => !ValidOpCodes.Contains(b.GetOpCode());
+        public static bool ControlframeNotFinal(this Frame b) => b.IsControlCode() && !b.IsFinal();
     }
 }

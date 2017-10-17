@@ -7,7 +7,7 @@ namespace WSr.Protocol
 {
     public static class PingPongFunctions
     {
-        public static Frame GetFrame(Parse<Fail, Frame> p)
+        public static Frame GetFrame(Parse<FailedFrame, Frame> p)
         {
             (var e, var d) = p;
 
@@ -53,8 +53,8 @@ namespace WSr.Protocol
 
         public static Func<Frame, Frame> TheirPingPong => p => ParsedFrame.PongP(p.Payload) as Frame;
 
-        public static IObservable<Parse<Fail, Frame>> PingPongWithFrames(
-            this IObservable<Parse<Fail, Frame>> fs,
+        public static IObservable<Parse<FailedFrame, Frame>> PingPongWithFrames(
+            this IObservable<Parse<FailedFrame, Frame>> fs,
             TimeSpan? interval = null,
             Action<TimeSpan> log = null)
         {

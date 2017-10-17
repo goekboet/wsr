@@ -9,9 +9,9 @@ namespace WSr.Protocol
 {
     public static class DefragDataFrames
     {
-        public static IObservable<Parse<Fail, Frame>> Defrag(
-            this IObservable<Parse<Fail, Frame>> fragmented) =>
-            fragmented.WithParser(x => Observable.Create<Parse<Fail, Frame>>(o =>
+        public static IObservable<Parse<FailedFrame, Frame>> Defrag(
+            this IObservable<Parse<FailedFrame, Frame>> fragmented) =>
+            fragmented.WithParser(x => Observable.Create<Parse<FailedFrame, Frame>>(o =>
         {
             OpCode? continuingOn = null;
             var binary = ParsedFrame.Empty;
@@ -22,17 +22,17 @@ namespace WSr.Protocol
                 {
                     if (f.IsControlCode())
                     {
-                        o.OnNext(new Parse<Fail, Frame>(f));
+                        o.OnNext(new Parse<FailedFrame, Frame>(f));
                     }
                     else
                     {
                         if (f.IsContinuation() && !continuingOn.HasValue)
-                            o.OnNext(new Parse<Fail, Frame>(Fail.ProtocolError("not expecting continuation")));
+                            o.OnNext(new Parse<FailedFrame, Frame>(FailedFrame.ProtocolError("not expecting continuation")));
                         if (!f.IsContinuation() && continuingOn.HasValue)
-                            o.OnNext(new Parse<Fail, Frame>(Fail.ProtocolError("expecting continuation")));
+                            o.OnNext(new Parse<FailedFrame, Frame>(FailedFrame.ProtocolError("expecting continuation")));
                         if (f.IsFinal() && !continuingOn.HasValue)
                         {
-                            o.OnNext(new Parse<Fail, Frame>(f));
+                            o.OnNext(new Parse<FailedFrame, Frame>(f));
                         }
                         else
                         {
@@ -50,12 +50,12 @@ namespace WSr.Protocol
                             {
                                 if (continuingOn == OpCode.Text)
                                 {
-                                    o.OnNext(new Parse<Fail, Frame>(text));
+                                    o.OnNext(new Parse<FailedFrame, Frame>(text));
                                     text = TextFrame.Empty;
                                 }
                                 else
                                 {
-                                    o.OnNext(new Parse<Fail, Frame>(binary));
+                                    o.OnNext(new Parse<FailedFrame, Frame>(binary));
                                     binary = ParsedFrame.Empty;
                                 }
                                 continuingOn = null;

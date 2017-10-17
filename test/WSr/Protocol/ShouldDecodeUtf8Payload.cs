@@ -14,8 +14,8 @@ namespace WSr.Protocol.Tests
     {
         static byte[] b(params byte[] bs) => bs;
 
-        private static Dictionary<string, (Parse<Fail, Frame> input, Parse<Fail, Frame> expected)> nonContinous =
-                   new Dictionary<string, (Parse<Fail, Frame> input, Parse<Fail, Frame> expected)>()
+        private static Dictionary<string, (Parse<FailedFrame, Frame> input, Parse<FailedFrame, Frame> expected)> nonContinous =
+                   new Dictionary<string, (Parse<FailedFrame, Frame> input, Parse<FailedFrame, Frame> expected)>()
                    {
                        ["IgnoreNonTextFrame"] = (
                         input: Parse(new ParsedFrame(b(0x82, 0x00), new byte[0])),
@@ -28,11 +28,11 @@ namespace WSr.Protocol.Tests
                         expected: Parse(new TextFrame(b(0x81, 0x03), "abc"))),
                        ["RejectBadUtf8"] = (
                         input: Parse(new ParsedFrame(b(0x81, 0x00), InvalidUtf8())),
-                        expected: Error(Fail.Utf8)
+                        expected: Error(FailedFrame.Utf8)
                         ),
                        ["IgnoreErrorParse"] = (
-                            input: Error(Fail.ProtocolError("e")),
-                            expected: Error(Fail.ProtocolError("e"))
+                            input: Error(FailedFrame.ProtocolError("e")),
+                            expected: Error(FailedFrame.ProtocolError("e"))
                         )
                    };
 
@@ -50,7 +50,7 @@ namespace WSr.Protocol.Tests
             var run = new TestScheduler();
             var expected = run.CreateColdObservable(
                 OnNext(1, testCase.expected),
-                OnCompleted<Parse<Fail, Frame>>(1)
+                OnCompleted<Parse<FailedFrame, Frame>>(1)
             );
             var actual = run.Start(
                 create: () => input.Take(1, run).DecodeUtf8Payload(),
@@ -62,8 +62,8 @@ namespace WSr.Protocol.Tests
             AssertAsExpected(expected, actual);
         }
 
-        private Dictionary<string, (IEnumerable<Parse<Fail, Frame>> parses, IEnumerable<Parse<Fail, Frame>> expected)> continous =
-            new Dictionary<string, (IEnumerable<Parse<Fail, Frame>> parses, IEnumerable<Parse<Fail, Frame>> expected)>()
+        private Dictionary<string, (IEnumerable<Parse<FailedFrame, Frame>> parses, IEnumerable<Parse<FailedFrame, Frame>> expected)> continous =
+            new Dictionary<string, (IEnumerable<Parse<FailedFrame, Frame>> parses, IEnumerable<Parse<FailedFrame, Frame>> expected)>()
             {
                 ["IgnoreBadContinuation"] = (
                     parses: new[]

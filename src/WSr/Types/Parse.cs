@@ -8,7 +8,6 @@ namespace WSr
         public TParse Data;
         public TError Error;
 
-
         public Parse(TError e)
         {
             Error = e;
@@ -28,7 +27,6 @@ namespace WSr
         }
 
         public bool IsError { get; }
-
 
         public override string ToString() => IsError
             ? $"Error: {Error.ToString()}"

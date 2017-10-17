@@ -6,7 +6,7 @@ using static WSr.IntegersFromByteConverter;
 
 namespace WSr
 {
-    public abstract class Frame : IBitfield
+    public abstract class Frame
     {
         protected Frame(IEnumerable<byte> bits)
         {
@@ -18,12 +18,7 @@ namespace WSr
         public abstract IEnumerable<byte> Payload { get; }
     }
 
-    public interface IBitfield
-    {
-        IEnumerable<byte> Bits { get; }
-    }
-    
-    public class ParsedFrame : Frame, IBitfield
+    public class ParsedFrame : Frame
     {
         public static ParsedFrame Empty => new ParsedFrame(new byte[2], new byte[0]);
         public static ParsedFrame Ping => new ParsedFrame(b(0x80 | (byte)OpCode.Ping, 0x00), new byte[0]);
@@ -55,30 +50,7 @@ namespace WSr
         public override int GetHashCode() => Payload.Count();
     }
 
-    public class Fail
-    {
-        public static Fail ProtocolError(string reason) => new Fail(ToBytes(1002, reason));
-        public static Fail Utf8 { get; } = new Fail(ToBytes(1007, ""));
-
-        private Fail(IEnumerable<byte> payload)
-        {
-            Payload = payload;
-        }
-
-        public IEnumerable<byte> Payload { get; }
-
-        public static IEnumerable<byte> ToBytes(ushort code, string reason) => ToNetwork2Bytes(code).Concat(Encoding.UTF8.GetBytes(reason));
-
-        public override string ToString() => $"Badframe: {Show(Payload.Take(10))}";
-
-        public override bool Equals(object obj) =>
-            obj is Fail b 
-            && Payload.SequenceEqual(b.Payload);
-
-        public override int GetHashCode() => Payload.Count();
-    }
-
-    public class TextFrame : Frame, IBitfield
+    public class TextFrame : Frame
     {
         public static TextFrame Empty => new TextFrame(new byte[2], string.Empty);
 

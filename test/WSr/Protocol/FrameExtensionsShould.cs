@@ -7,13 +7,11 @@ namespace WSr.Protocol.Tests
     [TestClass]
     public class FrameExtensionsShould
     {
-        private class Bitfield : IBitfield
+        private class Bitfield : Frame
         {
-            public Bitfield(params byte[] bs)
-            {
-                Bits = bs;
-            }
-            public IEnumerable<byte> Bits { get; }
+            public Bitfield(params byte[] bs) : base(bs) {}
+
+            public override IEnumerable<byte> Payload => new byte[0];
         }
 
         static Bitfield b(params byte[] bs) => new Bitfield(bs);

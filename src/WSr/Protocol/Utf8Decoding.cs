@@ -5,9 +5,9 @@ namespace WSr.Protocol
 {
     public static class Utf8Decoding
     {
-        public static IObservable<Parse<Fail, Frame>> DecodeUtf8Payload(
-            this IObservable<Parse<Fail, Frame>> frames) =>
-            frames.WithParser(x => Observable.Create<Parse<Fail, Frame>>(o =>
+        public static IObservable<Parse<FailedFrame, Frame>> DecodeUtf8Payload(
+            this IObservable<Parse<FailedFrame, Frame>> frames) =>
+            frames.WithParser(x => Observable.Create<Parse<FailedFrame, Frame>>(o =>
             {
                 var continuingText = false;
                 var utf8 = new UTF8DecoderState();
@@ -20,9 +20,9 @@ namespace WSr.Protocol
                             if (f.ExpectContinuation()) continuingText = true;
                             utf8 = utf8.Decode(f.Payload, !continuingText);
                             if (utf8.IsValid)
-                                o.OnNext(new Parse<Fail, Frame>(new TextFrame(f.Bits, utf8.Result())));
+                                o.OnNext(new Parse<FailedFrame, Frame>(new TextFrame(f.Bits, utf8.Result())));
                             else
-                                o.OnNext(new Parse<Fail, Frame>(Fail.Utf8));
+                                o.OnNext(new Parse<FailedFrame, Frame>(FailedFrame.Utf8));
                         }
                         else if (f.GetOpCode() == OpCode.Continuation && continuingText)
                         {
@@ -30,11 +30,11 @@ namespace WSr.Protocol
                             utf8 = utf8.Decode(f.Payload, !continuingText);
 
                             if (utf8.IsValid)
-                                o.OnNext(new Parse<Fail, Frame>(new TextFrame(f.Bits, utf8.Result())));
+                                o.OnNext(new Parse<FailedFrame, Frame>(new TextFrame(f.Bits, utf8.Result())));
                             else
-                                o.OnNext(new Parse<Fail, Frame>(Fail.Utf8));
+                                o.OnNext(new Parse<FailedFrame, Frame>(FailedFrame.Utf8));
                         }
-                        else o.OnNext(new Parse<Fail, Frame>(f));
+                        else o.OnNext(new Parse<FailedFrame, Frame>(f));
                     },
                     onCompleted: o.OnCompleted,
                     onError: o.OnError

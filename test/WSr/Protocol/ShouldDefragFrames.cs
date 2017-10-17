@@ -14,7 +14,7 @@ namespace WSr.Protocol.Tests
     [TestClass]
     public class ShouldDefrag : ReactiveTest
     {
-        private static Dictionary<string, Parse<Fail, Frame>[]> Input = new Dictionary<string, Parse<Fail, Frame>[]>()
+        private static Dictionary<string, Parse<FailedFrame, Frame>[]> Input = new Dictionary<string, Parse<FailedFrame, Frame>[]>()
         {
             ["UnfragmentedTextFrame"] = new[]
             {
@@ -28,7 +28,7 @@ namespace WSr.Protocol.Tests
             },
             ["BadFrame"] = new[]
             {
-                Error(Fail.ProtocolError(""))
+                Error(FailedFrame.ProtocolError(""))
             },
             ["FragmentedTextFrame"] = new[]
             {
@@ -67,7 +67,7 @@ namespace WSr.Protocol.Tests
             },
         };
 
-        private static Dictionary<string, Parse<Fail, Frame>[]> Expected = new Dictionary<string, Parse<Fail, Frame>[]>()
+        private static Dictionary<string, Parse<FailedFrame, Frame>[]> Expected = new Dictionary<string, Parse<FailedFrame, Frame>[]>()
         {
             ["UnfragmentedTextFrame"] = new[]
             {
@@ -81,7 +81,7 @@ namespace WSr.Protocol.Tests
             },
             ["BadFrame"] = new[]
             {
-                Error(Fail.ProtocolError(""))
+                Error(FailedFrame.ProtocolError(""))
             },
             ["FragmentedTextFrame"] = new[]
             {
@@ -100,16 +100,16 @@ namespace WSr.Protocol.Tests
             },
             ["NotExpectingContinuation"] = new[]
             {
-                Error(Fail.ProtocolError("not expecting continuation")),
+                Error(FailedFrame.ProtocolError("not expecting continuation")),
                 Parse(MakeTextParse(new byte[] {0x81, 0x00}, "Text"))
             },
             ["ExpectingContinuation1"] = new []
             {
-                Error(Fail.ProtocolError("expecting continuation"))
+                Error(FailedFrame.ProtocolError("expecting continuation"))
             },
             ["ExpectingContinuation2"] = new []
             {
-                Error(Fail.ProtocolError("expecting continuation"))
+                Error(FailedFrame.ProtocolError("expecting continuation"))
             }
         };
 

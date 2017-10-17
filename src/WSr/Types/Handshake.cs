@@ -38,7 +38,6 @@ namespace WSr
         public IDictionary<string, string> Headers => Parse.Headers;
         public string Url => Parse.Url;
 
-
         public override bool Equals(object o) => o is UpgradeRequest m
             && m.Parse.Url.Equals(Parse.Url)
             && m.Parse.Headers.Count.Equals(Parse.Headers.Count);
