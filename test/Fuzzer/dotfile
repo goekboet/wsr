@@ -1,0 +1,2 @@
+alias fall="../../src/scripts/fuzz.sh all"
+alias fone="../../src/scripts/fuzz.sh one"

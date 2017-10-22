@@ -23,6 +23,6 @@ artifacts/
 !.vscode/launch.json
 !.vscode/extensions.json
 
-src/App.WSr/test/reports
+test/Fuzzer/reports
 aliases
 *.txt
