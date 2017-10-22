@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+
+using static WSr.LogFunctions;
 
 namespace WSr.IO
 {
@@ -26,7 +29,12 @@ namespace WSr.IO
                 .Concat()
                 .Repeat()
                 .TakeWhile(x => x.Count() > 0)
+                .Do(
+                    onNext: x => {}, 
+                    onError: e => AddContext("error", log)(e.ToString()))
                 .Catch<byte[], ObjectDisposedException>(ex => Observable.Empty<byte[]>())
+                .Catch<byte[], IOException>(ex => Observable.Empty<byte[]>())
+                .Do(onNext: x => {}, onCompleted: () => AddContext("end", log)(s.Now.ToString()))
                 ;
         }
     }

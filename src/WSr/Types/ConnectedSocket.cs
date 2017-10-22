@@ -65,7 +65,7 @@ namespace WSr
             IScheduler s)
         {
             return Observable
-                .FromAsync(() => Stream.ReadAsync(buffer, 0, buffer.Count()), s)
+                .FromAsync(t => Stream.ReadAsync(buffer, 0, buffer.Count(), t), s)
                 ;
         }
     }

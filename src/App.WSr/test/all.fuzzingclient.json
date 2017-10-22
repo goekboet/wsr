@@ -17,6 +17,6 @@
         "8.*",
         "9.*"
             ],
-    "exclude-cases": ["9.1.1", "9.3.1", "9.4.1", "9.4.2"],
+    "exclude-cases": [],
     "exclude-agent-cases": {}
 }

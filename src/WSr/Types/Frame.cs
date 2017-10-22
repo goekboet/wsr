@@ -12,7 +12,7 @@ namespace WSr
         {
             Bits = bits;
         }
-        
+
         public IEnumerable<byte> Bits { get; }
 
         public abstract IEnumerable<byte> Payload { get; }
@@ -26,11 +26,6 @@ namespace WSr
         public static ParsedFrame Pong => new ParsedFrame(b(0x80 | (byte)OpCode.Pong, 0x00), new byte[0]);
 
         public static ParsedFrame PongP(IEnumerable<byte> payload) => new ParsedFrame(b(0x80 | (byte)OpCode.Pong, 0x00), payload);
-
-        public ParsedFrame Concat(ParsedFrame p) =>
-            new ParsedFrame(
-                bitfield: Bits.Zip(p.Bits, (l, r) => (byte)(l | r)),
-                payload: Payload.Concat(p.Payload));
 
         public ParsedFrame(
             IEnumerable<byte> bitfield,
@@ -53,11 +48,6 @@ namespace WSr
     public class TextFrame : Frame
     {
         public static TextFrame Empty => new TextFrame(new byte[2], string.Empty);
-
-        public TextFrame Concat(TextFrame p) =>
-            new TextFrame(
-                bitfield: Bits.Zip(p.Bits, (l, r) => (byte)(l | r)),
-                payload: string.Join(string.Empty, new[] { Text, p.Text }));
 
         public TextFrame(
             IEnumerable<byte> bitfield,

@@ -48,16 +48,15 @@ namespace WSr
                 observableFactory: c =>
                 {
                     var ctx = AddContext(c.ToString(), log);
-                    
+
                     return c
                         .Receive(
                             bufferfactory: bufferfactory,
                             log: ctx,
                             s: s)
-                        .Do(x => Timestamp(ctx, s.Now)($"Incoming bytes: {Show(x)} {(x.Count())}"))
+                        //.Do(x => Timestamp(ctx, s.Now)($"Incoming bytes: {Show(x)} {(x.Count())}"))
                         .Select(x => x.ToObservable())
                         .Concat()
-                        //.Do(x => Show(new[] { x }))
                         .Deserialize(s, ctx)
                         .Do(x => Timestamp(ctx, s.Now)("Parsed message: " + x.ToString()))
                         .Process()
