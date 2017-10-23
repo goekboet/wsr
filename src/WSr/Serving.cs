@@ -39,6 +39,8 @@ namespace WSr
             IConnectedSocket socket,
             Func<byte[]> bufferfactory,
             Action<string> log,
+            Func<IObservable<string>, IObservable<string>> textApp,
+            Func<IObservable<byte[]>, IObservable<byte[]>> binApp,
             IScheduler s = null)
         {
             if (s == null) s = Scheduler.Default;
@@ -59,7 +61,7 @@ namespace WSr
                         .Concat()
                         .Deserialize(s, ctx)
                         .Do(x => Timestamp(ctx, s.Now)("Parsed message: " + x.ToString()))
-                        .Process()
+                        .Process(textApp, binApp)
                         .Do(x => Timestamp(ctx, s.Now)("Processed message: " + x.ToString()))
                         .Serialize()
                         .Do(x => Timestamp(ctx, s.Now)("Outgoing bytes: " + Show(x)))

@@ -16,7 +16,9 @@ namespace WSr.Application
     public static class ProcessFunctions
     {
         public static IObservable<Output> Process(
-            this IObservable<Message> msg)
+            this IObservable<Message> msg,
+            Func<IObservable<string>, IObservable<string>> textApp,
+            Func<IObservable<byte[]>, IObservable<byte[]>> binApp)
         {
             return msg
                 .SelectMany(Controlcodes)

@@ -29,9 +29,11 @@ namespace App.WSr
 
             var run = Host(ip, port, terminator)
                 .SelectMany(x => Serve(
-                    x, 
-                    () => new byte[bufferSize],
-                    y => Console.WriteLine(y)))
+                    socket: x, 
+                    bufferfactory: () => new byte[bufferSize],
+                    log: y => Console.WriteLine(y),
+                    textApp: t => t,
+                    binApp: b => b))
                 .Subscribe(
                     onNext: x => Console.WriteLine("onnext"),
                     onError: WriteError,

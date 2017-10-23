@@ -59,7 +59,7 @@ namespace WSr.Protocol
                                 }
                                 else
                                 {
-                                    var frame = FinalBinary(binary);
+                                    var frame = FinalBinary(binary.ToArray());
                                     o.OnNext(new Parse<FailedFrame, Frame>(frame));
                                     binary.Clear();
                                 }
