@@ -11,6 +11,9 @@ namespace WSr.Tests
 {
     internal static class Bytes
     {
+        public static ParsedFrame MakeFrame(IEnumerable<byte> bitfield, string payload) =>
+            new ParsedFrame(bitfield, Encoding.UTF8.GetBytes(payload));
+            
         public static Parse<FailedFrame, Frame> Parse(Frame f) => new Parse<FailedFrame, Frame>(f);
         public static Parse<FailedFrame, Frame> Error(FailedFrame f) => new Parse<FailedFrame, Frame>(f);
 
@@ -37,9 +40,6 @@ namespace WSr.Tests
         public static Message Mping => new OpcodeMessage(OpCode.Ping, new byte[0]);
         public static Message Mpong => new OpcodeMessage(OpCode.Pong, new byte[0]);
         public static Message Mclose => new OpcodeMessage(OpCode.Close, new byte[0]);
-        public static Message MText => new TextMessage("");
-        public static Message MBin => new BinaryMessage(new byte[0]);
-
         public static Output Oping => new Buffer(OpCode.Ping, new byte[0]);
         public static Output Opong => new Buffer(OpCode.Pong, new byte[0]);
         public static Output Oclose => new Buffer(OpCode.Close, new byte[0]);
@@ -112,8 +112,8 @@ namespace WSr.Tests
 
         public static byte[] GoodBytes = new byte[] {0x81, 0x80, 0x55, 0x25, 0xaa, 0xda};
 
-        public static Frame GoodFrame = new TextFrame(b(0x81, 0x80), "");
-        public static Message GoodMessage = new TextMessage("");
+        public static Frame GoodFrame = new ParsedFrame(b(0x81, 0x80), new byte[] {});
+        public static Message GoodMessage = new OpcodeMessage(OpCode.Text, new byte[] {});
 
         public static Dictionary<string, string> InCompleteHeaders =
                  new Dictionary<string, string>()

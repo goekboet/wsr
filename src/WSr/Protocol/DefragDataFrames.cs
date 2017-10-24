@@ -7,11 +7,8 @@ namespace WSr.Protocol
 {
     public static class DefragDataFrames
     {
-        public static Frame FinalText(string t) =>
-            new TextFrame(new byte[] { (byte)(0x80 | (byte)OpCode.Text), 0x00 }, t);
-
-        public static Frame FinalBinary(IEnumerable<byte> bs) =>
-            new ParsedFrame(new byte[] { (byte)(0x80 | (byte)OpCode.Binary), 0x00 }, bs);
+        public static Frame FinalBinary(IEnumerable<byte> bs, OpCode c) =>
+            new ParsedFrame(new byte[] { (byte)(0x80 | (byte)c), 0x00 }, bs);
         public static IObservable<Parse<FailedFrame, Frame>> Defrag(
             this IObservable<Parse<FailedFrame, Frame>> fragmented) =>
             fragmented.WithParser(x => Observable.Create<Parse<FailedFrame, Frame>>(o =>
@@ -39,30 +36,16 @@ namespace WSr.Protocol
                         }
                         else
                         {
-                            if (f.ExpectContinuation())
-                                continuingOn = f.GetOpCode();
-                            if (continuingOn == OpCode.Text && f is TextFrame t)
-                            {
-                                text.Append(t.Text);
-                            }
-                            else if (f is ParsedFrame p)
-                            {
-                                binary.AddRange(p.Payload);
-                            }
+                            if (!f.IsContinuation()) continuingOn = f.GetOpCode();
+                            
+                            binary.AddRange(f.Payload);
+
                             if (f.EndsContinuation())
                             {
-                                if (continuingOn == OpCode.Text)
-                                {
-                                    var frame = FinalText(text.ToString());
-                                    o.OnNext(new Parse<FailedFrame, Frame>(frame));
-                                    text = text.Clear();
-                                }
-                                else
-                                {
-                                    var frame = FinalBinary(binary.ToArray());
-                                    o.OnNext(new Parse<FailedFrame, Frame>(frame));
-                                    binary.Clear();
-                                }
+                                var frame = FinalBinary(binary.ToArray(), continuingOn.Value);
+                                o.OnNext(new Parse<FailedFrame, Frame>(frame));
+
+                                binary.Clear();
                                 continuingOn = null;
                             }
                         }

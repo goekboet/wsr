@@ -17,10 +17,6 @@ namespace WSr.Application
                     return Upgrade(ur);
                 case BadUpgradeRequest br:
                     return DoNotUpgrade(br);
-                case TextMessage tm:
-                    return new Buffer(OpCode.Text, tm.Buffer);
-                case BinaryMessage bm:
-                    return new Buffer(OpCode.Binary, bm.Buffer);
                 case OpcodeMessage om:
                     return new Buffer(om.Opcode, om.Buffer);
                 default:

@@ -22,10 +22,10 @@ namespace WSr.Protocol.Tests
                         expected: Parse(new ParsedFrame(b(0x82, 0x00), new byte[0]))),
                        ["DecodeEmptyTextFrame"] = (
                         input: Parse(new ParsedFrame(b(0x81, 0x00), new byte[0])),
-                        expected: Parse(new TextFrame(b(0x81, 0x00), string.Empty))),
+                        expected: Parse(new ParsedFrame(b(0x81, 0x00), new byte[0]))),
                        ["DecodeTextFrame"] = (
                         input: Parse(new ParsedFrame(b(0x81, 0x03), Encoding.UTF8.GetBytes("abc"))),
-                        expected: Parse(new TextFrame(b(0x81, 0x03), "abc"))),
+                        expected: Parse(MakeFrame(b(0x81, 0x03), "abc"))),
                        ["RejectBadUtf8"] = (
                         input: Parse(new ParsedFrame(b(0x81, 0x00), InvalidUtf8())),
                         expected: Error(FailedFrame.Utf8)
@@ -74,7 +74,7 @@ namespace WSr.Protocol.Tests
                     expected: new[]
                     {
                         Parse(new ParsedFrame(b(0x80, 0x00), new byte[] { 0x61 })),
-                        Parse(new TextFrame(b(0x81, 0x00), "b"))
+                        Parse(MakeFrame(b(0x81, 0x00), "b"))
                     }
                 ),
                 ["Simple"] = (
@@ -85,8 +85,8 @@ namespace WSr.Protocol.Tests
                 },
                 expected: new[]
                 {
-                    Parse(new TextFrame(b(0x01, 0x00), "a")),
-                    Parse(new TextFrame(b(0x80, 0x00), "b"))
+                    Parse(MakeFrame(b(0x01, 0x00), "a")),
+                    Parse(MakeFrame(b(0x80, 0x00), "b"))
                 }
             ),
                 ["CodepointSplitByContinuation"] = (
@@ -98,9 +98,9 @@ namespace WSr.Protocol.Tests
                     },
                     expected: new[]
                     {
-                        Parse(new TextFrame(b(0x01, 0x00), "")),
-                        Parse(new TextFrame(b(0x00, 0x00), "")),
-                        Parse(new TextFrame(b(0x80, 0x00), "ᛒ"))
+                        Parse(new ParsedFrame(b(0x01, 0x00), new byte[]{0xe1})),
+                        Parse(new ParsedFrame(b(0x00, 0x00), new byte[]{0x9b})),
+                        Parse(new ParsedFrame(b(0x80, 0x00), new byte[]{0x92}))
                     }
                 ),
                 ["LongText"] = (
@@ -110,7 +110,7 @@ namespace WSr.Protocol.Tests
                     },
                     expected: new[]
                     {
-                        Parse(new TextFrame(b(0x81, 0x00), new string('*', 65535)))
+                        Parse(new ParsedFrame(b(0x81, 0x00), Enumerable.Repeat((byte)0x2a, 65535)))
                     }
                 ),
                 ["Fuzzer6.4.1"] = (
@@ -120,7 +120,7 @@ namespace WSr.Protocol.Tests
                     },
                     expected: new[]
                     {
-                        Parse(new TextFrame(b(0x01, 0x00), "κόσμε"))
+                        Parse(MakeFrame(b(0x01, 0x00), "κόσμε"))
                     }
                 )
             };
@@ -129,7 +129,6 @@ namespace WSr.Protocol.Tests
         [DataRow("Simple")]
         [DataRow("CodepointSplitByContinuation")]
         [DataRow("LongText")]
-        // [DataRow("Fuzzer6.4.1")]
         [TestMethod]
         public void HandleContinuationCases(string label)
         {

@@ -3,8 +3,8 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 
-using static WSr.Application.ControlCodesFunctions;
 using static WSr.Application.MapToOutputFunctions;
+using static WSr.OpCodeFunctions;
 
 namespace WSr.Application
 {
@@ -17,12 +17,14 @@ namespace WSr.Application
     {
         public static IObservable<Output> Process(
             this IObservable<Message> msg,
-            Func<IObservable<string>, IObservable<string>> textApp,
-            Func<IObservable<byte[]>, IObservable<byte[]>> binApp)
+            Func<IObservable<Message>, IObservable<Message>> app)
         {
             return msg
-                .SelectMany(Controlcodes)
-                .TakeWhile(x => !(x is Eof))
+                .TakeWhile(x => !x.Equals(OpcodeMessage.Empty))
+                .GroupBy(x => x is OpcodeMessage o && IsControlcode(o.Opcode))
+                .SelectMany(x => x.Key
+                    ? x
+                    : app(x))
                 .Select(ToOutput);
         }
     }

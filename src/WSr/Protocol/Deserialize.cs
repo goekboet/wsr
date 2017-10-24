@@ -52,7 +52,7 @@ namespace WSr.Protocol
                 .Select(x => x.Map(CloseHandshake))
                 .DecodeUtf8Payload()
                 .Defrag()
-                .Select(ToMessage)
+                .SelectMany(ToMessage)
                 ;
 
             return handshake.Concat(frames);

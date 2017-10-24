@@ -8,13 +8,13 @@ namespace WSr
     {
         public UTF8DecoderState()
         {
-            Decoded = new List<char>();
+            Decoded = new List<byte>();
         }
 
-        private IList<char> Decoded;
-        public string Result()
+        private IList<byte> Decoded;
+        public IEnumerable<byte> Result()
         {
-            var decoded = new string (Decoded.ToArray());
+            var decoded = Decoded.ToArray();
             Decoded.Clear();
 
             return decoded;
@@ -45,16 +45,15 @@ namespace WSr
                 charsUsed: out int c,
                 completed: out bool _
             );
+            Decoded.Add(b);
+            atByte++;
 
             if (c > 0)
             {
                 atByte = 0;
-                for(int i = 0; i < c; i++) Decoded.Add(glyph[i]);
-                
                 if (glyph[0] == notRepesented) IsValid = false;
             }
-            else if (last && c < 1) IsValid = false;
-            else atByte++;
+            else if (last) IsValid = false;
 
             return this;
         }

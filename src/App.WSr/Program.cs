@@ -22,7 +22,6 @@ namespace App.WSr
         const int bufferSize = 8192;
         static void Main(string[] args)
         {
-            
             var ip = "127.0.0.1";
             var port = 9001;
             var terminator = new Subject<Unit>();
@@ -32,8 +31,7 @@ namespace App.WSr
                     socket: x, 
                     bufferfactory: () => new byte[bufferSize],
                     log: y => Console.WriteLine(y),
-                    textApp: t => t,
-                    binApp: b => b))
+                    app: t => t))
                 .Subscribe(
                     onNext: x => Console.WriteLine("onnext"),
                     onError: WriteError,

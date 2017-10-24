@@ -1,5 +1,10 @@
 namespace WSr
 {
+    public static class OpCodeFunctions
+    {
+        public static bool IsControlcode(OpCode o) => ((byte)o & (byte)0b0000_1000) != 0;
+    }
+
     public enum OpCode : byte
     {
         Continuation = 0b0000_0000,

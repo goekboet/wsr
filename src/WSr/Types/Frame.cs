@@ -44,28 +44,4 @@ namespace WSr
 
         public override int GetHashCode() => Payload.Count();
     }
-
-    public class TextFrame : Frame
-    {
-        public static TextFrame Empty => new TextFrame(new byte[2], string.Empty);
-
-        public TextFrame(
-            IEnumerable<byte> bitfield,
-            string payload) : base(bitfield)
-        {
-            Text = payload;
-        }
-
-        public override IEnumerable<byte> Payload => Encoding.UTF8.GetBytes(Text);
-
-        public string Text { get; }
-
-        public override string ToString() => $"TextParse {Show(Bits)}-{Text.Substring(0, Text.Length > 10 ? 10 : Text.Length)}";
-
-        public override bool Equals(object obj) => obj is TextFrame t
-            && Bits.SequenceEqual(t.Bits)
-            && Text.Equals(t.Text);
-
-        public override int GetHashCode() => Bits.Count();
-    }
 }

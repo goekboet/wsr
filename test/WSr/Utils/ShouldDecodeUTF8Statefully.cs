@@ -16,7 +16,7 @@ namespace WSr.Tests
         {
             ["OneByteChars"] = (Encoding.UTF8.GetBytes("asciichars"),"asciichars", true, true),
             ["ManyByteChars"] = (Encoding.UTF8.GetBytes("åke ᛒråke"), "åke ᛒråke", true, true),
-            ["FinalSplitsCodepoint"] = (SplitCodepoint(), "a", true, false),
+            ["FinalSplitsCodepoint"] = (SplitCodepoint(), "a�", true, false),
             ["ContinuationSplitCodepoint"] = (SplitCodepoint(), "a", false, true),
             ["BadUtf8"] = (InvalidUtf8(), "κόσμε�", true, false),
             ["LongText"] = (Enumerable.Repeat((byte)0x2a, 65535).ToArray(), new string('*', 65535), true, true),
@@ -35,7 +35,7 @@ namespace WSr.Tests
             var testcase = cases[label];
 
             var actual = new UTF8DecoderState().Decode(testcase.encoded, testcase.final);
-            var result = actual.Result();
+            var result = Encoding.UTF8.GetString(actual.Result().ToArray());
             var valid = actual.IsValid;
 
             Assert.IsTrue(

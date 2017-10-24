@@ -20,7 +20,7 @@ namespace WSr.Protocol
                             if (f.ExpectContinuation()) continuingText = true;
                             utf8 = utf8.Decode(f.Payload, !continuingText);
                             if (utf8.IsValid)
-                                o.OnNext(new Parse<FailedFrame, Frame>(new TextFrame(f.Bits, utf8.Result())));
+                                o.OnNext(new Parse<FailedFrame, Frame>(new ParsedFrame(f.Bits, utf8.Result())));
                             else
                                 o.OnNext(new Parse<FailedFrame, Frame>(FailedFrame.Utf8));
                         }
@@ -30,7 +30,7 @@ namespace WSr.Protocol
                             utf8 = utf8.Decode(f.Payload, !continuingText);
 
                             if (utf8.IsValid)
-                                o.OnNext(new Parse<FailedFrame, Frame>(new TextFrame(f.Bits, utf8.Result())));
+                                o.OnNext(new Parse<FailedFrame, Frame>(new ParsedFrame(f.Bits, utf8.Result())));
                             else
                                 o.OnNext(new Parse<FailedFrame, Frame>(FailedFrame.Utf8));
                         }

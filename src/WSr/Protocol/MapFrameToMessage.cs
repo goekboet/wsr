@@ -1,10 +1,13 @@
 using System;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Text;
 
 namespace WSr.Protocol
 {
     public static class MapFrameToMessageFunctions
     {
-        public static Func<Parse<string, HandshakeParse>, Message> AcceptHandshake => p => 
+        public static Func<Parse<string, HandshakeParse>, Message> AcceptHandshake => p =>
         {
             (var error, var data) = p;
 
@@ -13,32 +16,22 @@ namespace WSr.Protocol
                 : new BadUpgradeRequest(error);
         };
 
-        public static Func<Parse<FailedFrame, Frame>, Message> ToMessage =>
+        public static Func<Parse<FailedFrame, Frame>, IObservable<Message>> ToMessage =>
             frame =>
         {
             (var e, var f) = frame;
 
-            if (frame.IsError) return ToOpcodeMessage(e);
-            switch (f)
-            {
-                case TextFrame t:
-                    return ToTextMessage(t);
-                case ParsedFrame p:
-                    switch (p.GetOpCode())
-                    {
-                        case OpCode.Binary:
-                            return ToBinaryMessage(p);
-                        default:
-                            return ToOpcodeMessage(p);
-                    }
-                default:
-                    throw new ArgumentException(frame.ToString());
-            }
+            if (frame.IsError) 
+                return Observable.Return(ToOpcodeMessage(e))
+                    .Concat(Observable.Return(OpcodeMessage.Empty));
+            else if (f.GetOpCode() == OpCode.Close)
+                return Observable.Return(ToOpcodeMessage(f))
+                    .Concat(Observable.Return(OpcodeMessage.Empty));
+            else
+                return Observable.Return(ToOpcodeMessage(f));
         };
 
         private static Message ToOpcodeMessage(FailedFrame f) => new OpcodeMessage(OpCode.Close, f.Payload);
-        private static Message ToOpcodeMessage(ParsedFrame p) => new OpcodeMessage(p.GetOpCode(), p.Payload);
-        private static Message ToBinaryMessage(ParsedFrame frame) => new BinaryMessage(frame.Payload);
-        public static Message ToTextMessage(TextFrame t) => new TextMessage(t.Text);
+        private static Message ToOpcodeMessage(Frame p) => new OpcodeMessage(p.GetOpCode(), p.Payload);
     }
 }

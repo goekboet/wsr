@@ -100,10 +100,5 @@ namespace WSr.Tests
         {
             return new ParsedFrame(bitfield, new byte[0]);
         }
-        public static TextFrame MakeFrame(IEnumerable<byte> bitfield) =>
-            MakeTextParse(bitfield, string.Empty);
-
-        public static TextFrame MakeTextParse(IEnumerable<byte> bitfield, string Payload) =>
-            new TextFrame(bitfield, Payload);
     }
 }
