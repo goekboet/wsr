@@ -26,3 +26,4 @@ artifacts/
 test/Fuzzer/reports
 aliases
 *.txt
+**/published/**
