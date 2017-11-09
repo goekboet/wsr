@@ -27,6 +27,10 @@ WSr is a server that serves requests for [websocketconnections]( https://tools.i
 6. Find [a way](https://www.websocket.org/echo.html) to connect to WSr yourself or test the server with [a thorough fuzzer](https://github.com/crossbario/autobahn-testsuite)
 7. Have fun!
 
+### Docker
+Assuming your working directory is where [the docker file is at](.):
+```docker build -t tag/name . && docker run -d -p 127.0.0.1:9001:80 tag/name```
+
 ### Prerequisites
 
 WSr requires [dotnet SDK](https://www.microsoft.com/net/download/core). Also it requires you to be able to download nuget packages. See csproj for dependencies `dotnet restore` should do the trick if not just running it doesn´t. 

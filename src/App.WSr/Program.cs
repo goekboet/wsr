@@ -8,6 +8,8 @@ using static WSr.Serving;
 using static App.WSr.Terminations;
 using static App.WSr.Loggers;
 using static App.WSr.Apps;
+using static App.WSr.ArgumentFunctions;
+
 using System.IO;
 
 namespace App.WSr
@@ -20,8 +22,8 @@ namespace App.WSr
         const int bufferSize = 8192;
         static void Main(string[] args)
         {
-            var ip = "127.0.0.1";
-            var port = 9001;
+            var ip = ParseIP(args);
+            var port = ParsePort(args);
             var t = SigInt.Publish().RefCount();
 
             var run = Host(ip, port, t)
@@ -36,7 +38,7 @@ namespace App.WSr
                     onCompleted: () => Console.WriteLine($"{DateTimeOffset.Now}: WSr stopped")
                 );
             
-            Console.WriteLine($"{DateTimeOffset.Now}: WSr is running");
+            Console.WriteLine($"{DateTimeOffset.Now}: WSr is listening on {ip}:{port}");
             t.Wait();
         }
     }
