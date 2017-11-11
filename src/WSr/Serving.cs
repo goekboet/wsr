@@ -55,7 +55,7 @@ namespace WSr
                             bufferfactory: bufferfactory,
                             log: ctx,
                             s: s)
-                        //.Do(x => Timestamp(ctx, s.Now)($"Incoming bytes: {Show(x)} {(x.Count())}"))
+                        .Do(x => Timestamp(ctx, s.Now)($"Incoming bytes: {Show(x)} {(x.Count())}"))
                         .Select(x => x.ToObservable())
                         .Concat()
                         .Deserialize(s, ctx)
