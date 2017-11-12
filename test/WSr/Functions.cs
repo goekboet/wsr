@@ -32,6 +32,13 @@ namespace WSr.Tests
             .Select(x => x.Value);
 
 
+        public static IEnumerable<T> GetValues<T>(
+            this ITestableObserver<T> o) => o.Messages
+                .Select(x => x.Value)
+                .Where(x => x.Kind == NotificationKind.OnNext)
+                .Select(x => x.Value);
+        
+
         public static void AssertAsExpected<T>(
             ITestableObservable<T> expected,
             ITestableObserver<T> actual)

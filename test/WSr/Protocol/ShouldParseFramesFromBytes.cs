@@ -14,7 +14,7 @@ using static WSr.Protocol.Functions;
 namespace WSr.Protocol.Tests
 {
     [TestClass]
-    public class ParseBytesToFrames : ReactiveTest
+    public class ParseFrameByteControlData : ReactiveTest
     {
         private static string Origin { get; } = "o";
         private string show((bool masked, int bitfieldLength, IEnumerable<byte> frame) parse) => $"{parse.bitfieldLength} {(parse.masked ? 'm' : '-')} {parse.frame.Count()}";

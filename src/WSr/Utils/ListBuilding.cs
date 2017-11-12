@@ -7,6 +7,7 @@ namespace WSr
     public static class ListConstruction
     {
         public static IEnumerable<T> Forever<T>(T f) { while (true) yield return f; }
+        
         public static IEnumerable<byte> ZeroBytes() => Forever((byte)0);
 
         public static IEnumerable<IEnumerable<T>> Chunk<T>(IEnumerable<T> ts, int count) => Chunked(ts, (int)Math.Ceiling((decimal)ts.Count() / count));
