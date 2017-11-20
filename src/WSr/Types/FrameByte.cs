@@ -38,51 +38,44 @@ namespace WSr
     {
         public static FrameByte Init(Head h) => new FrameByte(
             h: h,
-            o: 0,
-            t: 0,
+            f: 0,
             b: 0x00
         );
 
         public FrameByte With(
             byte @byte,
             Head head = null,
-            ulong? order = null,
-            ulong? terminator = null)
+            ulong? followers = null)
         {
             return new FrameByte(
                 h: head ?? Head,
-                o: order ?? Ord + 1,
-                t: terminator ?? Trm,
+                f: Flw - 1 + (followers ?? 0),
                 b: @byte
             );
         }
 
         private FrameByte(
             Head h,
-            ulong o,
-            ulong t,
+            ulong f,
             byte b)
         {
             Head = h;
-            Ord = o;
-            Trm = t;
+            Flw = f;
             Byte = b;
         }
 
         public Head Head { get; }
-        public ulong Ord { get; }
-        public ulong Trm { get; }
+        public ulong Flw { get; }
         public byte Byte { get; }
 
-        public override string ToString() => $"h: {showH} o: {Ord} trm: {Trm} pld: {showPld}";
+        public override string ToString() => $"h: {showH} followers: {Flw} pld: {showPld}";
 
         public override bool Equals(object obj) => obj is FrameByte f && Equals(f);
 
         public override int GetHashCode() => Head.GetHashCode();
 
         public bool Equals(FrameByte o) => o.Head.Equals(Head)
-            && o.Ord.Equals(Ord)
-            && o.Trm.Equals(Trm)
+            && o.Flw.Equals(Flw)
             && o.Byte.Equals(Byte);
 
         private string showH => Head?.ToString() ?? "Empty";

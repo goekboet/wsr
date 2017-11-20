@@ -69,11 +69,11 @@ namespace WSr.Protocol.Tests
             }
         }
 
-        private static Either<FrameByte> F(Head h, ulong o, ulong t, byte b) =>
-            new Either<FrameByte>(FrameByte.Init(h).With(@byte: b, order: o,terminator: t));
+        private static Either<FrameByte> F(Head h, byte b, ulong? f = null) =>
+            new Either<FrameByte>(FrameByte.Init(h).With(@byte: b,followers: f));
 
         private static string ShowExpected(ulong l, int r, int t) => string.Join("\n",
-            Expected(Repeat(Ids), l, r).Skip((int)l - t).Select(x => x.ToString()));
+            Expected(Repeat(Ids), l, r)/*.Skip((int)l - t)*/.Take(10).Select(x => x.ToString()));
 
         private static IEnumerable<Either<FrameByte>> Expected(Func<Guid> identify, ulong l, int r)
         {
@@ -82,44 +82,47 @@ namespace WSr.Protocol.Tests
                 ushort control = 6;
                 var h = H(identify());
 
-                yield return F(h, 1, control, 0x81);
+                yield return F(h, 0x81, control);
                 if (l < 126)
-                    yield return F(h, 2, l + control, (byte)(0x80 | (byte)l));
+                    yield return F(h, (byte)(0x80 | (byte)l), --control  + l);
                 else if (l <= UInt16.MaxValue)
                 {
                     control += 2;
-                    yield return F(h, 2, control, 0xFE);
+                    yield return F(h, 0xFE, --control);
                     var el = ToNetwork2Bytes((ushort)l).ToArray();
-                    yield return F(h, 3, control, el[0]);
-                    yield return F(h, 4, l + control, el[1]);
+                    yield return F(h, el[0], --control);
+                    yield return F(h, el[1], --control + l);
                 }
                 else
                 {
                     control += 8;
-                    yield return F(h, 2, control, 0xFF);
+                    yield return F(h, 0xFF, --control);
                     var el = ToNetwork8Bytes(l).ToArray();
-                    yield return F(h, 3, control, el[0]);
-                    yield return F(h, 4, control, el[1]);
-                    yield return F(h, 5, control, el[2]);
-                    yield return F(h, 6, control, el[3]);
-                    yield return F(h, 7, control, el[4]);
-                    yield return F(h, 8, control, el[5]);
-                    yield return F(h, 9, control, el[6]);
-                    yield return F(h, 10, l + control, el[7]);
+                    yield return F(h, el[0], --control);
+                    yield return F(h, el[1], --control);
+                    yield return F(h, el[2], --control);
+                    yield return F(h, el[3], --control);
+                    yield return F(h, el[4], --control);
+                    yield return F(h, el[5], --control);
+                    yield return F(h, el[6], --control);
+                    yield return F(h, el[7], --control + l);
                 }
                 for (int i = 3; i >= 0; i--)
-                    yield return F(h, (ulong)(control - i), l + control, Mask[3 - i]);
+                    yield return F(h, Mask[3 - i], --control + l);
 
                 for (ulong i = 0; i < l; i++)
-                    yield return F(h, control + i + 1, control + l, (byte)(Payload[i % (ulong)Payload.Length] ^ Mask[i % 4]));
+                    yield return F(h, (byte)(Payload[i % (ulong)Payload.Length] ^ Mask[i % 4]), l - i);
             }
         }
 
-        public string Showactual(IEnumerable<string> a) => string.Join("\n", a.Skip(a.Count() - 10));
+        public string Showactual(IEnumerable<Either<FrameByte>> a) => string.Join("\n", a
+            .Select(x => x.ToString())
+            .Skip(a.Count() - 20))
+            ;
 
         [TestMethod]
-        [DataRow((ulong)0, 3)]
-        [DataRow((ulong)125, 3)]
+        [DataRow((ulong)0, 2)]
+        [DataRow((ulong)125, 2)]
         [DataRow((ulong)65535, 2)]
         [DataRow((ulong)65536, 2)]
         public void ParseFrameWithLength(ulong l, int r)
@@ -129,12 +132,12 @@ namespace WSr.Protocol.Tests
             var i = Input(l, r).ToObservable(run);
             var e = Expected(Repeat(Ids), l, r).ToObservable(run);
 
-            var read = new List<string>((int)l);
+            var read = new List<Either<FrameByte>>((int)l);
             var actual = run.Start(
                 create: () => i
                     .Scan(FrameByteState.Init(Repeat(Ids)), (s, b) => s.Next(b))
                     .Select(x => x.Current)
-                    .Do(x => read.Add(x.ToString()))
+                    .Do(x => read.Add(x))
                     .SequenceEqual(e),
                 created: 0,
                 subscribed: 0,

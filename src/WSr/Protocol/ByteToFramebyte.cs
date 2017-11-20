@@ -21,8 +21,7 @@ namespace WSr.Protocol
             var h = Read(current.Head, b);
             var r = current.With(
                 head: h.With(id: s.Identify),
-                order: 1,
-                terminator: 6,
+                followers: 6,
                 @byte: b);
 
             return s.With(current: Success(r), next: FrameSecond);
@@ -33,28 +32,28 @@ namespace WSr.Protocol
             if (s.Current.IsError) return s;
             var current = s.Current.Right;
 
-            var l = b & 0x7f;
+            var l = (ulong)b & 0x7f;
             switch (l)
             {
                 case 126:
                     return s.With(
                         current: Success(current.With(
                             @byte: b,
-                            terminator: current.Trm + 2
+                            followers: 2
                         )),
                         next: ReadLengthBytes(0, new byte[2]));
                 case 127:
                     return s.With(
                         current: Success(current.With(
                             @byte: b,
-                            terminator: current.Trm + 8
+                            followers: 8
                         )),
                         next: ReadLengthBytes(0, new byte[8]));
                 default:
                     return s.With(
                         current: Success(current.With(
                             @byte: b,
-                            terminator: current.Trm + (ulong)l
+                            followers: l
                         )),
                         next: ReadMaskBytes(4, new byte[4]));
             }
@@ -78,7 +77,7 @@ namespace WSr.Protocol
                 }
 
                 return s.With(
-                    current: Success(current.With(@byte: b, terminator: current.Trm + InterpretLengthBytes(bs))),
+                    current: Success(current.With(@byte: b, followers: InterpretLengthBytes(bs))),
                     next: ReadMaskBytes(4, new byte[4])
                 );
             };
@@ -99,7 +98,7 @@ namespace WSr.Protocol
                     next: ReadMaskBytes(c - 1, mask)
                 );
 
-                if (current.Ord + 1 == current.Trm)
+                if (current.Flw == 1)
                     return s.With(
                         current: Success(current.With(@byte: b)),
                         next: ContinuationAndOpcode
@@ -123,7 +122,7 @@ namespace WSr.Protocol
 
                 return s.With(
                     current: Success(current.With(@byte: (byte)(b ^ mask[c % 4]))),
-                    next: current.Ord + 1 == current.Trm 
+                    next: current.Flw == 1 
                         ? ContinuationAndOpcode
                         : ReadPayload(c + 1, mask)
                 );
