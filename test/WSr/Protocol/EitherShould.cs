@@ -17,7 +17,7 @@ namespace WSr.Protocol.Tests
         };
         
         public static Head Text => Head.Init(Guid.NewGuid()).With(fin: true, opc: OpCode.Text);
-        public static FrameByte NonEmpty => FrameByte.Init(Text).With(@byte: 0x80, followers: 0);
+        public static FrameByte NonEmpty => FrameByte.Init(Text).With(@byte: 0x80);
 
         [TestMethod]
         [DataRow("NonEmptyFrameByte")]

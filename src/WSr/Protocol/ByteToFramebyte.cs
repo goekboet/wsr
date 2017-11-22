@@ -9,8 +9,8 @@ namespace WSr.Protocol
     {
         public static Either<FrameByte> Success(FrameByte f) => new Either<FrameByte>(f);
         public static Head Read(Head h, byte b) => h.With(
-            id: h.Id, 
-            fin: (b & 0x80) != 0, 
+            id: h.Id,
+            fin: (b & 0x80) != 0,
             opc: (OpCode)(b & 0x0F));
 
         public static FrameByteState ContinuationAndOpcode(FrameByteState s, byte b)
@@ -21,7 +21,6 @@ namespace WSr.Protocol
             var h = Read(current.Head, b);
             var r = current.With(
                 head: h.With(id: s.Identify),
-                followers: 6,
                 @byte: b);
 
             return s.With(current: Success(r), next: FrameSecond);
@@ -38,24 +37,21 @@ namespace WSr.Protocol
                 case 126:
                     return s.With(
                         current: Success(current.With(
-                            @byte: b,
-                            followers: 2
+                            @byte: b
                         )),
-                        next: ReadLengthBytes(0, new byte[2]));
+                        next: ReadLengthBytes(2, new byte[2]));
                 case 127:
                     return s.With(
                         current: Success(current.With(
-                            @byte: b,
-                            followers: 8
+                            @byte: b
                         )),
-                        next: ReadLengthBytes(0, new byte[8]));
+                        next: ReadLengthBytes(8, new byte[8]));
                 default:
                     return s.With(
                         current: Success(current.With(
-                            @byte: b,
-                            followers: l
+                            @byte: b
                         )),
-                        next: ReadMaskBytes(4, new byte[4]));
+                        next: ReadMaskBytes(4, new byte[4], l));
             }
         }
 
@@ -63,29 +59,30 @@ namespace WSr.Protocol
             int c,
             byte[] bs)
         {
-            return (s, b) => 
+            return (s, b) =>
             {
                 if (s.Current.IsError) return s;
                 var current = s.Current.Right;
 
-                bs[c] = b;
-                if (c < bs.Length - 1)
+                bs[bs.Length - c] = b;
+                if (c == 1)
                 {
                     return s.With(
-                        current: Success(current.With(@byte: b)),
-                        next: ReadLengthBytes(c + 1, bs));
+                    current: Success(current.With(@byte: b)),
+                    next: ReadMaskBytes(4, new byte[4], InterpretLengthBytes(bs))
+                );
                 }
 
                 return s.With(
-                    current: Success(current.With(@byte: b, followers: InterpretLengthBytes(bs))),
-                    next: ReadMaskBytes(4, new byte[4])
-                );
+                        current: Success(current.With(@byte: b)),
+                        next: ReadLengthBytes(c - 1, bs));
             };
         }
 
         public static Func<FrameByteState, byte, FrameByteState> ReadMaskBytes(
             int c,
-            byte[] mask)
+            byte[] mask,
+            ulong l)
         {
             return (s, b) =>
             {
@@ -95,36 +92,36 @@ namespace WSr.Protocol
                 mask[mask.Length - c] = b;
                 if (c > 1) return s.With(
                     current: Success(current.With(@byte: b)),
-                    next: ReadMaskBytes(c - 1, mask)
+                    next: ReadMaskBytes(c - 1, mask, l)
                 );
 
-                if (current.Flw == 1)
-                    return s.With(
+                if (c == 1 && l == 0) return s.With(
                         current: Success(current.With(@byte: b)),
                         next: ContinuationAndOpcode
                     );
 
                 return s.With(
                     current: Success(current.With(@byte: b)),
-                    next: ReadPayload(0, mask)
+                    next: ReadPayload(0, mask, l)
                 );
             };
         }
 
         public static Func<FrameByteState, byte, FrameByteState> ReadPayload(
             int c,
-            byte[] mask)
+            byte[] mask,
+            ulong l)
         {
-            return (s, b) => 
+            return (s, b) =>
             {
                 if (s.Current.IsError) return s;
                 var current = s.Current.Right;
 
                 return s.With(
-                    current: Success(current.With(@byte: (byte)(b ^ mask[c % 4]))),
-                    next: current.Flw == 1 
+                    current: Success(current.With(@byte: (byte)(b ^ mask[c]), app: true)),
+                    next: l == 1
                         ? ContinuationAndOpcode
-                        : ReadPayload(c + 1, mask)
+                        : ReadPayload((c + 1) % 4, mask, l - 1)
                 );
             };
         }

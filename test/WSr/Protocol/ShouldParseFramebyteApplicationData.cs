@@ -69,8 +69,8 @@ namespace WSr.Protocol.Tests
             }
         }
 
-        private static Either<FrameByte> F(Head h, byte b, ulong? f = null) =>
-            new Either<FrameByte>(FrameByte.Init(h).With(@byte: b,followers: f));
+        private static Either<FrameByte> F(Head h, byte b, bool? a = null) =>
+            new Either<FrameByte>(FrameByte.Init(h).With(@byte: b, app: a));
 
         private static string ShowExpected(ulong l, int r, int t) => string.Join("\n",
             Expected(Repeat(Ids), l, r)/*.Skip((int)l - t)*/.Take(10).Select(x => x.ToString()));
@@ -79,39 +79,36 @@ namespace WSr.Protocol.Tests
         {
             while (r-- > 0)
             {
-                ushort control = 6;
                 var h = H(identify());
 
-                yield return F(h, 0x81, control);
+                yield return F(h, 0x81);
                 if (l < 126)
-                    yield return F(h, (byte)(0x80 | (byte)l), --control  + l);
+                    yield return F(h, (byte)(0x80 | (byte)l));
                 else if (l <= UInt16.MaxValue)
                 {
-                    control += 2;
-                    yield return F(h, 0xFE, --control);
+                    yield return F(h, 0xFE);
                     var el = ToNetwork2Bytes((ushort)l).ToArray();
-                    yield return F(h, el[0], --control);
-                    yield return F(h, el[1], --control + l);
+                    yield return F(h, el[0]);
+                    yield return F(h, el[1]);
                 }
                 else
                 {
-                    control += 8;
-                    yield return F(h, 0xFF, --control);
+                    yield return F(h, 0xFF);
                     var el = ToNetwork8Bytes(l).ToArray();
-                    yield return F(h, el[0], --control);
-                    yield return F(h, el[1], --control);
-                    yield return F(h, el[2], --control);
-                    yield return F(h, el[3], --control);
-                    yield return F(h, el[4], --control);
-                    yield return F(h, el[5], --control);
-                    yield return F(h, el[6], --control);
-                    yield return F(h, el[7], --control + l);
+                    yield return F(h, el[0]);
+                    yield return F(h, el[1]);
+                    yield return F(h, el[2]);
+                    yield return F(h, el[3]);
+                    yield return F(h, el[4]);
+                    yield return F(h, el[5]);
+                    yield return F(h, el[6]);
+                    yield return F(h, el[7]);
                 }
                 for (int i = 3; i >= 0; i--)
-                    yield return F(h, Mask[3 - i], --control + l);
+                    yield return F(h, Mask[3 - i]);
 
                 for (ulong i = 0; i < l; i++)
-                    yield return F(h, (byte)(Payload[i % (ulong)Payload.Length] ^ Mask[i % 4]), l - i);
+                    yield return F(h, (byte)(Payload[i % (ulong)Payload.Length] ^ Mask[i % 4]), true);
             }
         }
 
