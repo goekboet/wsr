@@ -16,7 +16,7 @@ namespace WSr.Protocol.Tests
             ["NonEmptyError"] = (c: new Either<FrameByte>(new Error(1, null)), true)
         };
         
-        public static Head Text => Head.Init(Guid.NewGuid()).With(fin: true, opc: OpCode.Text);
+        public static Head Text => Head.Init(Guid.NewGuid()).With(opc: OpCode.Text | OpCode.Final);
         public static FrameByte NonEmpty => FrameByte.Init(Text).With(@byte: 0x80);
 
         [TestMethod]

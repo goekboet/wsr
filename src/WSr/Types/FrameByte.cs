@@ -2,39 +2,34 @@ using System;
 
 namespace WSr
 {
-    public class Head
+    public sealed class Head
     {
         public static Head Init(Guid id) => new Head().With(id: id);
         public Head With(
             Guid? id = null,
-            bool? fin = null,
-            OpCode? opc = null) => new Head(id ?? Id, fin ?? Fin, opc ?? Opc);
+            OpCode? opc = null) => new Head(id ?? Id, opc ?? Opc);
 
         public Guid Id { get; }
-        public bool Fin { get; }
         public OpCode Opc { get; }
 
-        public override string ToString() => $"id: {Id} fin: {Fin} opc: {Opc} ";
+        public override string ToString() => $"id: {Id} opc: {Opc} ";
 
         public override bool Equals(object obj) => obj is Head h
             && h.Id.Equals(Id)
-            && h.Fin.Equals(Fin)
             && h.Opc.Equals(Opc);
 
         public override int GetHashCode() => Id.GetHashCode();
         private Head() { }
         private Head(
             Guid id,
-            bool fin,
             OpCode opc)
         {
             Id = id;
-            Fin = fin;
             Opc = opc;
         }
     }
     
-    public struct FrameByte : IEquatable<FrameByte>
+    public sealed class FrameByte : IEquatable<FrameByte>
     {
         public static FrameByte Init(Head h) => new FrameByte(
             h: h,
@@ -81,9 +76,9 @@ namespace WSr
         private string showPld => Byte.ToString("X2");
     }
 
-    public struct Error : IEquatable<Error>
+    public class Error : IEquatable<Error>
     {
-        public Error Empty => new Error();
+        public Error Empty => new Error(0, new byte[0]);
         public Error(ushort c, byte[] msg)
         {
             C = c;
@@ -99,24 +94,24 @@ namespace WSr
         public bool Equals(Error other) => C == other.C;
     }
 
-    public struct Either<T> : IEquatable<Either<T>> where T : struct
+    public sealed class Either<T> : IEquatable<Either<T>> where T : class
     {
         public Either(T r)
         {
             Right = r;
-            Left = default(Error);
+            Left = null;
         }
 
         public Either(Error e)
         {
-            Right = default(T);
+            Right = null;
             Left = e;
         }
 
         public T Right { get; }
         public Error Left { get; }
 
-        public bool IsError => !Left.Equals(default(Error));
+        public bool IsError => Left != null;
 
         public override string ToString() => $"{show}: {showmember}";
 

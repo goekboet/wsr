@@ -7,6 +7,7 @@ namespace WSr
 
     public enum OpCode : byte
     {
+        Final        = 0b1000_0000,
         Continuation = 0b0000_0000,
         Text         = 0b0000_0001,
         Binary       = 0b0000_0010,

@@ -11,24 +11,24 @@ namespace WSr.Protocol.Tests
     public class ShouldParseFramebyteControlData
     {
         private static Guid Id { get; } = Guid.NewGuid();
-        private static Head H(Guid id, bool fin, OpCode o) => Head.Init(id).With(fin: fin, opc: o);
-        private static Either<FrameByte> F(Guid id, bool fin, OpCode op, byte b) => 
-            new Either<FrameByte>(FrameByte.Init(H(id, fin, op)).With(@byte: b));
+        private static Head H(Guid id, OpCode o) => Head.Init(id).With(opc: o);
+        private static Either<FrameByte> F(Guid id, OpCode op, byte b) => 
+            new Either<FrameByte>(FrameByte.Init(H(id, op)).With(@byte: b));
 
         private static Either<FrameByte> F(Head h, byte b) => 
             new Either<FrameByte>(FrameByte.Init(h).With(@byte: b));  
 
         private (byte b, Either<FrameByte> f)[] FirstByteCases = new[]
         {
-            ((byte)0x80, F(Id, true, OpCode.Continuation, 0x80)),
-            ((byte)0x81, F(Id, true, OpCode.Text, 0x81)),
-            ((byte)0x82, F(Id, true, OpCode.Binary, 0x82)),
-            ((byte)0x88, F(Id, true, OpCode.Close, 0x88)),
-            ((byte)0x89, F(Id, true, OpCode.Ping, 0x89)),
-            ((byte)0x8A, F(Id, true, OpCode.Pong, 0x8A)),
-            ((byte)0x00, F(Id, false, OpCode.Continuation, 0x00)),
-            ((byte)0x01, F(Id, false, OpCode.Text, 0x01)),
-            ((byte)0x02, F(Id, false, OpCode.Binary, 0x02))
+            ((byte)0x80, F(Id, OpCode.Final | OpCode.Continuation, 0x80)),
+            ((byte)0x81, F(Id, OpCode.Final | OpCode.Text, 0x81)),
+            ((byte)0x82, F(Id, OpCode.Final | OpCode.Binary, 0x82)),
+            ((byte)0x88, F(Id, OpCode.Final | OpCode.Close, 0x88)),
+            ((byte)0x89, F(Id, OpCode.Final | OpCode.Ping, 0x89)),
+            ((byte)0x8A, F(Id, OpCode.Final | OpCode.Pong, 0x8A)),
+            ((byte)0x00, F(Id, OpCode.Continuation, 0x00)),
+            ((byte)0x01, F(Id, OpCode.Text, 0x01)),
+            ((byte)0x02, F(Id, OpCode.Binary, 0x02))
         };
 
         private IEnumerable<string> testfirst((byte b, Either<FrameByte> e) c) =>
@@ -44,7 +44,7 @@ namespace WSr.Protocol.Tests
             Assert.IsFalse(r.Any(), string.Join(Environment.NewLine, r));
         }
 
-        private static Head TextHead { get; } = Head.Init(Id).With(fin: true, opc: OpCode.Text);
+        private static Head TextHead { get; } = Head.Init(Id).With(opc: OpCode.Text);
 
         private static FrameByteState FirstFramed => FrameByteState.Init(() => Id).With(
             current: F(TextHead, 0x81),

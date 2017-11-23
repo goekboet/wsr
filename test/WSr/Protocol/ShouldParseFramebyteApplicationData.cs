@@ -41,7 +41,7 @@ namespace WSr.Protocol.Tests
                 return id;
             };
         }
-        private static Head H(Guid id) => Head.Init(id).With(fin: true, opc: OpCode.Text);
+        private static Head H(Guid id) => Head.Init(id).With(opc: OpCode.Final | OpCode.Text);
         private static byte[] Mask { get; } = new byte[] { 1, 2, 4, 8 };
         private static byte[] Payload { get; } = new byte[] { 0xFF, 0xBF, 0xDF, 0xEF, 0xF7, 0xFB, 0xFD, 0xFE };
         private static IEnumerable<byte> Input(ulong l, int r)

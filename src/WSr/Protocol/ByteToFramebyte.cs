@@ -10,8 +10,7 @@ namespace WSr.Protocol
         public static Either<FrameByte> Success(FrameByte f) => new Either<FrameByte>(f);
         public static Head Read(Head h, byte b) => h.With(
             id: h.Id,
-            fin: (b & 0x80) != 0,
-            opc: (OpCode)(b & 0x0F));
+            opc: (OpCode)b);
 
         public static FrameByteState ContinuationAndOpcode(FrameByteState s, byte b)
         {

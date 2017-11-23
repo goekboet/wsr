@@ -4,7 +4,7 @@ using static WSr.Protocol.FrameByteFunctions;
 
 namespace WSr
 {
-    public struct FrameByteState : IEquatable<FrameByteState>
+    public sealed class FrameByteState : IEquatable<FrameByteState>
     {
         public static FrameByteState Init(Func<Guid> id) => new FrameByteState(
             id,
@@ -25,7 +25,7 @@ namespace WSr
         public Guid Identify => Id();
         public FrameByteState With(
            Func<Guid> id = null,
-           Either<FrameByte>? current = null,
+           Either<FrameByte> current = null,
            Func<FrameByteState, byte, FrameByteState> next = null) =>
            new FrameByteState(
                id: id ?? this.Id,
