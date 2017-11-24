@@ -58,6 +58,7 @@ namespace WSr
                         .Do(x => Timestamp(ctx, s.Now)($"Incoming bytes: {Show(x)} {(x.Count())}"))
                         .Select(x => x.ToObservable())
                         .Concat()
+                        // .EchoFrames()
                         .Deserialize(s, ctx)
                         .Do(x => Timestamp(ctx, s.Now)("Parsed message: " + x.ToString()))
                         .Process(app)

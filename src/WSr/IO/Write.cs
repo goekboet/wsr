@@ -13,12 +13,10 @@ namespace WSr.IO
             IConnectedSocket socket,
             IScheduler s = null)
         {
-            if (s == null) s = Scheduler.Default;
-
             return outgoing
                 .Publish()
                 .RefCount()
-                .Select(x => socket.Write(x, s))
+                .Select(x => socket.Write(x, s ?? Scheduler.Default))
                 .Concat()
                 .Catch<Unit, ObjectDisposedException>(ex => Observable.Empty<Unit>());
         }
