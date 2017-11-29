@@ -5,131 +5,60 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-using static WSr.Algorithms;
+using static WSr.ListConstruction;
 
-namespace WSr.Protocol
+namespace WSr.Protocol.Functional
 {
-    public static class HandshakeFunctions
+    public static class Handshake
     {
-        public static IObservable<IEnumerable<IEnumerable<T>>> Chop<T>(
-                this IObservable<T> source,
-                T[] lineterminator,
-                Func<IEnumerable<T>, bool> eof)
-        {
-            return Observable.Create<IEnumerable<IEnumerable<T>>>(o =>
-            {
-                var file = new List<IEnumerable<T>>();
-                var line = new List<T>();
-                var skip = 0;
+        public static IObservable<IEnumerable<byte>> Delimiter(
+            IObservable<byte> bs,
+            IEnumerable<byte> delimiter
+        ) => bs.Buffer(2, 1).Where(x => x.SequenceEqual(delimiter));
 
-                return source.Buffer(lineterminator.Length, 1).Subscribe(bs =>
-                {
-                    try
-                    {
-                        if (skip > 0)
-                        {
-                            --skip;
-                        }
-                        else if (lineterminator.SequenceEqual(bs))
-                        {
-                            if (eof(line))
-                            {
-                                o.OnNext(file.ToArray());
-                                file.Clear();
-                            }
-                            else
-                            {
-                                file.Add(line.ToArray());
-                            }
-                            line.Clear();
-                            skip = lineterminator.Length - 1;
-                        }
-                        else
-                        {
-                            line.Add(bs.First());
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        o.OnError(e);
-                    }
-                },
-                o.OnError,
-                o.OnCompleted);
-            });
+        public static IObservable<IEnumerable<byte>> CRLF(
+            IObservable<byte> bs
+        ) => Delimiter(bs, "\r\n".ToCharArray().Select(x => (byte)x));
+
+        public static bool IsPrintableAscii(byte b) => b > 0x1F && b < 0x7F;
+
+        public static IObservable<IEnumerable<byte>> Lines(
+            IObservable<byte> bs
+        ) => bs
+            .Buffer(CRLF(bs))
+            .Select(x => x.TakeWhile(IsPrintableAscii))
+            .TakeWhile(x => x.Any());
+
+        public static string Url(byte[] bs) => Regex
+            .Match(Encoding.ASCII.GetString(bs), "^GET (/[a-z|/]*) HTTP/1.1$")
+            .Groups[1]
+            .Captures[0]
+            .Value;
+
+        public static (string k, string v) Header(byte[] bs)
+        {
+            var s = Encoding.ASCII.GetString(bs).Split(new[] { ':' }, 2);
+
+            return (s[0], s[1].TrimStart());
         }
 
-        public static IObservable<IEnumerable<string>> ChopUpgradeRequest(
-            this IObservable<byte> bytes) => bytes
-                .Chop(new byte[] { 0x0d, 0x0a }, bs => bs.Count() == 0)
-                .Select(x => x.Select(y => Encoding.ASCII.GetString(y.ToArray())));
+        public static Request ReadRequestLine(Request r, IEnumerable<byte> bs) => r.With(url: Url(bs.ToArray()));
 
-        public static Parse<string, HandshakeParse> ParseHandshake(
-            IEnumerable<string> upgrade)
+        public static Request ReadHeader(Request r, IEnumerable<byte> bs)
         {
-            string getUrl(IEnumerable<string> u) => u.First();
+            var (k, v) = Header(bs.ToArray());
 
-            IEnumerable<string> getHeaders(IEnumerable<string> u) => u.Skip(1);
-
-            string url;
-            IDictionary<string, string> headers;
-            try
-            {
-                url = Regex.Matches(getUrl(upgrade), parseRequestLine)[0].Groups[1].Value;
-            }
-            catch (Exception)
-            {
-                return new Parse<string, HandshakeParse>("bad requestline");
-            }
-            try
-            {
-                headers = getHeaders(upgrade)
-                    .Select(l =>
-                    {
-                        var line = Regex.Matches(l, parseHeaderLine)[0].Groups;
-                        return new KeyValuePair<string, string>(line[1].Value, line[2].Value);
-                    }).ToDictionary(x => x.Key, x => x.Value);
-            }
-            catch (Exception)
-            {
-                return new Parse<string, HandshakeParse>("bad headerline");
-            }
-
-            return new Parse<string, HandshakeParse>(new HandshakeParse(url, headers));
+            return r.With(headers: r.Headers.Add(k, v));
         }
 
-        private static string ws = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+        public static IEnumerable<Func<Request, IEnumerable<byte>, Request>> ParseHandshake => new Func<Request, IEnumerable<byte>, Request>[]
+            { ReadRequestLine }
+            .Concat(Forever<Func<Request, IEnumerable<byte>, Request>>(ReadHeader));
 
-        private static byte[] hash(string s) => SHA1.ComputeHash(Encoding.UTF8.GetBytes(s));
+        public static IObservable<Request> Deserialize(
+            IObservable<IEnumerable<byte>> lines) => lines
+                .Zip(ParseHandshake, (l, p) => (line: l, parse: p))
+                .Aggregate(Request.Init, (acc, x) => x.parse(acc, x.line));
 
-        public static string ResponseKey(string requestKey) => Convert.ToBase64String(hash(requestKey + ws));
-
-        public static Parse<string, HandshakeParse> AcceptKey(HandshakeParse p)
-        {
-                if (Validate(p.Headers))
-                {
-                    p.Headers["Sec-WebSocket-Accept"] = ResponseKey(p.Headers["Sec-WebSocket-Key"]);
-                    return new Parse<string, HandshakeParse>(p);
-                }
-                return new Parse<string, HandshakeParse>("bad headers");
-
-        }
-
-        private static string parseRequestLine = @"^GET\s(/\S*)\sHTTP/1\.1$";
-        private static string parseHeaderLine = @"^(\S*):\s(.+)$";
-        private static HashSet<string> RequiredHeaders = new HashSet<string>(new[]
-        {
-            "Host",
-            "Upgrade",
-            "Connection",
-            "Sec-WebSocket-Key",
-            "Sec-WebSocket-Version"
-        });
-
-        public static bool Validate(IDictionary<string, string> headers)
-        {
-            return RequiredHeaders.IsSubsetOf(new HashSet<string>(headers.Keys));
-        }
     }
 }
-

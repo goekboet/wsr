@@ -3,7 +3,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using static WSr.Tests.Bytes;
-using static WSr.Protocol.HandshakeFunctions;
+using static WSr.Protocol.AggregatingHandshake.HandshakeFunctions;
 
 namespace WSr.Protocol.Tests
 {

@@ -5,7 +5,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 
 using static WSr.Protocol.Functions;
-using static WSr.Protocol.HandshakeFunctions;
+using static WSr.Protocol.AggregatingHandshake.HandshakeFunctions;
 using static WSr.Protocol.MapFrameToMessageFunctions;
 using static WSr.IntegersFromByteConverter;
 using static WSr.LogFunctions;

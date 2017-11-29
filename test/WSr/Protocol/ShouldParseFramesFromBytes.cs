@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using static WSr.Tests.Bytes;
 using static WSr.Tests.Debug;
 using static WSr.Protocol.Functions;
+using WSr.Protocol.AggregatingHandshake;
 
 namespace WSr.Protocol.Tests
 {

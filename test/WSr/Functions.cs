@@ -7,23 +7,15 @@ using Microsoft.Reactive.Testing;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
 
+using static Microsoft.Reactive.Testing.ReactiveTest;
+
 namespace WSr.Tests
 {
-    public static class StringEncoding
-    {
-        public static byte[] BytesFromUTF8(string str) => Encoding.UTF8.GetBytes(str);
-    }
-
     public static class Debug
     {
         public static string debugElementsEqual<T>(IList<Recorded<Notification<T>>> expected, IList<Recorded<Notification<T>>> actual)
         {
             return $"{Environment.NewLine} expected: {string.Join(", ", expected)} {Environment.NewLine} actual: {string.Join(", ", actual)}";
-        }
-
-        public static string Showlist<T>(IEnumerable<T> list)
-        {
-            return string.Join(", ", list.Select(x => x.ToString()));
         }
 
         public static IEnumerable<T> OnNextValues<T>(IList<Recorded<Notification<T>>> ns) => ns
@@ -37,7 +29,7 @@ namespace WSr.Tests
                 .Select(x => x.Value)
                 .Where(x => x.Kind == NotificationKind.OnNext)
                 .Select(x => x.Value);
-        
+
 
         public static void AssertAsExpected<T>(
             ITestableObservable<T> expected,
@@ -51,38 +43,38 @@ namespace WSr.Tests
         }
 
         public static ITestableObservable<T> EvenlySpaced<T>(
-            this TestScheduler s, 
-            long start, 
-            int distance, 
+            this TestScheduler s,
+            long start,
+            int distance,
             IEnumerable<T> es) =>
             TestStream(s, es.Select((x, i) => (start + (i * distance), x)));
 
         public static ITestableObservable<T> TestStream<T>(
-            this TestScheduler s, 
+            this TestScheduler s,
             IEnumerable<(long t, T v)> es)
         {
             return s.CreateColdObservable<T>(
                 es
-                .Select(e => ReactiveTest.OnNext(e.t, e.v))
-                .Concat(new [] {ReactiveTest.OnCompleted<T>(es.Max(x => x.t))})
+                .Select(e => OnNext(e.t, e.v))
+                .Concat(new[] { OnCompleted<T>(es.Max(x => x.t)) })
                 .ToArray());
         }
 
         public static ITestableObservable<T> EvenlySpacedHot<T>(
-            this TestScheduler s, 
-            long start, 
-            int distance, 
+            this TestScheduler s,
+            long start,
+            int distance,
             IEnumerable<T> es) =>
             TestStreamHot(s, es.Select((x, i) => (start + (i * distance), x)));
 
         public static ITestableObservable<T> TestStreamHot<T>(
-            this TestScheduler s, 
+            this TestScheduler s,
             IEnumerable<(long t, T v)> es)
         {
             return s.CreateHotObservable<T>(
                 es
                 .Select(e => ReactiveTest.OnNext(e.t, e.v))
-                .Concat(new [] {ReactiveTest.OnCompleted<T>(es.Max(x => x.t))})
+                .Concat(new[] { ReactiveTest.OnCompleted<T>(es.Max(x => x.t)) })
                 .ToArray());
         }
 
