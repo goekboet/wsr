@@ -40,34 +40,6 @@ namespace WSr
             Func<byte[]> bufferfactory,
             Action<string> log,
             Func<IObservable<Message>, IObservable<Message>> app,
-            IScheduler s = null)
-        {
-            if (s == null) s = Scheduler.Default;
-
-            return Observable.Using(
-                resourceFactory: () => socket,
-                observableFactory: c =>
-                {
-                    var ctx = AddContext(c.ToString(), log);
-
-                    return c
-                        .Receive(
-                            bufferfactory: bufferfactory,
-                            log: ctx,
-                            s: s)
-                        .Do(x => Timestamp(ctx, s.Now)($"Incoming bytes: {Show(x)} {(x.Count())}"))
-                        .Select(x => x.ToObservable())
-                        .Concat()
-                        // .EchoFrames()
-                        .Deserialize(s, ctx)
-                        .Do(x => Timestamp(ctx, s.Now)("Parsed message: " + x.ToString()))
-                        .Process(app)
-                        .Do(x => Timestamp(ctx, s.Now)("Processed message: " + x.ToString()))
-                        .Serialize()
-                        .Do(x => Timestamp(ctx, s.Now)("Outgoing bytes: " + Show(x)))
-                        .Transmit(c, s)
-                        ;
-                });
-        }
+            IScheduler s = null) => Observable.Empty<Unit>();
     }
 }

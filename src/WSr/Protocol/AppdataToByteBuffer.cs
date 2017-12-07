@@ -17,6 +17,7 @@ namespace WSr.Protocol
 
         public static string ResponseKey(string requestKey) => Convert.ToBase64String(hash(requestKey + Ws));
         
+        public static IObservable<byte[]> Handshake(this IObservable<Request> r) => r.Select(Accept);
         public static byte[] Accept(Request r) => Encoding.ASCII.GetBytes(
             string.Join("\r\n", new[]
             {

@@ -23,7 +23,7 @@ namespace WSr.Protocol.Functional
         public static bool IsPrintableAscii(byte b) => b > 0x1F && b < 0x7F;
 
         public static IObservable<IEnumerable<byte>> Lines(
-            IObservable<byte> bs
+            this IObservable<byte> bs
         ) => bs
             .Buffer(CRLF(bs))
             .Select(x => x.TakeWhile(IsPrintableAscii))
@@ -56,9 +56,13 @@ namespace WSr.Protocol.Functional
             .Concat(Forever<Func<Request, IEnumerable<byte>, Request>>(ReadHeader));
 
         public static IObservable<Request> Deserialize(
-            IObservable<IEnumerable<byte>> lines) => lines
+            this IObservable<IEnumerable<byte>> lines) => lines
                 .Zip(ParseHandshake, (l, p) => (line: l, parse: p))
                 .Aggregate(Request.Init, (acc, x) => x.parse(acc, x.line));
+
+        public static IObservable<Request> ParseRequest(this IObservable<byte> bs) => bs
+            .Lines()
+            .Deserialize();
 
     }
 }
