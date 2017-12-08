@@ -93,39 +93,4 @@ namespace WSr
 
         public bool Equals(Error other) => C == other.C;
     }
-
-    public sealed class Either<T> : IEquatable<Either<T>> where T : class
-    {
-        public Either(T r)
-        {
-            Right = r;
-            Left = null;
-        }
-
-        public Either(Error e)
-        {
-            Right = null;
-            Left = e;
-        }
-
-        public T Right { get; }
-        public Error Left { get; }
-
-        public bool IsError => Left != null;
-
-        public override string ToString() => $"{show}: {showmember}";
-
-        public override int GetHashCode() => IsError 
-            ? Left.GetHashCode() 
-            : Right.GetHashCode();
-
-        public override bool Equals(object obj) => Equals(obj);
-
-        public bool Equals(Either<T> other) => IsError 
-            ? Left.Equals(other.Left)
-            : Right.Equals(other.Right);
-
-        private string show => IsError ? "Left" : "Right";
-        private string showmember => IsError ? Left.ToString() : Right.ToString();
-    }
 }

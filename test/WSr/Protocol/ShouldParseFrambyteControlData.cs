@@ -12,13 +12,13 @@ namespace WSr.Protocol.Tests
     {
         private static Guid Id { get; } = Guid.NewGuid();
         private static Head H(Guid id, OpCode o) => Head.Init(id).With(opc: o);
-        private static Either<FrameByte> F(Guid id, OpCode op, byte b) => 
-            new Either<FrameByte>(FrameByte.Init(H(id, op)).With(@byte: b));
+        private static FrameByte F(Guid id, OpCode op, byte b) => 
+            FrameByte.Init(H(id, op)).With(@byte: b);
 
-        private static Either<FrameByte> F(Head h, byte b) => 
-            new Either<FrameByte>(FrameByte.Init(h).With(@byte: b));  
+        private static FrameByte F(Head h, byte b) => 
+            FrameByte.Init(h).With(@byte: b);  
 
-        private (byte b, Either<FrameByte> f)[] FirstByteCases = new[]
+        private (byte b, FrameByte f)[] FirstByteCases = new[]
         {
             ((byte)0x80, F(Id, OpCode.Final | OpCode.Continuation, 0x80)),
             ((byte)0x81, F(Id, OpCode.Final | OpCode.Text, 0x81)),
@@ -31,7 +31,7 @@ namespace WSr.Protocol.Tests
             ((byte)0x02, F(Id, OpCode.Binary, 0x02))
         };
 
-        private IEnumerable<string> testfirst((byte b, Either<FrameByte> e) c) =>
+        private IEnumerable<string> testfirst((byte b, FrameByte e) c) =>
             ContinuationAndOpcode(FrameByteState.Init(() => Id), c.b).Current.Equals(c.e)
                 ? Enumerable.Empty<string>()
                 : new[] { $"{Environment.NewLine}e: {c.e.ToString()}{Environment.NewLine}a: {ContinuationAndOpcode(FrameByteState.Init(() => Id), c.b).Current.ToString()}" };
@@ -51,12 +51,12 @@ namespace WSr.Protocol.Tests
             next: FrameSecond
         );
 
-        private static IEnumerable<string> testSecond((byte b, Either<FrameByte> e) c) =>
+        private static IEnumerable<string> testSecond((byte b, FrameByte e) c) =>
             FrameSecond(FirstFramed, c.b).Current.Equals(c.e)
                 ? Enumerable.Empty<string>()
                 : new[] { $"{Environment.NewLine}e: {c.e.ToString()}{Environment.NewLine}a: {FrameSecond(FirstFramed, c.b).Current.ToString()}" };
 
-        private (byte b, Either<FrameByte> e)[] SecondByteCases = new[]
+        private (byte b, FrameByte e)[] SecondByteCases = new[]
         {
             ((byte)0x80, F(TextHead, 0x80)),
             ((byte)0xFD, F(TextHead, 0xFD)),

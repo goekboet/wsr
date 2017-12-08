@@ -74,13 +74,13 @@ namespace WSr.Protocol.Tests
             }
         }
 
-        private static Either<FrameByte> F(Head h, byte b, bool? a = null) =>
-            new Either<FrameByte>(FrameByte.Init(h).With(@byte: b, app: a));
+        private static FrameByte F(Head h, byte b, bool? a = null) =>
+            FrameByte.Init(h).With(@byte: b, app: a);
 
         private static string ShowExpected(ulong l, int r, int t, bool m) => string.Join("\n",
             FrameBytes(Repeat(Ids), l, r, m)/*.Skip((int)l - t)*/.Take(10).Select(x => x.ToString()));
 
-        private static IEnumerable<Either<FrameByte>> FrameBytes(
+        private static IEnumerable<FrameByte> FrameBytes(
             
             Func<Guid> identify, 
             ulong l, 
@@ -123,7 +123,7 @@ namespace WSr.Protocol.Tests
             }
         }
 
-        public string Showactual(IEnumerable<Either<FrameByte>> a) => string.Join("\n", a
+        public string Showactual(IEnumerable<FrameByte> a) => string.Join("\n", a
             .Select(x => x.ToString())
             .Skip(a.Count() - 20))
             ;
@@ -140,7 +140,7 @@ namespace WSr.Protocol.Tests
             var i = Bytes(l, r, true).ToObservable(run);
             var e = FrameBytes(Repeat(Ids), l, r, true).ToObservable(run);
 
-            var read = new List<Either<FrameByte>>((int)l);
+            var read = new List<FrameByte>((int)l);
             var actual = run.Start(
                 create: () => i
                     .Deserialiaze(Repeat(Ids))
@@ -171,8 +171,7 @@ namespace WSr.Protocol.Tests
             var run = new TestScheduler();
 
             var i = FrameBytes(Repeat(Ids), l, r, false)
-                .ToObservable(run)
-                .SwollowErrors();
+                .ToObservable(run);
 
             var e = Enumerable.Range(0, r)
                 .Select(_ => Bytes(l, 1, false).ToArray());

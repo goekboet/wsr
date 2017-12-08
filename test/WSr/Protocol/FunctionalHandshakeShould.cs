@@ -45,7 +45,7 @@ namespace WSr.Protocol.Tests
             var e = s.CreateColdObservable(Expected);
 
             var r = s.Start(
-                create: () => Lines(i)
+                create: () => i.Lines()
                     .Select(Show),
                 created: 0,
                 subscribed: 0,
@@ -122,7 +122,7 @@ namespace WSr.Protocol.Tests
             );
 
             var a = s.Start(
-                create: () => Deserialize(i),
+                create: () => i.Deserialize(),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000

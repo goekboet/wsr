@@ -9,62 +9,50 @@ namespace WSr.Protocol
 {
     public static class FrameByteFunctions
     {
-        public static IObservable<FrameByte> SwollowErrors(
-            this IObservable<Either<FrameByte>> unhandled) => unhandled
-                .SelectMany(x => x.IsError
-                    ? Observable.Empty<FrameByte>()
-                    : Observable.Return(x.Right));
-
-        public static IObservable<Either<FrameByte>> Deserialiaze(
+        public static IObservable<FrameByte> Deserialiaze(
             this IObservable<byte> incoming,
             Func<Guid> identify) => incoming
                 .Scan(FrameByteState.Init(identify), (s, b) => s.Next(b))
                 .Select(x => x.Current);
 
-        public static Either<FrameByte> Success(FrameByte f) => new Either<FrameByte>(f);
         public static Head Read(Head h, byte b) => h.With(
             id: h.Id,
             opc: (OpCode)b);
 
         public static FrameByteState ContinuationAndOpcode(FrameByteState s, byte b)
         {
-            if (s.Current.IsError) return s;
-
-            var current = s.Current.Right;
+            var current = s.Current;
             var h = Read(current.Head, b);
             var r = current.With(
                 head: h.With(id: s.Identify),
                 @byte: b);
 
-            return s.With(current: Success(r), next: FrameSecond);
+            return s.With(current: r, next: FrameSecond);
         }
 
         public static FrameByteState FrameSecond(FrameByteState s, byte b)
         {
-            if (s.Current.IsError) return s;
-            var current = s.Current.Right;
-
             var l = (ulong)b & 0x7f;
             switch (l)
             {
                 case 126:
                     return s.With(
-                        current: Success(current.With(
-                            @byte: b
-                        )),
-                        next: ReadLengthBytes(2, new byte[2]));
+                        current: s.Current.With(
+                            @byte: b),
+                        next: ReadLengthBytes(2, new byte[2])
+                        );
                 case 127:
                     return s.With(
-                        current: Success(current.With(
-                            @byte: b
-                        )),
-                        next: ReadLengthBytes(8, new byte[8]));
+                        current: s.Current.With(
+                            @byte: b), 
+                        next: ReadLengthBytes(8, new byte[8])
+                        );
                 default:
                     return s.With(
-                        current: Success(current.With(
-                            @byte: b
-                        )),
-                        next: ReadMaskBytes(4, new byte[4], l));
+                        current: s.Current.With(
+                            @byte: b),
+                        next: ReadMaskBytes(4, new byte[4], l)
+                        );
             }
         }
 
@@ -74,20 +62,19 @@ namespace WSr.Protocol
         {
             return (s, b) =>
             {
-                if (s.Current.IsError) return s;
-                var current = s.Current.Right;
-
                 bs[bs.Length - c] = b;
                 if (c == 1)
                 {
                     return s.With(
-                    current: Success(current.With(@byte: b)),
+                    current: s.Current.With(
+                        @byte: b),
                     next: ReadMaskBytes(4, new byte[4], InterpretLengthBytes(bs))
                 );
                 }
 
                 return s.With(
-                        current: Success(current.With(@byte: b)),
+                        current: s.Current.With(
+                            @byte: b),
                         next: ReadLengthBytes(c - 1, bs));
             };
         }
@@ -99,22 +86,22 @@ namespace WSr.Protocol
         {
             return (s, b) =>
             {
-                if (s.Current.IsError) return s;
-                var current = s.Current.Right;
-
                 mask[mask.Length - c] = b;
                 if (c > 1) return s.With(
-                    current: Success(current.With(@byte: b)),
+                    current: s.Current.With(
+                        @byte: b),
                     next: ReadMaskBytes(c - 1, mask, l)
                 );
 
                 if (c == 1 && l == 0) return s.With(
-                        current: Success(current.With(@byte: b)),
+                        current: s.Current.With(
+                            @byte: b),
                         next: ContinuationAndOpcode
                     );
 
                 return s.With(
-                    current: Success(current.With(@byte: b)),
+                    current: s.Current.With(
+                        @byte: b),
                     next: ReadPayload(0, mask, l)
                 );
             };
@@ -127,11 +114,8 @@ namespace WSr.Protocol
         {
             return (s, b) =>
             {
-                if (s.Current.IsError) return s;
-                var current = s.Current.Right;
-
                 return s.With(
-                    current: Success(current.With(@byte: (byte)(b ^ mask[c]), app: true)),
+                    current: s.Current.With(@byte: (byte)(b ^ mask[c]), app: true),
                     next: l == 1
                         ? ContinuationAndOpcode
                         : ReadPayload((c + 1) % 4, mask, l - 1)

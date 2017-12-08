@@ -8,12 +8,12 @@ namespace WSr
     {
         public static FrameByteState Init(Func<Guid> id) => new FrameByteState(
             id,
-            new Either<FrameByte>(FrameByte.Init(Head.Init(Guid.Empty))),
+            FrameByte.Init(Head.Init(Guid.Empty)),
             ContinuationAndOpcode);
 
         private FrameByteState(
             Func<Guid> id,
-            Either<FrameByte> current,
+            FrameByte current,
             Func<FrameByteState, byte, FrameByteState> next)
         {
             Id = id;
@@ -25,7 +25,7 @@ namespace WSr
         public Guid Identify => Id();
         public FrameByteState With(
            Func<Guid> id = null,
-           Either<FrameByte> current = null,
+           FrameByte current = null,
            Func<FrameByteState, byte, FrameByteState> next = null) =>
            new FrameByteState(
                id: id ?? this.Id,
@@ -33,7 +33,7 @@ namespace WSr
                next: next ?? Compute
            );
 
-        public Either<FrameByte> Current { get; }
+        public FrameByte Current { get; }
         private Func<FrameByteState, byte, FrameByteState> Compute { get; }
 
         public FrameByteState Next(byte b) => Compute(this, b);
