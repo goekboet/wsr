@@ -46,7 +46,7 @@ namespace WSr.Protocol.Tests
         private static Head H(Guid id) => Head.Init(id).With(opc: OpCode.Final | OpCode.Text);
         private static byte[] Mask { get; } = new byte[] { 1, 2, 4, 8 };
         private static byte[] Payload { get; } = new byte[] { 0xFF, 0xBF, 0xDF, 0xEF, 0xF7, 0xFB, 0xFD, 0xFE };
-        
+
         private static byte maskbyte(bool b) => (byte)(b ? 0x80 : 0x00);
         private static IEnumerable<byte> Bytes(ulong l, int r, bool m)
         {
@@ -58,12 +58,12 @@ namespace WSr.Protocol.Tests
                     yield return (byte)(maskbyte(m) | (byte)l);
                 else if (l <= UInt16.MaxValue)
                 {
-                    yield return 0xFE;
+                    yield return (byte)(m ? 0xFE : 0x7E);
                     foreach (byte b in ToNetwork2Bytes((ushort)l)) yield return b;
                 }
                 else
                 {
-                    yield return 0xFF;
+                    yield return (byte)(m ? 0xFF : 0x7F);
                     foreach (byte b in ToNetwork8Bytes(l)) yield return b;
                 }
                 foreach (byte b in mask)
@@ -78,12 +78,11 @@ namespace WSr.Protocol.Tests
             FrameByte.Init(h).With(@byte: b, app: a);
 
         private static string ShowExpected(ulong l, int r, int t, bool m) => string.Join("\n",
-            FrameBytes(Repeat(Ids), l, r, m)/*.Skip((int)l - t)*/.Take(10).Select(x => x.ToString()));
+            FrameBytes(Repeat(Ids), l, r, m).Skip((int)l - t).Take(10).Select(x => x.ToString()));
 
         private static IEnumerable<FrameByte> FrameBytes(
-            
-            Func<Guid> identify, 
-            ulong l, 
+            Func<Guid> identify,
+            ulong l,
             int r,
             bool m)
         {
@@ -155,17 +154,17 @@ namespace WSr.Protocol.Tests
             $"expected:\n{ShowExpected(l, r, read.Count(), true)}\nactual:\n{Showactual(read)}");
         }
 
-        private string ShowBuffer(byte[] bs) => string.Join("-", bs.Select(b => b.ToString("X2")));
+        private string ShowBuffer(byte[] bs) => string.Join("-", bs.Select(b => b.ToString("X2")).Take(10));
         private string Compare((byte[] e, byte[] a) rs) => $@"
         expected: {ShowBuffer(rs.e)}
-        actual : {ShowBuffer(rs.a)}";
+        actual  : {ShowBuffer(rs.a)}";
         private string ShowResult(IEnumerable<(byte[] exp, byte[] act)> eqs) => string.Join("\n", eqs.Select(Compare));
 
         [TestMethod]
         [DataRow((ulong)0, 2)]
         [DataRow((ulong)125, 2)]
-        // [DataRow((ulong)65535, 2)]
-        // [DataRow((ulong)65536, 2)]
+        [DataRow((ulong)65535, 2)]
+        [DataRow((ulong)65536, 2)]
         public void ShouldSerializeFrameByte(ulong l, int r)
         {
             var run = new TestScheduler();
@@ -185,7 +184,7 @@ namespace WSr.Protocol.Tests
             var test = e.Zip(a.GetValues(), (exp, act) => (exp: exp, act: act));
 
             Assert.IsTrue(
-                test.Select(x => x.exp.SequenceEqual(x.act)).All(x => x), 
+                test.Select(x => x.exp.SequenceEqual(x.act)).All(x => x),
                 ShowResult(test));
         }
     }
