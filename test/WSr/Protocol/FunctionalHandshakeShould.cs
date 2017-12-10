@@ -122,7 +122,7 @@ namespace WSr.Protocol.Tests
             );
 
             var a = s.Start(
-                create: () => i.Deserialize(),
+                create: () => i.DeserializeH(),
                 created: 0,
                 subscribed: 0,
                 disposed: 1000
@@ -131,7 +131,15 @@ namespace WSr.Protocol.Tests
             AssertAsExpected(e, a);
         }
 
-        public static byte[] accept => Encoding.ASCII.GetBytes(
+        public static IObservable<byte> EmptyBytes => Observable.Empty<byte>();
+
+        public static Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>> DummyRoute => 
+            new Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>>()
+            {
+                ["/chat"] = _ => Observable.Empty<byte[]>()
+            };
+
+        public static byte[] Expectedaccept => Encoding.ASCII.GetBytes(
                 "HTTP/1.1 101 Switching Protocols\r\n" +
                 "Upgrade: websocket\r\n" +
                 "Connection: Upgrade\r\n" +
@@ -145,13 +153,14 @@ namespace WSr.Protocol.Tests
             var i = Observable.Return(ExpectedRequest, s);
 
             var r = s.Start(
-                create: () => i.Select(Accept),
+                create: () => i.SelectMany(x => Accept(x, EmptyBytes, DummyRoute)),
                 created: 0,
                 subscribed: 0,
                 disposed: long.MaxValue
             );
+            var result = r.GetValues().Single();
 
-            Assert.IsTrue(r.GetValues().Single().SequenceEqual(accept));
+            Assert.IsTrue(Expectedaccept.SequenceEqual(result));
         }
     }
 }

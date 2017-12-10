@@ -11,13 +11,20 @@ using static App.WSr.Apps;
 using static App.WSr.ArgumentFunctions;
 
 using System.IO;
+using System.Collections.Generic;
 
 namespace App.WSr
 {
     class Program
     {
+        static Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>> Routes { get; } =
+            new Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>>()
+            {
+                [""] = Websocket(x => Observable.Return(x))
+            };
+
         static string Logfile = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "log.txt";
-        
+
         static void WriteError(Exception e) => Console.WriteLine($"error: {e.GetType()} {e.Message} {e.Source} {e.StackTrace}");
         const int bufferSize = 8192;
         static void Main(string[] args)
@@ -28,16 +35,16 @@ namespace App.WSr
 
             var run = Host(ip, port, t)
                 .SelectMany(x => Serve(
-                    socket: x, 
+                    socket: x,
                     bufferfactory: () => new byte[bufferSize],
                     log: StdOut,
-                    app: Echo))
+                    routingtable: Routes))
                 .Subscribe(
-                    onNext: x => {},
+                    onNext: x => { },
                     onError: WriteError,
                     onCompleted: () => Console.WriteLine($"{DateTimeOffset.Now}: WSr stopped")
                 );
-            
+
             Console.WriteLine($"{DateTimeOffset.Now}: WSr is listening on {ip}:{port}");
             t.Wait();
         }

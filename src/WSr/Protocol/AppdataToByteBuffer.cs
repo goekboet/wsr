@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
+using WSr.Protocol.AggregatingHandshake;
 
 using static WSr.IntegersFromByteConverter;
 using static WSr.Algorithms;
+using WSr.Protocol.Functional;
 
 namespace WSr.Protocol
 {
@@ -16,26 +18,33 @@ namespace WSr.Protocol
         private static byte[] hash(string s) => SHA1.ComputeHash(Encoding.UTF8.GetBytes(s));
 
         public static string ResponseKey(string requestKey) => Convert.ToBase64String(hash(requestKey + Ws));
-        
-        public static IObservable<byte[]> Handshake(this IObservable<Request> r) => r.Select(Accept);
-        public static byte[] Accept(Request r) => Encoding.ASCII.GetBytes(
-            string.Join("\r\n", new[]
-            {
-                "HTTP/1.1 101 Switching Protocols",
-                "Upgrade: websocket",
-                "Connection: Upgrade",
-                $"Sec-WebSocket-Accept: {ResponseKey(r.Headers["Sec-WebSocket-Key"])}",
-                "\r\n"
-            })
-        );
 
-        public static IObservable<byte[]> Echo(
-            this IObservable<FrameByte> from) => from
-                .GroupBy(
-                    keySelector: x => x.Head,
-                    elementSelector: x => (app: x.AppData, data: x.Byte))
-                .SelectMany(AppData)
-                .Select(x => Frame(x).ToArray());
+        public static IObservable<Request> Handshake(IObservable<byte> incoming) =>
+            incoming
+            .ParseRequest();
+
+        public static IObservable<byte[]> Accept(
+            Request r,
+            IObservable<byte> bs,
+            Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>> routes) => (
+                Observable.Return(Encoding.ASCII.GetBytes(
+                        string.Join("\r\n", new[]
+                        {
+                            "HTTP/1.1 101 Switching Protocols",
+                            "Upgrade: websocket",
+                            "Connection: Upgrade",
+                            $"Sec-WebSocket-Accept: {ResponseKey(r.Headers["Sec-WebSocket-Key"])}",
+                            "\r\n"
+                        })))
+                .Concat(routes[r.Url](bs)));
+
+        public static IObservable<(OpCode opcode, IObservable<byte> appdata)> ToAppdata(
+            this IObservable<FrameByte> frames
+        ) => Observable.Empty<(OpCode opcode, IObservable<byte> appdata)>();
+
+        public static IObservable<byte[]> Serialize(
+            this IObservable<(OpCode opcode, IObservable<byte> appdata)> buffers) =>
+            buffers.SelectMany(x => x.appdata.ToArray().Select(p => Frame((x.opcode, p)).ToArray()));
 
         public static IObservable<(OpCode opc, byte[] data)> AppData(
             IGroupedObservable<Head, (bool app, byte data)> frames) => frames
@@ -43,7 +52,7 @@ namespace WSr.Protocol
                 .Select(f => f.data)
                 .ToArray()
                 .Select(a => (frames.Key.Opc, a));
-        
+
         public static IEnumerable<byte> Frame(
             (OpCode opc, byte[] data) app)
         {

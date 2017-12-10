@@ -15,8 +15,7 @@ namespace WSr
         public override string ToString() => $"id: {Id} opc: {Opc} ";
 
         public override bool Equals(object obj) => obj is Head h
-            && h.Id.Equals(Id)
-            && h.Opc.Equals(Opc);
+            && h.Id.Equals(Id);
 
         public override int GetHashCode() => Id.GetHashCode();
         private Head() { }

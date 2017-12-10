@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -8,6 +10,7 @@ using WSr.Tests;
 using static WSr.IntegersFromByteConverter;
 
 using static WSr.Protocol.FrameByteFunctions;
+using List = WSr.ListConstruction;
 
 namespace WSr.Protocol.Tests
 {
@@ -45,15 +48,23 @@ namespace WSr.Protocol.Tests
         }
         private static Head H(Guid id) => Head.Init(id).With(opc: OpCode.Final | OpCode.Text);
         private static byte[] Mask { get; } = new byte[] { 1, 2, 4, 8 };
-        private static byte[] Payload { get; } = new byte[] { 0xFF, 0xBF, 0xDF, 0xEF, 0xF7, 0xFB, 0xFD, 0xFE };
+        private static byte[] PayloadBytes { get; } = new byte[] { 0xFF, 0xBF, 0xDF, 0xEF, 0xF7, 0xFB, 0xFD, 0xFE };
+
+        private static IEnumerable<byte> Payload(long l)
+        {
+            for (long i = 0; i < l; i++)
+                yield return PayloadBytes[i % PayloadBytes.Length];
+        }
+
+
 
         private static byte maskbyte(bool b) => (byte)(b ? 0x80 : 0x00);
-        private static IEnumerable<byte> Bytes(ulong l, int r, bool m)
+        private static IEnumerable<byte> Bytes(OpCode o, ulong l, int r, bool m)
         {
             var mask = m ? Mask : new byte[0];
             while (r-- > 0)
             {
-                yield return 0x81;
+                yield return (byte)(o | OpCode.Final);
                 if (l < 126)
                     yield return (byte)(maskbyte(m) | (byte)l);
                 else if (l <= UInt16.MaxValue)
@@ -70,18 +81,19 @@ namespace WSr.Protocol.Tests
                     yield return b;
 
                 for (ulong i = 0; i < l; i++)
-                    yield return Payload[i % (ulong)Payload.Length];
+                    yield return PayloadBytes[i % (ulong)PayloadBytes.Length];
             }
         }
 
         private static FrameByte F(Head h, byte b, bool? a = null) =>
             FrameByte.Init(h).With(@byte: b, app: a);
 
-        private static string ShowExpected(ulong l, int r, int t, bool m) => string.Join("\n",
-            FrameBytes(Repeat(Ids), l, r, m).Skip((int)l - t).Take(10).Select(x => x.ToString()));
+        private static string ShowExpected(OpCode o, ulong l, int r, int t, bool m) => string.Join("\n",
+            FrameBytes(Repeat(Ids), o, l, r, m).Skip((int)l - t).Take(10).Select(x => x.ToString()));
 
         private static IEnumerable<FrameByte> FrameBytes(
             Func<Guid> identify,
+            OpCode o,
             ulong l,
             int r,
             bool m)
@@ -91,7 +103,7 @@ namespace WSr.Protocol.Tests
                 var h = H(identify());
                 var mask = m ? Mask : new byte[0];
 
-                yield return F(h, 0x81);
+                yield return F(h, (byte)(o | OpCode.Final));
                 if (l < 126)
                     yield return F(h, (byte)(maskbyte(m) | (byte)l));
                 else if (l <= UInt16.MaxValue)
@@ -118,7 +130,7 @@ namespace WSr.Protocol.Tests
                     yield return F(h, Mask[i]);
 
                 for (ulong i = 0; i < l; i++)
-                    yield return F(h, (byte)(Payload[i % (ulong)Payload.Length] ^ (byte)(m ? mask[i % 4] : 0x00)), true);
+                    yield return F(h, (byte)(PayloadBytes[i % (ulong)PayloadBytes.Length] ^ (byte)(m ? mask[i % 4] : 0x00)), true);
             }
         }
 
@@ -136,8 +148,8 @@ namespace WSr.Protocol.Tests
         {
             var run = new TestScheduler();
 
-            var i = Bytes(l, r, true).ToObservable(run);
-            var e = FrameBytes(Repeat(Ids), l, r, true).ToObservable(run);
+            var i = Bytes(OpCode.Text, l, r, true).ToObservable(run);
+            var e = FrameBytes(Repeat(Ids), OpCode.Text, l, r, true).ToObservable(run);
 
             var read = new List<FrameByte>((int)l);
             var actual = run.Start(
@@ -151,7 +163,7 @@ namespace WSr.Protocol.Tests
             );
 
             Assert.IsTrue(actual.GetValues().SingleOrDefault(),
-            $"expected:\n{ShowExpected(l, r, read.Count(), true)}\nactual:\n{Showactual(read)}");
+            $"expected:\n{ShowExpected(OpCode.Text, l, r, read.Count(), true)}\nactual:\n{Showactual(read)}");
         }
 
         private string ShowBuffer(byte[] bs) => string.Join("-", bs.Select(b => b.ToString("X2")).Take(10));
@@ -160,32 +172,101 @@ namespace WSr.Protocol.Tests
         actual  : {ShowBuffer(rs.a)}";
         private string ShowResult(IEnumerable<(byte[] exp, byte[] act)> eqs) => string.Join("\n", eqs.Select(Compare));
 
+        private IObservable<(OpCode, IObservable<byte>)> x3_OutgoingFrame(long l, IScheduler s) =>
+            Observable.Range(0, 3).Select(_ => (OpCode.Text | OpCode.Final, Payload(l).ToObservable(s)));
+
+        private string ShowBufferLengths(
+            IEnumerable<long> bs
+        ) => string.Join(" - ", bs.Select(x => x.ToString()));
+
+        private string ShowBufferLengths(long l) => ShowBufferLengths(Enumerable.Repeat(l, 3));
+
         [TestMethod]
-        [DataRow((ulong)0, 2)]
-        [DataRow((ulong)125, 2)]
-        [DataRow((ulong)65535, 2)]
-        [DataRow((ulong)65536, 2)]
-        public void ShouldSerializeFrameByte(ulong l, int r)
+        [DataRow((long)0, 2 + 0)]
+        [DataRow((long)125, 2 + 125)]
+        [DataRow((long)65535, 2 + 2 + 65535)]
+        [DataRow((long)65536, 2 + 8 + 65536)]
+        public void ShouldSerializeFrameByte(long l, long e)
         {
-            var run = new TestScheduler();
+            var s = new TestScheduler();
 
-            var i = FrameBytes(Repeat(Ids), l, r, false)
-                .ToObservable(run);
+            var i = x3_OutgoingFrame(l, s);
 
-            var e = Enumerable.Range(0, r)
-                .Select(_ => Bytes(l, 1, false).ToArray());
-
-            var a = run.Start(
-                create: () => i.Echo(),
+            var a = s.Start(
+                create: () => i
+                    .Serialize()
+                    .Select(x => x.LongLength)
+                    .Take(3),
                 created: 0,
                 subscribed: 0,
-                disposed: long.MaxValue);
+                disposed: long.MaxValue
+            );
 
-            var test = e.Zip(a.GetValues(), (exp, act) => (exp: exp, act: act));
+            var r = a.GetValues();
+            Assert.IsTrue(r.Count() == 3, $"e: 3, a:{r.Count()}");
+            Assert.IsTrue(r.All(x => x == e), $"e: {ShowBufferLengths(e)} a: {ShowBufferLengths(r)}");
+        }
 
-            Assert.IsTrue(
-                test.Select(x => x.exp.SequenceEqual(x.act)).All(x => x),
-                ShowResult(test));
+        private IObservable<int> MakeAppdata(
+            int l,
+            IEnumerable<OpCode> codes, 
+            IEnumerable<int> p) => Observable.Empty<int>();
+
+        IEnumerable<Head> Heads(
+            IEnumerable<OpCode> codes,
+            IEnumerable<Guid> ids) => codes.Zip(ids, 
+                (opc, id) => Head.Init(id).With(opc: opc));
+
+        private IObservable<FrameByte> IncomingBytes(
+            int frames,
+            IEnumerable<OpCode> codes,
+            IEnumerable<Guid> ids, 
+            IEnumerable<int> p_length) => Heads(codes, ids)
+                .Zip(p_length, 
+                    (h, l) => Enumerable.Repeat(FrameByte.Init(h).With(app: true, @byte: 0xFF), l))
+                .SelectMany(x => x)
+                .ToObservable();
+
+        private IEnumerable<OpCode> Codes = List.Forever(new [] 
+        {
+             OpCode.Binary, OpCode.Ping, OpCode.Close
+        })
+            .SelectMany(x => x.Select(o => o | OpCode.Final));
+
+        private IEnumerable<int> IncrementingLengths(int l) => Enumerable
+            .Range(1, l + 1);
+
+        private string showLengths(IEnumerable<int> ls) => string.Join(", ", ls);
+        
+        string ShowRecord<T>(IList<Recorded<Notification<T>>> r) => string.Join(", ", r);
+
+        [TestMethod]
+        [DataRow(3)]
+        public void ShouldMapFrameByteToAppdata(
+            int l)
+        {
+            var s = new TestScheduler();
+            
+            var e = IncrementingLengths(l);
+            var i = IncomingBytes(
+                frames: l,
+                codes: Codes.Take(l),
+                ids: Ids,
+                p_length: e)
+                .Concat(Observable.Never<FrameByte>());
+
+            var a = s.Start(
+                create: () => i.ToAppdata()
+                    .SelectMany(x => x.appdata.Count()),
+                created: 0,
+                subscribed: 0,
+                disposed: 0);
+
+            var r = a.GetValues();
+            Assert.IsTrue(r.SequenceEqual(e), 
+            $@"e: {showLengths(e)}
+               a: {showLengths(r)}
+               r: {ShowRecord(a.Messages)}");
         }
     }
 }
