@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace WSr
 {
@@ -27,19 +28,26 @@ namespace WSr
             Opc = opc;
         }
     }
-    
+
+    [Flags]
+    public enum Control : byte
+    {
+        IsAppdata = 1,
+        IsLast = 2
+    }
+
     public sealed class FrameByte : IEquatable<FrameByte>
     {
         public static FrameByte Init(Head h) => new FrameByte(
             h: h,
             b: 0x00,
-            a: false
+            a: 0
         );
 
         public FrameByte With(
             byte @byte,
             Head head = null,
-            bool? app = null)
+            Control? app = null)
         {
             return new FrameByte(
                 h: head ?? Head,
@@ -51,7 +59,7 @@ namespace WSr
         private FrameByte(
             Head h,
             byte b,
-            bool a)
+            Control a)
         {
             Head = h;
             Byte = b;
@@ -60,9 +68,13 @@ namespace WSr
 
         public Head Head { get; }
         public byte Byte { get; }
-        public bool AppData {get;}
+        public Control AppData { get; }
 
-        public override string ToString() => $"h: {showH} pld: {showPld}";
+        private string C => string.Join(", ", new[] { a, l }.Where(x => x != ""));
+        private string a => (AppData & Control.IsAppdata) != 0 ? "appdata" : "";
+        private string l => (AppData & Control.IsLast) != 0 ? "last" : "";
+
+        public override string ToString() => $"h: {showH} pld: {showPld} ctr: {C}";
 
         public override bool Equals(object obj) => obj is FrameByte f && Equals(f);
 

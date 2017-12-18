@@ -44,7 +44,7 @@ namespace WSr.Protocol
                 case 127:
                     return s.With(
                         current: s.Current.With(
-                            @byte: b), 
+                            @byte: b),
                         next: ReadLengthBytes(8, new byte[8])
                         );
                 default:
@@ -95,6 +95,7 @@ namespace WSr.Protocol
 
                 if (c == 1 && l == 0) return s.With(
                         current: s.Current.With(
+                            app: Control.IsLast,
                             @byte: b),
                         next: ContinuationAndOpcode
                     );
@@ -107,6 +108,10 @@ namespace WSr.Protocol
             };
         }
 
+        public static Control Appdata(ulong l) => Control.IsAppdata | (l == 1 ? Control.IsLast : 0x00);
+
+        public static byte UnMask(byte b, byte m) => (byte)(b ^ m);
+
         public static Func<FrameByteState, byte, FrameByteState> ReadPayload(
             int c,
             byte[] mask,
@@ -115,7 +120,7 @@ namespace WSr.Protocol
             return (s, b) =>
             {
                 return s.With(
-                    current: s.Current.With(@byte: (byte)(b ^ mask[c]), app: true),
+                    current: s.Current.With(@byte: UnMask(b, mask[c]), app: Appdata(l)),
                     next: l == 1
                         ? ContinuationAndOpcode
                         : ReadPayload((c + 1) % 4, mask, l - 1)

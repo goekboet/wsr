@@ -8,6 +8,8 @@ using WSr.Protocol.AggregatingHandshake;
 using static WSr.IntegersFromByteConverter;
 using static WSr.Algorithms;
 using WSr.Protocol.Functional;
+using System.Reactive;
+using System.Reactive.Concurrency;
 
 namespace WSr.Protocol
 {
@@ -38,29 +40,42 @@ namespace WSr.Protocol
                         })))
                 .Concat(routes[r.Url](bs)));
 
+        private static bool LastByte((Control c, byte b) fb) => (fb.c & Control.IsLast) != 0;
+        private static bool IsAppdata((Control c, byte b) fb) => (fb.c & Control.IsAppdata) != 0;
         public static IObservable<(OpCode opcode, IObservable<byte> appdata)> ToAppdata(
-            this IObservable<FrameByte> frames
-        ) => Observable.Empty<(OpCode opcode, IObservable<byte> appdata)>();
+            this IObservable<FrameByte> frames,
+            IScheduler s = null)
+        {
+            return frames.GroupByUntil(
+                keySelector: f => f.Head,
+                elementSelector: f => (appdata: f.AppData, @byte: f.Byte),
+                durationSelector: f => f.Where(LastByte))
+                .SelectMany(
+                        x => Observable.Return(
+                            (x.Key.Opc, x.Where(IsAppdata).Select(y => y.@byte)), s ?? Scheduler.Default));
+        }
 
+        public static IObservable<(OpCode opcode, IObservable<byte> appdata)> CompleteOnClose(
+            this IObservable<(OpCode opcode, IObservable<byte> appdata)> parsed) => parsed.Publish(p => p
+                .Where(x => (x.opcode & OpCode.Close) != 0).Take(1)
+                .Merge(p.TakeWhile(x => (x.opcode & OpCode.Close) == 0)));
+
+        public static IObservable<byte[]> ToFrame((OpCode opcode, IObservable<byte> appdata) x) =>
+            x.appdata.ToArray().Select(p => Frame(x.opcode, p).ToArray());
         public static IObservable<byte[]> Serialize(
-            this IObservable<(OpCode opcode, IObservable<byte> appdata)> buffers) =>
-            buffers.SelectMany(x => x.appdata.ToArray().Select(p => Frame((x.opcode, p)).ToArray()));
-
-        public static IObservable<(OpCode opc, byte[] data)> AppData(
-            IGroupedObservable<Head, (bool app, byte data)> frames) => frames
-                .Where(f => f.app)
-                .Select(f => f.data)
-                .ToArray()
-                .Select(a => (frames.Key.Opc, a));
+            this IObservable<(OpCode opcode, IObservable<byte> appdata)> data) => data
+                    .CompleteOnClose()
+                    .SelectMany(ToFrame);
 
         public static IEnumerable<byte> Frame(
-            (OpCode opc, byte[] data) app)
+            OpCode opc,
+            byte[] data)
         {
-            yield return (byte)app.opc;
+            yield return (byte)opc;
 
-            var l = app.data.Length;
+            var l = data.Length;
             if (l < 126)
-                yield return (byte)app.data.Length;
+                yield return (byte)data.Length;
             else if (l <= ushort.MaxValue)
             {
                 yield return 0x7E;
@@ -72,7 +87,7 @@ namespace WSr.Protocol
                 foreach (var b in ToNetwork8Bytes((ulong)l)) yield return b;
             }
 
-            foreach (var b in app.data) yield return b;
+            foreach (var b in data) yield return b;
         }
     }
 }

@@ -79,10 +79,10 @@ namespace WSr.Protocol.Tests
             var pings = PingAt(c.PingTiming, c.OutgoingPings.Count(), s);
             var pongs = s.TestStreamHot(c.Pongs.Select(x => (x, ParsedFrame.Pong as Frame)));
 
-            var expected = s.TestStream(c.OutgoingPings.Select(x => (x, ParsedFrame.Ping as Frame)));
+            var expected = s.TestStream(c.OutgoingPings.Select(x => (x, ParsedFrame.Ping as Frame)), SameTickAsLast<Frame>());
             var actual = s.Start(
                 create: () => Latency(
-                        pings.Timestamp(s), 
+                        pings.Timestamp(s),
                         pongs.Timestamp(s))
                     .pings.Take(c.OutgoingPings.Count()),
                 created: 0,
@@ -104,10 +104,10 @@ namespace WSr.Protocol.Tests
             var pings = PingAt(c.PingTiming, c.OutgoingPings.Count(), s);
             var pongs = s.TestStreamHot(c.Pongs.Select(x => (x, ParsedFrame.Pong as Frame)));
 
-            var expected = s.TestStream(c.Intervals);
+            var expected = s.TestStream(c.Intervals, SameTickAsLast<TimeSpan>());
             var actual = s.Start(
                 create: () => Latency(
-                        pings.Timestamp(s), 
+                        pings.Timestamp(s),
                         pongs.Timestamp(s))
                     .latency.Take(c.OutgoingPings.Count()),
                 created: 0,
@@ -134,10 +134,10 @@ namespace WSr.Protocol.Tests
             var record = new List<TimeSpan>();
             Action<TimeSpan> latencyRecord = l => record.Add(l);
 
-            var expected = s.TestStream(c.OutgoingPings.Select(x => (x, ParsedFrame.Ping as Frame)));
+            var expected = s.TestStream(c.OutgoingPings.Select(x => (x, ParsedFrame.Ping as Frame)), SameTickAsLast<Frame>());
             var actual = s.Start(
                 create: () => OurPingPong(
-                        pings.Timestamp(s), 
+                        pings.Timestamp(s),
                         pongs.Timestamp(s),
                         latencyRecord)
                     .Take(c.OutgoingPings.Count()),

@@ -66,7 +66,7 @@ namespace WSr.Protocol.Tests
             var t = testcases[label];
 
             var input = s.TestStream(new[] { t.input });
-            var expected = s.TestStream(t.expected);
+            var expected = s.TestStream(t.expected, SameTickAsLast<Message>());
 
             var actual = s.Start(
                 create: () => input

@@ -15,23 +15,23 @@ namespace WSr.Protocol.Tests
     {
         private Dictionary<string, (byte[][] input, IEnumerable<Message> output)> _cases =
             new Dictionary<string, (byte[][] input, IEnumerable<Message> output)>()
-        {
-            ["Handshake&Frames"] = (
-                input: new [] 
-                { 
+            {
+                ["Handshake&Frames"] = (
+                input: new[]
+                {
                     Handshake,
                     GoodBytes,
                     GoodBytes,
                     GoodBytes
                 },
-                output: new []
+                output: new[]
                 {
                     MHandshake,
                     GoodMessage,
                     GoodMessage,
                     GoodMessage
                 })
-        };
+            };
 
         [TestMethod]
         [DataRow("Handshake&Frames")]
@@ -49,14 +49,15 @@ namespace WSr.Protocol.Tests
             var e = run.EvenlySpaced(
                 start: 1001,
                 distance: 1000,
-                es: t.output
+                es: t.output,
+                closebehavior: SameTickAsLast<Message>()
             );
-            
+
             var a = run.Start(
                 create: () => i
                     .Select(x => x.ToObservable(run))
                     .Concat()
-                    .Deserialize(run, s => {})
+                    .Deserialize(run, s => { })
                     .EmittedAtInterval(TimeSpan.FromTicks(1000), run, t.output.Count()),
                 created: 0,
                 subscribed: 0,
