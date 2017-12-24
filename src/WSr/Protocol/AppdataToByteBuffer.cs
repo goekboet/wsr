@@ -55,6 +55,14 @@ namespace WSr.Protocol
                             (x.Key.Opc, x.Where(IsAppdata).Select(y => y.@byte)), s ?? Scheduler.Default));
         }
 
+        public static IObservable<(OpCode opcode, IObservable<byte> appdata)> SwitchOnOpcode(
+            this IObservable<(OpCode opcode, IObservable<byte> appdata)> incoming,
+            Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> dataframes,
+            Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> ping,
+            Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> pong,
+            Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> close
+        ) => incoming;
+
         public static IObservable<(OpCode opcode, IObservable<byte> appdata)> CompleteOnClose(
             this IObservable<(OpCode opcode, IObservable<byte> appdata)> parsed) => parsed.Publish(p => p
                 .Where(x => (x.opcode & OpCode.Close) != 0).Take(1)

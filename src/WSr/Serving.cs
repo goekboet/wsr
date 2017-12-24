@@ -38,16 +38,33 @@ namespace WSr
                 ;
         }
 
+        public static Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> Echo => x => Observable.Return(x);
         public static Func<IObservable<byte>, IObservable<byte[]>> Websocket(
                 Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> app) => incoming =>
             incoming
                 .Deserialiaze(() => Guid.NewGuid())
                 .ToAppdata()
-                .SelectMany(app)
+                .SwitchOnOpcode(
+                    dataframes: app,
+                    ping: Echo,
+                    pong: Echo,
+                    close: Echo)
                 .Serialize();
 
         public static Func<Request, IObservable<byte>, IObservable<byte[]>> Routing(
             Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>> routingtable) => (r, bs) => Accept(r, bs, routingtable);
+
+        public static IObservable<byte[]> SwitchProtocol(
+            this IObservable<IEnumerable<byte>> buffers,
+            Func<IObservable<byte>, IObservable<Request>> handshake,
+            Func<Request, IObservable<byte>, IObservable<byte[]>> routing)
+        {
+            var bs = buffers
+                .SelectMany(x => x.ToObservable())
+                .Publish().RefCount();
+
+            return handshake(bs).SelectMany(x => routing(x, bs));
+        }
 
         public static IObservable<Unit> Serve(
             IConnectedSocket socket,
@@ -56,7 +73,7 @@ namespace WSr
             Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>> routingtable,
             IScheduler s = null) => socket
                 .Receive(bufferfactory, log)
-                .Protocol(
+                .SwitchProtocol(
                     handshake: Handshake,
                     routing: Routing(routingtable))
                 .Transmit(socket);
