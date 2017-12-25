@@ -51,7 +51,7 @@ namespace WSr
         {
             return new FrameByte(
                 h: head ?? Head,
-                a: app ?? AppData,
+                a: app ?? Control,
                 b: @byte
             );
         }
@@ -63,16 +63,16 @@ namespace WSr
         {
             Head = h;
             Byte = b;
-            AppData = a;
+            Control = a;
         }
 
         public Head Head { get; }
         public byte Byte { get; }
-        public Control AppData { get; }
+        public Control Control { get; }
 
         private string C => string.Join(", ", new[] { a, l }.Where(x => x != ""));
-        private string a => (AppData & Control.IsAppdata) != 0 ? "appdata" : "";
-        private string l => (AppData & Control.IsLast) != 0 ? "last" : "";
+        private string a => (Control & Control.IsAppdata) != 0 ? "appdata" : "";
+        private string l => (Control & Control.IsLast) != 0 ? "last" : "";
 
         public override string ToString() => $"h: {showH} pld: {showPld} ctr: {C}";
 
@@ -81,7 +81,8 @@ namespace WSr
         public override int GetHashCode() => Head.GetHashCode();
 
         public bool Equals(FrameByte o) => o.Head.Equals(Head)
-            && o.Byte.Equals(Byte);
+            && o.Byte.Equals(Byte)
+            && o.Control.Equals(Control);
 
         private string showH => Head?.ToString() ?? "Empty";
         private string showPld => Byte.ToString("X2");

@@ -20,7 +20,7 @@ namespace App.WSr
         static Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>> Routes { get; } =
             new Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>>()
             {
-                [""] = Websocket(x => Observable.Return(x))
+                ["/"] = Websocket(x => Observable.Return(x))
             };
 
         static string Logfile = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "log.txt";

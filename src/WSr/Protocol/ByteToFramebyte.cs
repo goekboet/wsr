@@ -7,13 +7,18 @@ using static WSr.Protocol.Functions;
 
 namespace WSr.Protocol
 {
+    
     public static class FrameByteFunctions
     {
+        public static void PrintByte(byte b) => Console.WriteLine($"{b.ToString("X2")}");
+
         public static IObservable<FrameByte> Deserialiaze(
             this IObservable<byte> incoming,
             Func<Guid> identify) => incoming
                 .Scan(FrameByteState.Init(identify), (s, b) => s.Next(b))
-                .Select(x => x.Current);
+                .Select(x => x.Current)
+                //.Do(x => Console.WriteLine(x))
+                ;
 
         public static Head Read(Head h, byte b) => h.With(
             id: h.Id,
@@ -25,7 +30,8 @@ namespace WSr.Protocol
             var h = Read(current.Head, b);
             var r = current.With(
                 head: h.With(id: s.Identify),
-                @byte: b);
+                @byte: b,
+                app: 0);
 
             return s.With(current: r, next: FrameSecond);
         }

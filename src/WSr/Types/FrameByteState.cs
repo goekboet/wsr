@@ -43,6 +43,5 @@ namespace WSr
         public override bool Equals(object obj) => obj is FrameByteState s && Equals(s);
 
         public bool Equals(FrameByteState other) => Current.Equals(other);
-        
     }
 }

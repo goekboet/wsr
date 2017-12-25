@@ -39,6 +39,7 @@ namespace WSr
         }
 
         public static Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> Echo => x => Observable.Return(x);
+        
         public static Func<IObservable<byte>, IObservable<byte[]>> Websocket(
                 Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> app) => incoming =>
             incoming
@@ -71,11 +72,13 @@ namespace WSr
             Func<byte[]> bufferfactory,
             Action<string> log,
             Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>> routingtable,
-            IScheduler s = null) => socket
+            IScheduler s = null) => Observable.Using(
+                resourceFactory: () => socket,
+                observableFactory: c => c
                 .Receive(bufferfactory, log)
                 .SwitchProtocol(
                     handshake: Handshake,
                     routing: Routing(routingtable))
-                .Transmit(socket);
+                .Transmit(socket));
     }
 }

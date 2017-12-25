@@ -48,11 +48,11 @@ namespace WSr.Protocol
         {
             return frames.GroupByUntil(
                 keySelector: f => f.Head,
-                elementSelector: f => (appdata: f.AppData, @byte: f.Byte),
+                elementSelector: f => (appdata: f.Control, @byte: f.Byte),
                 durationSelector: f => f.Where(LastByte))
                 .SelectMany(
                         x => Observable.Return(
-                            (x.Key.Opc, x.Where(IsAppdata).Select(y => y.@byte)), s ?? Scheduler.Default));
+                            (x.Key.Opc, x.Where(IsAppdata).Select(y => y.@byte)), s ?? Scheduler.Immediate));
         }
 
         public static IObservable<(OpCode opcode, IObservable<byte> appdata)> SwitchOnOpcode(
