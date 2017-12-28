@@ -9,10 +9,13 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
 using System.Reactive;
-using WSr.Application;
 
 namespace WSr
 {
+    public interface IListeningSocket : IDisposable
+    {
+        IObservable<IConnectedSocket> Connect(IScheduler on);
+    }
     internal class TcpSocket : IListeningSocket
     {
         private readonly TcpListener _listeningSocket;

@@ -119,12 +119,4 @@ namespace WSr.Tests
                     second: Observable.Interval(t, s),
                     resultSelector: (x, i) => x);
     }
-
-    public static class FrameCreator
-    {
-        public static ParsedFrame MakeParse(IEnumerable<byte> bitfield)
-        {
-            return new ParsedFrame(bitfield, new byte[0]);
-        }
-    }
 }

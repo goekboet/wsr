@@ -38,5 +38,4 @@ namespace WSr
         public static byte[] b(params byte[] bs) => bs;
 
     }
-
 }

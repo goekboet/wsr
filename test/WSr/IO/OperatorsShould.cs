@@ -5,7 +5,6 @@ using System.Reactive.Linq;
 using Microsoft.Reactive.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using WSr.Application;
 
 using static WSr.Tests.Debug;
 

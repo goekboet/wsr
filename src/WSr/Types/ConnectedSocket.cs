@@ -12,7 +12,6 @@ using System.Reactive;
 using System.Collections.Generic;
 using System.Threading;
 using System.Reactive.Subjects;
-using WSr.Application;
 
 namespace WSr
 {

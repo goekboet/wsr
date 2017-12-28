@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
-using WSr.Protocol.AggregatingHandshake;
-
-using static WSr.IntegersFromByteConverter;
-using static WSr.Algorithms;
 using WSr.Protocol.Functional;
 using System.Reactive;
 using System.Reactive.Concurrency;
+
+using static WSr.IntegersFromByteConverter;
+using static WSr.Algorithms;
 
 namespace WSr.Protocol
 {

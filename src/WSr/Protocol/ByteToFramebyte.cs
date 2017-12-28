@@ -3,13 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 
-using static WSr.Protocol.Functions;
-
 namespace WSr.Protocol
 {
-    
     public static class FrameByteFunctions
     {
+        public static ulong InterpretLengthBytes(IEnumerable<byte> bytes)
+        {
+            if (BitConverter.IsLittleEndian)
+                bytes = bytes.Reverse();
+
+            if (bytes.Count() == 2)
+                return (ulong)BitConverter.ToUInt16(bytes.ToArray(), 0);
+
+            return BitConverter.ToUInt64(bytes.ToArray(), 0);
+        }
+
         public static void PrintByte(byte b) => Console.WriteLine($"{b.ToString("X2")}");
 
         public static IObservable<FrameByte> Deserialiaze(

@@ -7,7 +7,6 @@ using System.Reactive.Subjects;
 using static WSr.Serving;
 using static App.WSr.Terminations;
 using static App.WSr.Loggers;
-using static App.WSr.Apps;
 using static App.WSr.ArgumentFunctions;
 
 using System.IO;
