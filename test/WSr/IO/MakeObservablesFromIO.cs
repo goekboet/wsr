@@ -72,7 +72,7 @@ namespace WSr.IO.Tests
 
             var actual = run.Start(
                 create: () => socket
-                    .Receive(() => new byte[1024], x => {}, run)
+                    .Receive(1024, x => {}, run)
                     .Select(x => Encoding.UTF8.GetString(x.ToArray())),
                 created: 0,
                 subscribed: 0,
@@ -106,7 +106,7 @@ namespace WSr.IO.Tests
 
             var actual = run.Start(
                 create: () => socket
-                    .Receive(() => new byte[1024], x => {}, run)
+                    .Receive(1024, x => {}, run)
                     .Select(x => Encoding.UTF8.GetString(x.ToArray())),
                 created: 0,
                 subscribed: 0,

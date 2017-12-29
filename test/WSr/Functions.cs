@@ -28,6 +28,11 @@ namespace WSr.Tests
             .Select(x => x.Value)
             .Where(x => x.Kind == NotificationKind.OnCompleted);
 
+        public static bool Errored<T>(IList<Recorded<Notification<T>>> ns) => ErroredValues(ns).Any();
+        public static IEnumerable<Notification<T>> ErroredValues<T>(IList<Recorded<Notification<T>>> ns) => ns
+            .Select(x => x.Value)
+            .Where(x => x.Kind == NotificationKind.OnError);
+
 
         public static IEnumerable<T> GetValues<T>(
             this ITestableObserver<T> o) => o.Messages
@@ -118,5 +123,15 @@ namespace WSr.Tests
                 .Zip(
                     second: Observable.Interval(t, s),
                     resultSelector: (x, i) => x);
+
+        public static ITestableObserver<T> Start<T>(
+            this TestScheduler s,
+            Func<IObservable<T>> es
+        ) => s.Start(es, 0, 0, long.MaxValue);
+
+        public static IEnumerable<string> Show<T>(
+            this IList<Recorded<Notification<T>>> ns) => ns.Select(x => x.ToString());
+    
+        public static string Column<T>(this IEnumerable<T> es) => string.Join(Environment.NewLine, es);
     }
 }

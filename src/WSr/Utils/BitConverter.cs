@@ -37,5 +37,7 @@ namespace WSr
 
         public static byte[] b(params byte[] bs) => bs;
 
+        public static string Show(byte b) => b.ToString("X2");
+
     }
 }

@@ -1,56 +1,130 @@
-// using System;
-// using System.Collections.Generic;
-// using System.Linq;
-// using WSr.Protocol;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
-// using static WSr.ListConstruction;
-// using static WSr.IntegersFromByteConverter;
-// using System.Text;
+using static WSr.IntegersFromByteConverter;
+using static WSr.Protocol.FrameByteFunctions;
 
-// namespace WSr.Tests
-// {
-//     internal static class Bytes
-//     {
-//         static byte[] b(params byte[] bs) => bs;
+namespace WSr.Tests
+{
+    public static class GenerateTestData
+    {
+        public static IEnumerable<Guid> Ids { get; } = new[]
+        {
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid()
+        };
 
-//         public static byte[] InvalidUtf8()
-//         {
-//             return new byte[] { 0xce, 0xba, 0xe1, 0xbd, 0xb9, 0xcf, 0x83, 0xce, 0xbc, 0xce, 0xb5, 0xed, 0xa0, 0x80, 0x65, 0x64, 0x69, 0x74, 0x65, 0x64 };
-//         }
+        public static Func<Guid> Repeat(IEnumerable<Guid> ids)
+        {
+            var l = new Stack<Guid>(ids.ToArray());
+            var r = new Stack<Guid>(ids.ToArray());
 
-//         public static Dictionary<string, string> AcceptedHeaders =
-//                   new Dictionary<string, string>()
-//                   {
-//                       ["Host"] = "host",
-//                       ["Upgrade"] = "websocket",
-//                       ["Connection"] = "upgrade",
-//                       ["Origin"] = "http://example.com",
-//                       ["Sec-WebSocket-Key"] = "dGhlIHNhbXBsZSBub25jZQ==",
-//                       ["Sec-WebSocket-Version"] = "v",
-//                       ["Sec-WebSocket-Accept"] = "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="
-//                   };
+            return () =>
+            {
+                Guid id;
+                if (l.Any())
+                {
+                    id = l.Pop();
+                    r.Push(id);
+                }
+                else
+                {
+                    id = r.Pop();
+                    l.Push(id);
+                }
 
-        
+                return id;
+            };
+        }
 
-//         public static byte[] r => Encoding.ASCII.GetBytes(
-//                 "HTTP/1.1 101 Switching Protocols\r\n" +
-//                 "Upgrade: websocket\r\n" +
-//                 "Connection: Upgrade\r\n" +
-//                 "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n");
-//         public static HandshakeParse PHandshake => new HandshakeParse("/chat", AcceptedHeaders);
+        public static Head H(Guid id, OpCode o) => Head.Init(id).With(opc: o);
+        public static byte[] Mask { get; } = new byte[] { 1, 2, 4, 8 };
+        public static byte[] PayloadBytes { get; } = new byte[] { 0xFF, 0xBF, 0xDF, 0xEF, 0xF7, 0xFB, 0xFD, 0xFE };
 
-//         public static byte[] GoodBytes = new byte[] {0x81, 0x80, 0x55, 0x25, 0xaa, 0xda};
+        public static IEnumerable<byte> Payload(long l)
+        {
+            for (long i = 0; i < l; i++)
+                yield return PayloadBytes[i % PayloadBytes.Length];
+        }
 
-//         public static Frame GoodFrame = new ParsedFrame(b(0x81, 0x80), new byte[] {});
-//         public static Message GoodMessage = new OpcodeMessage(OpCode.Text, new byte[] {});
+        public static byte maskbyte(bool b) => (byte)(b ? 0x80 : 0x00);
+        public static IEnumerable<byte> Bytes(OpCode o, ulong l, int r, bool m)
+        {
+            var mask = m ? Mask : new byte[0];
+            while (r-- > 0)
+            {
+                yield return (byte)(o | OpCode.Final);
+                if (l < 126)
+                    yield return (byte)(maskbyte(m) | (byte)l);
+                else if (l <= UInt16.MaxValue)
+                {
+                    yield return (byte)(m ? 0xFE : 0x7E);
+                    foreach (byte b in ToNetwork2Bytes((ushort)l)) yield return b;
+                }
+                else
+                {
+                    yield return (byte)(m ? 0xFF : 0x7F);
+                    foreach (byte b in ToNetwork8Bytes(l)) yield return b;
+                }
+                foreach (byte b in mask)
+                    yield return b;
 
-//         public static Dictionary<string, string> InCompleteHeaders =
-//                  new Dictionary<string, string>()
-//                  {
-//                      ["Host"] = "host",
-//                      ["Upgrade"] = "websocket",
-//                      ["Connection"] = "upgrade",
-//                      ["Sec-WebSocket-Version"] = "v"
-//                  };
-//     }
-// }
+                for (ulong i = 0; i < l; i++)
+                    yield return PayloadBytes[i % (ulong)PayloadBytes.Length];
+            }
+        }
+
+        public static FrameByte F(Head h, byte b, Control? a = null) =>
+            FrameByte.Init(h).With(@byte: b, app: a);
+
+        public static IEnumerable<FrameByte> FrameBytes(
+            Head h,
+            int l) => FrameBytes(() => h.Id, h.Opc, (ulong)l, 1, true);
+        public static IEnumerable<FrameByte> FrameBytes(
+            Func<Guid> identify,
+            OpCode o,
+            ulong l,
+            int r,
+            bool m)
+        {
+            while (r-- > 0)
+            {
+                var h = H(identify(), o);
+                var mask = m ? Mask : new byte[0];
+
+                yield return F(h, (byte)o);
+                if (l < 126)
+                    yield return F(h, (byte)(maskbyte(m) | (byte)l));
+                else if (l <= UInt16.MaxValue)
+                {
+                    yield return F(h, 0xFE);
+                    var el = ToNetwork2Bytes((ushort)l).ToArray();
+                    yield return F(h, el[0]);
+                    yield return F(h, el[1]);
+                }
+                else
+                {
+                    yield return F(h, 0xFF);
+                    var el = ToNetwork8Bytes(l).ToArray();
+                    yield return F(h, el[0]);
+                    yield return F(h, el[1]);
+                    yield return F(h, el[2]);
+                    yield return F(h, el[3]);
+                    yield return F(h, el[4]);
+                    yield return F(h, el[5]);
+                    yield return F(h, el[6]);
+                    yield return F(h, el[7]);
+                }
+                for (int i = 0; i < mask.Length; i++)
+                    yield return F(h, Mask[i], (i == 3 && l == 0) ? Control.IsLast : 0);
+
+                for (ulong i = 0; i < l; i++)
+                    yield return F(h,
+                        UnMask((byte)(PayloadBytes[i % (ulong)PayloadBytes.Length]), (byte)(m ? mask[i % 4] : 0x00)),
+                        Appdata(l - i));
+            }
+        }
+    }
+}

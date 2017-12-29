@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using C = WSr.Protocol.OpCodeSets;
 
 namespace WSr.Protocol
 {
@@ -17,16 +18,6 @@ namespace WSr.Protocol
 
             return BitConverter.ToUInt64(bytes.ToArray(), 0);
         }
-
-        public static void PrintByte(byte b) => Console.WriteLine($"{b.ToString("X2")}");
-
-        public static IObservable<FrameByte> Deserialiaze(
-            this IObservable<byte> incoming,
-            Func<Guid> identify) => incoming
-                .Scan(FrameByteState.Init(identify), (s, b) => s.Next(b))
-                .Select(x => x.Current)
-                //.Do(x => Console.WriteLine(x))
-                ;
 
         public static Head Read(Head h, byte b) => h.With(
             id: h.Id,
@@ -50,12 +41,16 @@ namespace WSr.Protocol
             switch (l)
             {
                 case 126:
+                    if (C.IsControlFrame(s))
+                        throw C.ControlFrameInvalidLength;
                     return s.With(
                         current: s.Current.With(
                             @byte: b),
                         next: ReadLengthBytes(2, new byte[2])
                         );
                 case 127:
+                    if (C.IsControlFrame(s))
+                        throw C.ControlFrameInvalidLength;
                     return s.With(
                         current: s.Current.With(
                             @byte: b),

@@ -11,16 +11,13 @@ using static App.WSr.ArgumentFunctions;
 
 using System.IO;
 using System.Collections.Generic;
+using WSr;
 
 namespace App.WSr
 {
     class Program
     {
-        static Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>> Routes { get; } =
-            new Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>>()
-            {
-                ["/"] = Websocket(x => Observable.Return(x))
-            };
+        static Func<Request, Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>>> Routing => r => f => Observable.Return(f);
 
         static string Logfile = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "log.txt";
 
@@ -35,9 +32,9 @@ namespace App.WSr
             var run = Host(ip, port, t)
                 .SelectMany(x => Serve(
                     socket: x,
-                    bufferfactory: () => new byte[bufferSize],
+                    buffersize: bufferSize,
                     log: StdOut,
-                    routingtable: Routes))
+                    route: Routing))
                 .Subscribe(
                     onNext: x => { },
                     onError: WriteError,

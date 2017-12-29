@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using static WSr.Protocol.FrameByteFunctions;
 
 namespace WSr.Protocol.Tests
@@ -12,11 +11,8 @@ namespace WSr.Protocol.Tests
     {
         private static Guid Id { get; } = Guid.NewGuid();
         private static Head H(Guid id, OpCode o) => Head.Init(id).With(opc: o);
-        private static FrameByte F(Guid id, OpCode op, byte b) => 
+        private static FrameByte F(Guid id, OpCode op, byte b) =>
             FrameByte.Init(H(id, op)).With(@byte: b);
-
-        private static FrameByte F(Head h, byte b) => 
-            FrameByte.Init(h).With(@byte: b);  
 
         private (byte b, FrameByte f)[] FirstByteCases = new[]
         {
@@ -40,34 +36,6 @@ namespace WSr.Protocol.Tests
         public void ParseFirstByte()
         {
             var r = FirstByteCases.SelectMany(testfirst);
-
-            Assert.IsFalse(r.Any(), string.Join(Environment.NewLine, r));
-        }
-
-        private static Head TextHead { get; } = Head.Init(Id).With(opc: OpCode.Text);
-
-        private static FrameByteState FirstFramed => FrameByteState.Init(() => Id).With(
-            current: F(TextHead, 0x81),
-            next: FrameSecond
-        );
-
-        private static IEnumerable<string> testSecond((byte b, FrameByte e) c) =>
-            FrameSecond(FirstFramed, c.b).Current.Equals(c.e)
-                ? Enumerable.Empty<string>()
-                : new[] { $"{Environment.NewLine}e: {c.e.ToString()}{Environment.NewLine}a: {FrameSecond(FirstFramed, c.b).Current.ToString()}" };
-
-        private (byte b, FrameByte e)[] SecondByteCases = new[]
-        {
-            ((byte)0x80, F(TextHead, 0x80)),
-            ((byte)0xFD, F(TextHead, 0xFD)),
-            ((byte)0xFE, F(TextHead, 0xFE)),
-            ((byte)0xFF, F(TextHead, 0xFF))
-        };
-
-        [TestMethod]
-        public void ParseSecondByte()
-        {
-            var r = SecondByteCases.SelectMany(testSecond);
 
             Assert.IsFalse(r.Any(), string.Join(Environment.NewLine, r));
         }

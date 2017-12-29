@@ -9,10 +9,13 @@ using static WSr.IO.WriteFunctions;
 using static WSr.IntegersFromByteConverter;
 using static WSr.LogFunctions;
 using static WSr.Protocol.AppdataToByteBuffer;
+using static WSr.Protocol.Functional.Handshake;
 
 using WSr.Protocol;
 using WSr.Protocol.Functional;
 using System.Collections.Generic;
+using System.Text;
+using Ops = WSr.Protocol.Operations;
 
 namespace WSr
 {
@@ -38,46 +41,64 @@ namespace WSr
         }
 
         public static Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> Echo => x => Observable.Return(x);
-        
+
+        public static IObservable<Request> Handshake(IObservable<byte> incoming) =>
+            incoming
+            .ParseRequest();
+
+        public static IObservable<byte[]> Accept(
+            Request r,
+            IObservable<byte> bs,
+            Func<Request, Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>>> routes) =>
+                Observable.Return(Encoding.ASCII.GetBytes(
+                        string.Join("\r\n", new[]
+                        {
+                            "HTTP/1.1 101 Switching Protocols",
+                            "Upgrade: websocket",
+                            "Connection: Upgrade",
+                            $"Sec-WebSocket-Accept: {ResponseKey(r.Headers["Sec-WebSocket-Key"])}",
+                            "\r\n"
+                        })))
+                .Concat(Websocket(routes(r))(bs));
+
         public static Func<IObservable<byte>, IObservable<byte[]>> Websocket(
                 Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> app) => incoming =>
             incoming
-                .Deserialiaze(() => Guid.NewGuid())
+                .Deserialize(() => Guid.NewGuid())
+                // .Materialize()
+                // .Do(x => Console.WriteLine(x))
+                // .Dematerialize()
                 .ToAppdata()
                 .SwitchOnOpcode(
                     dataframes: app,
-                    ping: Echo,
-                    pong: Echo,
+                    ping: Operations.Pong(),
+                    pong: Operations.NoPing(),
                     close: Echo)
-                .Serialize();
+                .Serialize()
+                .Catch(Ops.CloseWith1002);
 
-        public static Func<Request, IObservable<byte>, IObservable<byte[]>> Routing(
-            Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>> routingtable) => (r, bs) => Accept(r, bs, routingtable);
-
-        public static IObservable<byte[]> SwitchProtocol(
-            this IObservable<IEnumerable<byte>> buffers,
-            Func<IObservable<byte>, IObservable<Request>> handshake,
-            Func<Request, IObservable<byte>, IObservable<byte[]>> routing)
-        {
-            var bs = buffers
-                .SelectMany(x => x.ToObservable())
-                .Publish().RefCount();
-
-            return handshake(bs).SelectMany(x => routing(x, bs));
-        }
+        public static IObservable<FrameByte> Deserialize(
+            this IObservable<byte> incoming,
+            Func<Guid> identify) => incoming
+                .Scan(FrameByteState.Init(identify), (s, b) => s.Next(b))
+                .Select(x => x.Current)
+                //.Do(x => Console.WriteLine(x))
+                ;
 
         public static IObservable<Unit> Serve(
             IConnectedSocket socket,
-            Func<byte[]> bufferfactory,
+            int buffersize,
             Action<string> log,
-            Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>> routingtable,
+            Func<Request, Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>>> route,
             IScheduler s = null) => Observable.Using(
                 resourceFactory: () => socket,
                 observableFactory: c => c
-                .Receive(bufferfactory, log)
-                .SwitchProtocol(
-                    handshake: Handshake,
-                    routing: Routing(routingtable))
+                .Receive(buffersize, log)
+                .SelectMany(x => x.ToObservable())
+                .Publish(
+                    bs => Handshake(bs)
+                    //.Do(x => Console.WriteLine(x))
+                    .SelectMany(x => Accept(x, bs, route)))
                 .Transmit(socket));
     }
 }

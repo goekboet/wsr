@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using static WSr.ListConstruction;
+using static WSr.Algorithms;
 
 namespace WSr.Protocol.Functional
 {
@@ -64,7 +65,12 @@ namespace WSr.Protocol.Functional
             .Lines()
             .DeserializeH();
 
-        
+        private static readonly string Ws = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+        private static byte[] hash(string s) => SHA1.ComputeHash(Encoding.UTF8.GetBytes(s));
+
+        public static string ResponseKey(string requestKey) => Convert.ToBase64String(hash(requestKey + Ws));
+
+        
     }
 }

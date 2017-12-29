@@ -14,6 +14,7 @@ using static Microsoft.Reactive.Testing.ReactiveTest;
 using static WSr.Tests.Debug;
 using static WSr.Protocol.Functional.Handshake;
 using static WSr.Protocol.AppdataToByteBuffer;
+using static WSr.Serving;
 
 namespace WSr.Protocol.Tests
 {
@@ -133,11 +134,8 @@ namespace WSr.Protocol.Tests
 
         public static IObservable<byte> EmptyBytes => Observable.Empty<byte>();
 
-        public static Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>> DummyRoute => 
-            new Dictionary<string, Func<IObservable<byte>, IObservable<byte[]>>>()
-            {
-                ["/chat"] = _ => Observable.Empty<byte[]>()
-            };
+        public static Func<Request, Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>>> DummyRoute => _ =>
+            b => Observable.Empty<(OpCode, IObservable<byte>)>();
 
         public static byte[] Expectedaccept => Encoding.ASCII.GetBytes(
                 "HTTP/1.1 101 Switching Protocols\r\n" +

@@ -1,3 +1,5 @@
+using System;
+
 namespace WSr
 {
     public static class OpCodeFunctions
@@ -5,6 +7,7 @@ namespace WSr
         public static bool IsControlcode(OpCode o) => ((byte)o & (byte)0b0000_1000) != 0;
     }
 
+    [Flags]
     public enum OpCode : byte
     {
         Final        = 0b1000_0000,
