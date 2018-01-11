@@ -5,6 +5,7 @@ using System.Reactive.Linq;
 using System.Reactive.Concurrency;
 
 using static WSr.IntegersFromByteConverter;
+using Ops = WSr.Protocol.OpCodeSets;
 
 namespace WSr.Protocol
 {
@@ -50,7 +51,7 @@ namespace WSr.Protocol
                     case OpCode.Pong | OpCode.Final:
                         return x.SelectMany(pong);
                     default:
-                        return Observable.Throw<(OpCode, T)>(new ArgumentException($"Bad Opcode: {Show((byte)x.Key)}"));
+                        return Observable.Throw<(OpCode, T)>(Ops.UndefinedOpcode);
                 }
             });
 

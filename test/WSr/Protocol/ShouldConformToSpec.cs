@@ -10,6 +10,7 @@ using D = WSr.Tests.GenerateTestData;
 using T = WSr.Tests.Debug;
 using Opcodes = WSr.Protocol.OpCodeSets;
 using Ops = WSr.Protocol.Operations;
+using System.Collections.Immutable;
 
 namespace WSr.Protocol.Tests
 {
@@ -57,7 +58,7 @@ namespace WSr.Protocol.Tests
         {
             var s = new TestScheduler();
 
-            var i = Opcodes.AllPossible
+            var i = Valid
                 .Select(x => (x, 0))
                 .ToObservable(s);
 
@@ -73,6 +74,39 @@ namespace WSr.Protocol.Tests
             );
 
             Assert.IsFalse(T.Errored(a.Messages));
+        }
+
+        static ImmutableHashSet<OpCode> Valid {get;} = Opcodes.AllPossible.ToImmutableHashSet<OpCode>();
+        static ImmutableHashSet<OpCode> All {get;} = Enumerable.Range(0, byte.MaxValue)
+            .Select(x => (OpCode)x)
+            .ToImmutableHashSet();
+        static ImmutableHashSet<OpCode> InValid {get;} = All.Except(Valid);
+
+        static string Show(IEnumerable<Recorded<Notification<(OpCode c, int h)>>> msgs) => 
+            string.Join(Environment.NewLine, msgs.Select(x => x.Value));
+
+        [TestMethod]
+        public void ShouldErrorOnAllInvalidOpCodes()
+        {
+            var s = new TestScheduler();
+
+            var i = InValid
+                .Select(x => new [] {(x, 0)}.ToObservable(s))
+                .ToObservable(s);
+
+            var a = s.Start(
+                create: () => i.SelectMany(x => x.SwitchOnOpcode(
+                    dataframes: H,
+                    ping: H,
+                    pong: H,
+                    close: H)),
+                created: 0,
+                subscribed: 0,
+                disposed: long.MaxValue
+            );
+
+            Assert.IsTrue(a.Messages.All(x => x.Value.Kind == NotificationKind.OnError),
+            $"a: {Show(a.Messages)}");
         }
 
         [TestMethod]
