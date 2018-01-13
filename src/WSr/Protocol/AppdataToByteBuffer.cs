@@ -18,13 +18,12 @@ namespace WSr.Protocol
             IScheduler s = null)
         {
             return frames.GroupByUntil(
-                        keySelector: f => f.Head,
+                        keySelector: f => f.OpCode,
                         elementSelector: f => (appdata: f.Control, @byte: f.Byte),
-                        durationSelector: f => f.Where(LastByte),
-                        comparer: ByFrameId)
+                        durationSelector: f => f.Where(LastByte))
                     .SelectMany(
                         x => Observable.Return(
-                            (x.Key.Opc, x.Where(IsAppdata).Select(y => y.@byte)), s ?? Scheduler.Immediate));
+                            (x.Key, x.Where(IsAppdata).Select(y => y.@byte)), s ?? Scheduler.Immediate));
         }
 
         public static IObservable<(OpCode opcode, T appdata)> SwitchOnOpcode<T>(
@@ -35,7 +34,7 @@ namespace WSr.Protocol
             Func<(OpCode, T), IObservable<(OpCode, T)>> close
         ) => incoming
             .GroupBy(x => x.opcode)
-            .SelectMany(x => 
+            .SelectMany(x =>
             {
                 switch (x.Key)
                 {
@@ -69,7 +68,7 @@ namespace WSr.Protocol
                     .CompleteOnClose()
                     .SelectMany(ToFrame);
 
-        
+
 
         public static IEnumerable<byte> Frame(
             OpCode opc,
@@ -93,14 +92,5 @@ namespace WSr.Protocol
 
             foreach (var b in data) yield return b;
         }
-
-        class ByIdentifier : IEqualityComparer<Head>
-        {
-            public bool Equals(Head x, Head y) => x.Id == y.Id;
-
-            public int GetHashCode(Head obj) => obj.Id.GetHashCode();
-        }
-
-        public static IEqualityComparer<Head> ByFrameId { get; } = new ByIdentifier();
     }
 }

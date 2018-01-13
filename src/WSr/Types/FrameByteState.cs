@@ -6,29 +6,22 @@ namespace WSr
 {
     public sealed class FrameByteState : IEquatable<FrameByteState>
     {
-        public static FrameByteState Init(Func<Guid> id) => new FrameByteState(
-            id,
-            FrameByte.Init(Head.Init(Guid.Empty)),
+        public static FrameByteState Init() => new FrameByteState(
+            FrameByte.Init(),
             ContinuationAndOpcode);
 
         private FrameByteState(
-            Func<Guid> id,
             FrameByte current,
             Func<FrameByteState, byte, FrameByteState> next)
         {
-            Id = id;
             Current = current;
             Compute = next;
         }
 
-        private Func<Guid> Id { get; }
-        public Guid Identify => Id();
         public FrameByteState With(
-           Func<Guid> id = null,
-           FrameByte current = null,
+           FrameByte? current = null,
            Func<FrameByteState, byte, FrameByteState> next = null) =>
            new FrameByteState(
-               id: id ?? this.Id,
                current: current ?? Current,
                next: next ?? Compute
            );

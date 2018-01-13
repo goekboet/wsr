@@ -3,32 +3,6 @@ using System.Linq;
 
 namespace WSr
 {
-    public sealed class Head
-    {
-        public static Head Init(Guid id) => new Head().With(id: id);
-        public Head With(
-            Guid? id = null,
-            OpCode? opc = null) => new Head(id ?? Id, opc ?? Opc);
-
-        public Guid Id { get; }
-        public OpCode Opc { get; }
-
-        public override string ToString() => $"id: {Id} opc: {Opc} ";
-
-        public override bool Equals(object obj) => obj is Head h
-            && h.Id.Equals(Id) && h.Opc.Equals(Opc);
-
-        public override int GetHashCode() => Id.GetHashCode();
-        private Head() { }
-        private Head(
-            Guid id,
-            OpCode opc)
-        {
-            Id = id;
-            Opc = opc;
-        }
-    }
-
     [Flags]
     public enum Control : byte
     {
@@ -36,73 +10,47 @@ namespace WSr
         IsLast = 2
     }
 
-    public sealed class FrameByte : IEquatable<FrameByte>
+    public struct FrameByte : IEquatable<FrameByte>
     {
-        public static FrameByte Init(Head h) => new FrameByte(
-            h: h,
+        public static FrameByte Init() => new FrameByte(
             b: 0x00,
+            o: 0,
             a: 0
         );
 
         public FrameByte With(
             byte @byte,
-            Head head = null,
+            OpCode? opcode = null,
             Control? app = null)
         {
             return new FrameByte(
-                h: head ?? Head,
                 a: app ?? Control,
+                o: opcode ?? OpCode,
                 b: @byte
             );
         }
 
         private FrameByte(
-            Head h,
             byte b,
+            OpCode o,
             Control a)
         {
-            Head = h;
             Byte = b;
+            OpCode = o;
             Control = a;
         }
 
-        public Head Head { get; }
         public byte Byte { get; }
+        public OpCode OpCode { get; }
         public Control Control { get; }
 
-        private string C => string.Join(", ", new[] { a, l }.Where(x => x != ""));
-        private string a => (Control & Control.IsAppdata) != 0 ? "appdata" : "";
-        private string l => (Control & Control.IsLast) != 0 ? "last" : "";
-
-        public override string ToString() => $"h: {showH} pld: {showPld} ctr: {C}";
+        private string show(byte b) => b.ToString("X2");
+        public override string ToString() => $"byte: {show(Byte)} opcode: {OpCode} control: {Control}";
 
         public override bool Equals(object obj) => obj is FrameByte f && Equals(f);
-
-        public override int GetHashCode() => Head.GetHashCode();
-
-        public bool Equals(FrameByte o) => o.Head.Equals(Head)
-            && o.Byte.Equals(Byte)
+        public override int GetHashCode() => Byte.GetHashCode();
+        public bool Equals(FrameByte o) => o.Byte.Equals(Byte)
+            && o.OpCode.Equals(OpCode)
             && o.Control.Equals(Control);
-
-        private string showH => Head?.ToString() ?? "Empty";
-        private string showPld => Byte.ToString("X2");
-    }
-
-    public class Error : IEquatable<Error>
-    {
-        public Error Empty => new Error(0, new byte[0]);
-        public Error(ushort c, byte[] msg)
-        {
-            C = c;
-            Msg = msg;
-        }
-        public ushort C { get; }
-        public byte[] Msg { get; }
-
-        public override int GetHashCode() => C;
-
-        public override bool Equals(object obj) => obj is Error e && Equals(e);
-
-        public bool Equals(Error other) => C == other.C;
     }
 }

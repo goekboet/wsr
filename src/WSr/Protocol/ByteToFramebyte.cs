@@ -19,17 +19,12 @@ namespace WSr.Protocol
             return BitConverter.ToUInt64(bytes.ToArray(), 0);
         }
 
-        public static Head Read(Head h, byte b) => h.With(
-            id: h.Id,
-            opc: (OpCode)b);
-
         public static FrameByteState ContinuationAndOpcode(FrameByteState s, byte b)
         {
             var current = s.Current;
-            var h = Read(current.Head, b);
             var r = current.With(
-                head: h.With(id: s.Identify),
                 @byte: b,
+                opcode: (OpCode)b,
                 app: 0);
 
             return s.With(current: r, next: FrameSecond);

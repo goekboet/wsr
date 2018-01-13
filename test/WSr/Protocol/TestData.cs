@@ -9,37 +9,6 @@ namespace WSr.Tests
 {
     public static class GenerateTestData
     {
-        public static IEnumerable<Guid> Ids { get; } = new[]
-        {
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            Guid.NewGuid()
-        };
-
-        public static Func<Guid> Repeat(IEnumerable<Guid> ids)
-        {
-            var l = new Stack<Guid>(ids.ToArray());
-            var r = new Stack<Guid>(ids.ToArray());
-
-            return () =>
-            {
-                Guid id;
-                if (l.Any())
-                {
-                    id = l.Pop();
-                    r.Push(id);
-                }
-                else
-                {
-                    id = r.Pop();
-                    l.Push(id);
-                }
-
-                return id;
-            };
-        }
-
-        public static Head H(Guid id, OpCode o) => Head.Init(id).With(opc: o);
         public static byte[] Mask { get; } = new byte[] { 1, 2, 4, 8 };
         public static byte[] PayloadBytes { get; } = new byte[] { 0xFF, 0xBF, 0xDF, 0xEF, 0xF7, 0xFB, 0xFD, 0xFE };
 
@@ -76,14 +45,13 @@ namespace WSr.Tests
             }
         }
 
-        public static FrameByte F(Head h, byte b, Control? a = null) =>
-            FrameByte.Init(h).With(@byte: b, app: a);
+        public static FrameByte F(byte b, OpCode? o = null, Control? a = null) =>
+            FrameByte.Init().With(@byte: b, opcode: o, app: a);
 
         public static IEnumerable<FrameByte> FrameBytes(
-            Head h,
-            int l) => FrameBytes(() => h.Id, h.Opc, (ulong)l, 1, true);
+            OpCode o,
+            int l) => FrameBytes(o, (ulong)l, 1, true);
         public static IEnumerable<FrameByte> FrameBytes(
-            Func<Guid> identify,
             OpCode o,
             ulong l,
             int r,
@@ -91,39 +59,39 @@ namespace WSr.Tests
         {
             while (r-- > 0)
             {
-                var h = H(identify(), o);
                 var mask = m ? Mask : new byte[0];
 
-                yield return F(h, (byte)o);
+                var first = FrameByte.Init().With(opcode: o, @byte: (byte)o);
+                yield return first;
                 if (l < 126)
-                    yield return F(h, (byte)(maskbyte(m) | (byte)l));
+                    yield return first.With(@byte: (byte)(maskbyte(m) | (byte)l));
                 else if (l <= UInt16.MaxValue)
                 {
-                    yield return F(h, 0xFE);
+                    yield return first.With(@byte: 0xFE);
                     var el = ToNetwork2Bytes((ushort)l).ToArray();
-                    yield return F(h, el[0]);
-                    yield return F(h, el[1]);
+                    yield return first.With(@byte: el[0]);
+                    yield return first.With(@byte: el[1]);
                 }
                 else
                 {
-                    yield return F(h, 0xFF);
+                    yield return first.With(@byte: 0xFF);
                     var el = ToNetwork8Bytes(l).ToArray();
-                    yield return F(h, el[0]);
-                    yield return F(h, el[1]);
-                    yield return F(h, el[2]);
-                    yield return F(h, el[3]);
-                    yield return F(h, el[4]);
-                    yield return F(h, el[5]);
-                    yield return F(h, el[6]);
-                    yield return F(h, el[7]);
+                    yield return first.With(@byte: el[0]);
+                    yield return first.With(@byte: el[1]);
+                    yield return first.With(@byte: el[2]);
+                    yield return first.With(@byte: el[3]);
+                    yield return first.With(@byte: el[4]);
+                    yield return first.With(@byte: el[5]);
+                    yield return first.With(@byte: el[6]);
+                    yield return first.With(@byte: el[7]);
                 }
                 for (int i = 0; i < mask.Length; i++)
-                    yield return F(h, Mask[i], (i == 3 && l == 0) ? Control.IsLast : 0);
+                    yield return first.With(@byte: Mask[i], app: (i == 3 && l == 0) ? Control.IsLast : 0);
 
                 for (ulong i = 0; i < l; i++)
-                    yield return F(h,
+                    yield return first.With(@byte:
                         UnMask((byte)(PayloadBytes[i % (ulong)PayloadBytes.Length]), (byte)(m ? mask[i % 4] : 0x00)),
-                        Appdata(l - i));
+                        app: Appdata(l - i));
             }
         }
     }

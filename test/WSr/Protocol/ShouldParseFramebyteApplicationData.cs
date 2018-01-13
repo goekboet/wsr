@@ -17,7 +17,7 @@ namespace WSr.Protocol.Tests
             ;
 
         public static string ShowExpected(OpCode o, ulong l, int r, int t, bool m) => string.Join("\n",
-            FrameBytes(Repeat(Ids), o, l, r, m).Skip((int)l - t).Take(10).Select(x => x.ToString()));
+            FrameBytes(o, l, r, m).Skip((int)l - t).Take(10).Select(x => x.ToString()));
 
         OpCode o => OpCode.Text | OpCode.Final;
 
@@ -31,12 +31,12 @@ namespace WSr.Protocol.Tests
             var run = new TestScheduler();
 
             var i = Bytes(o, l, r, true).ToObservable(run);
-            var e = FrameBytes(Repeat(Ids), o, l, r, true).ToObservable(run);
+            var e = FrameBytes(o, l, r, true).ToObservable(run);
 
             var read = new List<FrameByte>((int)l);
             var actual = run.Start(
                 create: () => i
-                    .Deserialize(Repeat(Ids))
+                    .Deserialize()
                     .Do(x => read.Add(x))
                     .SequenceEqual(e),
                 created: 0,

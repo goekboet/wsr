@@ -64,7 +64,7 @@ namespace WSr
         public static Func<IObservable<byte>, IObservable<byte[]>> Websocket(
                 Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> app) => incoming =>
             incoming
-                .Deserialize(() => Guid.NewGuid())
+                .Deserialize()
                 // .Materialize()
                 // .Do(x => Console.WriteLine(x))
                 // .Dematerialize()
@@ -78,9 +78,8 @@ namespace WSr
                 .Catch(Ops.CloseWith1002);
 
         public static IObservable<FrameByte> Deserialize(
-            this IObservable<byte> incoming,
-            Func<Guid> identify) => incoming
-                .Scan(FrameByteState.Init(identify), (s, b) => s.Next(b))
+            this IObservable<byte> incoming) => incoming
+                .Scan(FrameByteState.Init(), (s, b) => s.Next(b))
                 .Select(x => x.Current)
                 //.Do(x => Console.WriteLine(x))
                 ;

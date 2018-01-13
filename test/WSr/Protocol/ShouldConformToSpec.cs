@@ -19,7 +19,7 @@ namespace WSr.Protocol.Tests
     {
         private OpCode O => OpCode.Text | OpCode.Final;
 
-        private IEnumerable<FrameByte> F(int pl, int r) => D.FrameBytes(() => Guid.Empty, O, (ulong)pl, r, true);
+        private IEnumerable<FrameByte> F(int pl, int r) => D.FrameBytes(O, (ulong)pl, r, true);
 
         [DataRow(0)]
         [DataRow(1)]
@@ -50,7 +50,7 @@ namespace WSr.Protocol.Tests
                 a completions: {completions} values: {values}");
         }
 
-        static Func<(OpCode c, int h), IObservable<(OpCode c, int h)>> H => 
+        static Func<(OpCode c, int h), IObservable<(OpCode c, int h)>> H =>
             x => Observable.Return((x.c, x.h + 1));
 
         [TestMethod]
@@ -76,13 +76,13 @@ namespace WSr.Protocol.Tests
             Assert.IsFalse(T.Errored(a.Messages));
         }
 
-        static ImmutableHashSet<OpCode> Valid {get;} = Opcodes.AllPossible.ToImmutableHashSet<OpCode>();
-        static ImmutableHashSet<OpCode> All {get;} = Enumerable.Range(0, byte.MaxValue)
+        static ImmutableHashSet<OpCode> Valid { get; } = Opcodes.AllPossible.ToImmutableHashSet<OpCode>();
+        static ImmutableHashSet<OpCode> All { get; } = Enumerable.Range(0, byte.MaxValue)
             .Select(x => (OpCode)x)
             .ToImmutableHashSet();
-        static ImmutableHashSet<OpCode> InValid {get;} = All.Except(Valid);
+        static ImmutableHashSet<OpCode> InValid { get; } = All.Except(Valid);
 
-        static string Show(IEnumerable<Recorded<Notification<(OpCode c, int h)>>> msgs) => 
+        static string Show(IEnumerable<Recorded<Notification<(OpCode c, int h)>>> msgs) =>
             string.Join(Environment.NewLine, msgs.Select(x => x.Value));
 
         [TestMethod]
@@ -91,7 +91,7 @@ namespace WSr.Protocol.Tests
             var s = new TestScheduler();
 
             var i = InValid
-                .Select(x => new [] {(x, 0)}.ToObservable(s))
+                .Select(x => new[] { (x, 0) }.ToObservable(s))
                 .ToObservable(s);
 
             var a = s.Start(
@@ -139,7 +139,7 @@ namespace WSr.Protocol.Tests
 
             var i = Observable.Throw<byte[]>(Opcodes.ControlFrameInvalidLength, s);
 
-            var e = new byte[] {(byte)Opcodes.Close, 0x02, 0x03, 0xea};
+            var e = new byte[] { (byte)Opcodes.Close, 0x02, 0x03, 0xea };
             var a = s.Start(
                 create: () => i
                     .Catch(Ops.CloseWith1002)
