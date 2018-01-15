@@ -53,29 +53,6 @@ namespace WSr.Protocol.Tests
         static Func<(OpCode c, int h), IObservable<(OpCode c, int h)>> H =>
             x => Observable.Return((x.c, x.h + 1));
 
-        [TestMethod]
-        public void ShouldMapAllValidControlCodes()
-        {
-            var s = new TestScheduler();
-
-            var i = Valid
-                .Select(x => (x, 0))
-                .ToObservable(s);
-
-            var a = s.Start(
-                create: () => i.SwitchOnOpcode(
-                    dataframes: H,
-                    ping: H,
-                    pong: H,
-                    close: H),
-                created: 0,
-                subscribed: 0,
-                disposed: long.MaxValue
-            );
-
-            Assert.IsFalse(T.Errored(a.Messages));
-        }
-
         static ImmutableHashSet<OpCode> Valid { get; } = Opcodes.AllPossible.ToImmutableHashSet<OpCode>();
         static ImmutableHashSet<OpCode> All { get; } = Enumerable.Range(0, byte.MaxValue)
             .Select(x => (OpCode)x)

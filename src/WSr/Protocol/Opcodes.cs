@@ -10,9 +10,14 @@ namespace WSr.Protocol
         public static OpCode Pong { get; } = OpCode.Pong | OpCode.Final;
         public static OpCode Close { get; } = OpCode.Close | OpCode.Final;
 
-        public static bool IsControlFrame(FrameByteState s) => ControlFrames.Contains(s.Current.OpCode);
+        public static bool IsControlFrame(FrameByteState s) => new[] { OpCode.Close, OpCode.Ping, OpCode.Pong }.Contains(s.Current.OpCode);
         public static ProtocolException ControlFrameInvalidLength { get; } = new ProtocolException("Control frames must have a payload length less than 125");
-        public static ProtocolException UndefinedOpcode { get; } = new ProtocolException("Opcode has no defined meaning");
+        public static ProtocolException UndefinedOpcode(OpCode o) => new ProtocolException($"Opcode {o:X} has no defined meaning");
+        public static ProtocolException ExpectingContinuation(Control had, OpCode got) => 
+            new ProtocolException($"Was expecting continuation on {had} but got {got}");
+        
+        public static ProtocolException NotExpectionContinuation =>
+            new ProtocolException($"Was not expecting continuationframe");
         public static IEnumerable<OpCode> ControlFrames { get; } = new[]
         {
           Close,
@@ -26,7 +31,7 @@ namespace WSr.Protocol
              select d | c).ToImmutableArray();
 
         public static IEnumerable<OpCode> AllPossible { get; } =
-            DataFrames.Concat(ControlFrames).ToImmutableArray();
+            DataFrames.Concat(ControlFrames).Concat(new[] { OpCode.Continuation, OpCode.Final }).ToImmutableArray();
 
     }
 }

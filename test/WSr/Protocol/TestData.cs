@@ -24,7 +24,7 @@ namespace WSr.Tests
             var mask = m ? Mask : new byte[0];
             while (r-- > 0)
             {
-                yield return (byte)(o | OpCode.Final);
+                yield return (byte)(o);
                 if (l < 126)
                     yield return (byte)(maskbyte(m) | (byte)l);
                 else if (l <= UInt16.MaxValue)
@@ -46,7 +46,7 @@ namespace WSr.Tests
         }
 
         public static FrameByte F(byte b, OpCode? o = null, Control? a = null) =>
-            FrameByte.Init().With(@byte: b, opcode: o, app: a);
+            FrameByte.Init().With(@byte: b, opcode: o, ctl: a);
 
         public static IEnumerable<FrameByte> FrameBytes(
             OpCode o,
@@ -61,7 +61,10 @@ namespace WSr.Tests
             {
                 var mask = m ? Mask : new byte[0];
 
-                var first = FrameByte.Init().With(opcode: o, @byte: (byte)o);
+                var first = FrameByte.Init().With(
+                    opcode: o ^ OpCode.Final, 
+                    @byte: (byte)o, 
+                    ctl: (Control)((byte)o & (byte)Control.Final));
                 yield return first;
                 if (l < 126)
                     yield return first.With(@byte: (byte)(maskbyte(m) | (byte)l));
@@ -86,12 +89,16 @@ namespace WSr.Tests
                     yield return first.With(@byte: el[7]);
                 }
                 for (int i = 0; i < mask.Length; i++)
-                    yield return first.With(@byte: Mask[i], app: (i == 3 && l == 0) ? Control.IsLast : 0);
+                    yield return first.With(
+                        @byte: Mask[i], 
+                        ctl: (i == 3 && l == 0) 
+                            ? Control.Terminator | first.Control 
+                            : first.Control);
 
                 for (ulong i = 0; i < l; i++)
                     yield return first.With(@byte:
                         UnMask((byte)(PayloadBytes[i % (ulong)PayloadBytes.Length]), (byte)(m ? mask[i % 4] : 0x00)),
-                        app: Appdata(l - i));
+                        ctl: first.Control | Appdata(l - i));
             }
         }
     }

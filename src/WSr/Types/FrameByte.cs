@@ -6,8 +6,12 @@ namespace WSr
     [Flags]
     public enum Control : byte
     {
-        IsAppdata = 1,
-        IsLast = 2
+        Final        = 0b1000_0000,
+        Terminator   = 0b0100_0000,
+        EOF          = 0b1100_0000,
+        Appdata      = 0b0000_1000,
+        Text         = 0b0000_0001,
+        Binary       = 0b0000_0010
     }
 
     public struct FrameByte : IEquatable<FrameByte>
@@ -21,10 +25,10 @@ namespace WSr
         public FrameByte With(
             byte @byte,
             OpCode? opcode = null,
-            Control? app = null)
+            Control? ctl = null)
         {
             return new FrameByte(
-                a: app ?? Control,
+                a: ctl ?? Control,
                 o: opcode ?? OpCode,
                 b: @byte
             );

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reactive.Linq;
 using C = WSr.Protocol.OpCodeSets;
@@ -8,6 +9,21 @@ namespace WSr.Protocol
 {
     public static class FrameByteFunctions
     {
+        public static (Control c, OpCode b) ValidContinuation(Control c, OpCode b)
+        {
+            if (ContinuingOn(c) == 0 && b == OpCode.Continuation)
+                throw C.NotExpectionContinuation;
+            
+            if (ContinuingOn(c) != 0 && b != OpCode.Continuation)
+                throw C.ExpectingContinuation(c, b);
+
+            return (c, b);
+        }
+
+        public static bool IsControlFrame(OpCode o) => ((byte)o & 0b0000_1000) > 0;
+        public static OpCode ContinuingOn(Control c) => (OpCode)((byte)c & 0b0000_0011);
+
+        public static Control CarryOpcode(OpCode o) => (Control)((byte)o & 0b0000_0011);
         public static ulong InterpretLengthBytes(IEnumerable<byte> bytes)
         {
             if (BitConverter.IsLittleEndian)
@@ -18,14 +34,47 @@ namespace WSr.Protocol
 
             return BitConverter.ToUInt64(bytes.ToArray(), 0);
         }
+        private static ImmutableHashSet<OpCode> ValidCodes = C.AllPossible.ToImmutableHashSet();
+        public static OpCode Validate(byte b)
+        {
+            var c = (OpCode)b;
 
+            if (ValidCodes.Contains(c)) return c;
+
+            throw C.UndefinedOpcode(c);
+        }
+
+        public static OpCode MaskCode(OpCode o) => (OpCode)((byte)o & 0b0000_1111);
+        public static bool IsDataframe(OpCode o) => !IsControlFrame(o);
+        public static byte ContinuationState(byte s) => (byte)(s & 0x0000_0011);
+        static Control MaskState(Control c) => (Control)ContinuationState((byte) c);
+
+        static Control IsFinal(OpCode o) => (Control)(o & OpCode.Final); 
+
+        static bool IsFinal(byte b) => (b & (byte)0x80) != 0; 
         public static FrameByteState ContinuationAndOpcode(FrameByteState s, byte b)
         {
             var current = s.Current;
+            var input = Validate(b);
+            Control c = MaskState(current.Control) | IsFinal(input);
+            OpCode o = MaskCode(input);
+
+            if (IsDataframe(o)) 
+            {
+                var (state, next) = ValidContinuation(c, o);
+                if (next == OpCode.Continuation)
+                    o = ContinuingOn(state);
+                else
+                    c = CarryOpcode(next);
+
+                if (IsFinal(b))
+                    c = Control.Final;
+            }
+            
             var r = current.With(
                 @byte: b,
-                opcode: (OpCode)b,
-                app: 0);
+                opcode: o,
+                ctl: c);
 
             return s.With(current: r, next: FrameSecond);
         }
@@ -99,7 +148,7 @@ namespace WSr.Protocol
 
                 if (c == 1 && l == 0) return s.With(
                         current: s.Current.With(
-                            app: Control.IsLast,
+                            ctl: s.Current.Control | Control.Terminator,
                             @byte: b),
                         next: ContinuationAndOpcode
                     );
@@ -112,7 +161,7 @@ namespace WSr.Protocol
             };
         }
 
-        public static Control Appdata(ulong l) => Control.IsAppdata | (l == 1 ? Control.IsLast : 0x00);
+        public static Control Appdata(ulong l) => Control.Appdata | (l == 1 ? Control.Terminator : 0x00);
 
         public static byte UnMask(byte b, byte m) => (byte)(b ^ m);
 
@@ -124,7 +173,7 @@ namespace WSr.Protocol
             return (s, b) =>
             {
                 return s.With(
-                    current: s.Current.With(@byte: UnMask(b, mask[c]), app: Appdata(l)),
+                    current: s.Current.With(@byte: UnMask(b, mask[c]), ctl: s.Current.Control | Appdata(l)),
                     next: l == 1
                         ? ContinuationAndOpcode
                         : ReadPayload((c + 1) % 4, mask, l - 1)

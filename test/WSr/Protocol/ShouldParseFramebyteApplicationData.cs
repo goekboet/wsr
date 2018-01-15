@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reactive.Linq;
 using Microsoft.Reactive.Testing;
@@ -46,6 +47,45 @@ namespace WSr.Protocol.Tests
 
             Assert.IsTrue(actual.GetValues().SingleOrDefault(),
             $"expected:\n{ShowExpected(o, l, r, read.Count(), true)}\nactual:\n{Showactual(read)}");
+        }
+
+        public static IEnumerable<byte> B(OpCode o) => Bytes(o, 10, 1, true);
+        public static IEnumerable<byte> B(OpCode o, int i) => Bytes(o, 10, i, true);
+        public static IEnumerable<byte> AtomicData => B(OpCode.Text | OpCode.Final);
+        public static IEnumerable<byte> Begin => B(OpCode.Text);
+        public static IEnumerable<byte> Continuation(int i) => B(OpCode.Continuation, i);
+        public static IEnumerable<byte> Final => B(OpCode.Final);
+
+        public static Dictionary<string, IEnumerable<byte>> ContinuationInput =
+        new Dictionary<string, IEnumerable<byte>>()
+        {
+            ["A"] = AtomicData,
+            ["B-F"] = Enumerable.Concat(Begin, Final),
+            ["B-C-C-C-F"] = Begin.Concat(Continuation(3)).Concat(Final)
+        };
+
+        [DataRow("A", 10)]
+        [DataRow("B-F", 20)]
+        [DataRow("B-C-C-C-F", 50)]
+        [TestMethod]
+        public void HandleContinuationFrames(
+            string t,
+            int e
+        )
+        {
+            var s = new TestScheduler();
+            var i = ContinuationInput[t].ToObservable(s);
+
+            var log = new List<FrameByte>();
+            var a = s.Start(() => i
+                .Deserialize()
+                .Do(x => log.Add(x))
+                .ToAppdata()
+                .SelectMany(x => x.appdata.ToArray().Select(y => y.Length)));
+
+            var r = a.GetValues();
+            Assert.IsTrue(r.Count() == 1 && e == r.Single(),
+            $"a:\n{Showactual(log)}");
         }
     }
 }

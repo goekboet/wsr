@@ -11,8 +11,8 @@ namespace WSr.Protocol
 {
     public static class AppdataToByteBuffer
     {
-        private static bool LastByte((Control c, byte b) fb) => (fb.c & Control.IsLast) != 0;
-        private static bool IsAppdata((Control c, byte b) fb) => (fb.c & Control.IsAppdata) != 0;
+        private static bool LastByte((Control c, byte b) fb) => (fb.c & Control.EOF) == Control.EOF;
+        private static bool IsAppdata((Control c, byte b) fb) => (fb.c & Control.Appdata) != 0;
         public static IObservable<(OpCode opcode, IObservable<byte> appdata)> ToAppdata(
             this IObservable<FrameByte> frames,
             IScheduler s = null)
@@ -39,22 +39,20 @@ namespace WSr.Protocol
                 switch (x.Key)
                 {
                     case OpCode.Binary:
-                    case OpCode.Binary | OpCode.Final:
                     case OpCode.Text:
-                    case OpCode.Text | OpCode.Final:
                         return x.SelectMany(dataframes);
-                    case OpCode.Close | OpCode.Final:
+                    case OpCode.Close:
                         return x.SelectMany(close);
-                    case OpCode.Ping | OpCode.Final:
+                    case OpCode.Ping:
                         return x.SelectMany(ping);
-                    case OpCode.Pong | OpCode.Final:
+                    case OpCode.Pong:
                         return x.SelectMany(pong);
                     default:
-                        return Observable.Throw<(OpCode, T)>(Ops.UndefinedOpcode);
+                        return Observable.Throw<(OpCode, T)>(new ArgumentException(x.Key.ToString()));
                 }
             });
 
-        static bool IsClose((OpCode o, IObservable<byte>) x) => x.o == (OpCode.Close | OpCode.Final);
+        static bool IsClose((OpCode o, IObservable<byte>) x) => x.o == OpCode.Close;
         static bool IsNotClose((OpCode o, IObservable<byte>) x) => !IsClose(x);
         public static IObservable<(OpCode opcode, IObservable<byte> appdata)> CompleteOnClose(
             this IObservable<(OpCode opcode, IObservable<byte> appdata)> parsed) => parsed.Publish(p => p
@@ -68,13 +66,11 @@ namespace WSr.Protocol
                     .CompleteOnClose()
                     .SelectMany(ToFrame);
 
-
-
         public static IEnumerable<byte> Frame(
             OpCode opc,
             byte[] data)
         {
-            yield return (byte)opc;
+            yield return (byte)(opc | OpCode.Final);
 
             var l = data.Length;
             if (l < 126)

@@ -75,6 +75,7 @@ namespace WSr
                     pong: Operations.NoPing(),
                     close: Echo)
                 .Serialize()
+                .Do(onNext: x => {}, onError: e => Console.WriteLine(e.Message) )
                 .Catch(Ops.CloseWith1002);
 
         public static IObservable<FrameByte> Deserialize(
