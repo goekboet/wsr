@@ -61,6 +61,9 @@ namespace WSr
                         })))
                 .Concat(Websocket(routes(r))(bs));
 
+        static Func<IObservable<(Control c, byte b)>, IObservable<byte>> Utf8Validation => x => 
+            x.Scan(Utf8FSM.Init(), (fsm, inp) => fsm.Next(inp)).Select(o => o.Current);
+
         public static Func<IObservable<byte>, IObservable<byte[]>> Websocket(
                 Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> app) => incoming =>
             incoming
@@ -68,7 +71,7 @@ namespace WSr
                 // .Materialize()
                 // .Do(x => Console.WriteLine(x))
                 // .Dematerialize()
-                .ToAppdata()
+                .ToAppdata(Utf8Validation)
                 .SwitchOnOpcode(
                     dataframes: app,
                     ping: Operations.Pong(),
@@ -76,7 +79,7 @@ namespace WSr
                     close: Echo)
                 .Serialize()
                 .Do(onNext: x => {}, onError: e => Console.WriteLine(e.Message) )
-                .Catch(Ops.CloseWith1002);
+                .Catch(Ops.ServerSideCloseFrame);
 
         public static IObservable<FrameByte> Deserialize(
             this IObservable<byte> incoming) => incoming

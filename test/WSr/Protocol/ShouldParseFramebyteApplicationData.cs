@@ -7,6 +7,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using WSr.Tests;
 using static WSr.Tests.GenerateTestData;
 
+using AppData = WSr.Protocol.AppdataToByteBuffer;
+
 namespace WSr.Protocol.Tests
 {
     [TestClass]
@@ -80,7 +82,7 @@ namespace WSr.Protocol.Tests
             var a = s.Start(() => i
                 .Deserialize()
                 .Do(x => log.Add(x))
-                .ToAppdata()
+                .ToAppdata(AppData.None)
                 .SelectMany(x => x.appdata.ToArray().Select(y => y.Length)));
 
             var r = a.GetValues();

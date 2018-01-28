@@ -10,6 +10,7 @@ using D = WSr.Tests.GenerateTestData;
 using T = WSr.Tests.Debug;
 using Opcodes = WSr.Protocol.OpCodeSets;
 using Ops = WSr.Protocol.Operations;
+using AppData = WSr.Protocol.AppdataToByteBuffer;
 using System.Collections.Immutable;
 
 namespace WSr.Protocol.Tests
@@ -33,7 +34,7 @@ namespace WSr.Protocol.Tests
             var i = F(pl, repeat).ToObservable(s);
 
             var a = s.Start(
-                create: () => i.ToAppdata(s)
+                create: () => i.ToAppdata(AppData.None, s)
                     .SelectMany(x => x.appdata.Materialize()),
                 created: 0,
                 subscribed: 0,
@@ -119,7 +120,7 @@ namespace WSr.Protocol.Tests
             var e = new byte[] { (byte)Opcodes.Close, 0x02, 0x03, 0xea };
             var a = s.Start(
                 create: () => i
-                    .Catch(Ops.CloseWith1002)
+                    .Catch(Ops.ServerSideCloseFrame)
             );
 
             var r = a.GetValues().Single();

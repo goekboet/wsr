@@ -11,10 +11,12 @@ namespace WSr.Protocol
 {
     public static class AppdataToByteBuffer
     {
+        public static Func<IObservable<(Control c, byte b)>, IObservable<byte>> None => x => x.Select(d => d.b);
         private static bool LastByte((Control c, byte b) fb) => (fb.c & Control.EOF) == Control.EOF;
         private static bool IsAppdata((Control c, byte b) fb) => (fb.c & Control.Appdata) != 0;
         public static IObservable<(OpCode opcode, IObservable<byte> appdata)> ToAppdata(
             this IObservable<FrameByte> frames,
+            Func<IObservable<(Control c, byte b)>, IObservable<byte>> utf8Validation,
             IScheduler s = null)
         {
             return frames.GroupByUntil(
@@ -22,8 +24,11 @@ namespace WSr.Protocol
                         elementSelector: f => (appdata: f.Control, @byte: f.Byte),
                         durationSelector: f => f.Where(LastByte))
                     .SelectMany(
-                        x => Observable.Return(
-                            (x.Key, x.Where(IsAppdata).Select(y => y.@byte)), s ?? Scheduler.Immediate));
+                        x => x.Key == OpCode.Text 
+                            ? Observable.Return(
+                                (x.Key, utf8Validation(x.Where(IsAppdata))), s ?? Scheduler.Immediate)
+                            : Observable.Return(
+                                (x.Key, x.Where(IsAppdata).Select(y => y.@byte)), s ?? Scheduler.Immediate));
         }
 
         public static IObservable<(OpCode opcode, T appdata)> SwitchOnOpcode<T>(
