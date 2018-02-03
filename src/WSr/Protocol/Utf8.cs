@@ -63,6 +63,12 @@ namespace WSr.Protocol
         public static bool OutOfBounds(byte b) => (b > 0x7F && b < 0xC2) || b > 0xF4;
 
         public static bool IsEof(Control c) => (c & Control.EOF) == Control.EOF;
+
+        public static Func<Utf8FSM, (Control c, byte b), Utf8FSM> Skip(int n) => (s, i) =>
+        {
+            return s.With(current: i.b, next: n == 1 ? Boundry : Skip(n - 1));
+        };
+        
         public static Func<Utf8FSM, (Control c, byte b), Utf8FSM> Boundry => (s, i) =>
         {
             var (l, cpt) = codepointLength(i.b);

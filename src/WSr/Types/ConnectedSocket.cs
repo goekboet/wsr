@@ -21,7 +21,7 @@ namespace WSr
 
         IObservable<Unit> Write(
             byte[] buffer,
-            IScheduler scheduler);
+            IScheduler scheduler = null);
         IObservable<int> Read(
             byte[] buffer,
             IScheduler scheduler);
@@ -52,10 +52,10 @@ namespace WSr
 
         public IObservable<Unit> Write(
             byte[] buffer,
-            IScheduler s)
+            IScheduler s = null)
         {
             return Observable
-                .FromAsync(() => Stream.WriteAsync(buffer, 0, buffer.Length), s)
+                .FromAsync(() => Stream.WriteAsync(buffer, 0, buffer.Length))
                 ;
         }
 

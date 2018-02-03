@@ -11,12 +11,12 @@ namespace WSr.Protocol
 {
     public static class AppdataToByteBuffer
     {
-        public static Func<IObservable<(Control c, byte b)>, IObservable<byte>> None => x => x.Select(d => d.b);
+        public static Func<int, IObservable<(Control c, byte b)>, IObservable<byte>> None => (n, x) => x.Select(d => d.b);
         private static bool LastByte((Control c, byte b) fb) => (fb.c & Control.EOF) == Control.EOF;
         private static bool IsAppdata((Control c, byte b) fb) => (fb.c & Control.Appdata) != 0;
         public static IObservable<(OpCode opcode, IObservable<byte> appdata)> ToAppdata(
             this IObservable<FrameByte> frames,
-            Func<IObservable<(Control c, byte b)>, IObservable<byte>> utf8Validation,
+            Func<int, IObservable<(Control c, byte b)>, IObservable<byte>> utf8Validation,
             IScheduler s = null)
         {
             return frames.GroupByUntil(
@@ -24,11 +24,19 @@ namespace WSr.Protocol
                         elementSelector: f => (appdata: f.Control, @byte: f.Byte),
                         durationSelector: f => f.Where(LastByte))
                     .SelectMany(
-                        x => x.Key == OpCode.Text 
-                            ? Observable.Return(
-                                (x.Key, utf8Validation(x.Where(IsAppdata))), s ?? Scheduler.Immediate)
-                            : Observable.Return(
-                                (x.Key, x.Where(IsAppdata).Select(y => y.@byte)), s ?? Scheduler.Immediate));
+                        x =>
+                        {
+                            if (x.Key == OpCode.Text)
+                                return Observable.Return(
+                                   (x.Key, utf8Validation(0, x.Where(IsAppdata))), s ?? Scheduler.Immediate);
+                            else if (x.Key == OpCode.Close)
+                                return Observable.Return(
+                                    (x.Key, utf8Validation(2, x.Where(IsAppdata))), s ?? Scheduler.Immediate);
+                            else
+                                return Observable.Return(
+                                    (x.Key, x.Where(IsAppdata).Select(y => y.@byte)), s ?? Scheduler.Immediate);
+                        });
+
         }
 
         public static IObservable<(OpCode opcode, T appdata)> SwitchOnOpcode<T>(
@@ -57,19 +65,19 @@ namespace WSr.Protocol
                 }
             });
 
-        static bool IsClose((OpCode o, IObservable<byte>) x) => x.o == OpCode.Close;
-        static bool IsNotClose((OpCode o, IObservable<byte>) x) => !IsClose(x);
-        public static IObservable<(OpCode opcode, IObservable<byte> appdata)> CompleteOnClose(
-            this IObservable<(OpCode opcode, IObservable<byte> appdata)> parsed) => parsed.Publish(p => p
-                .Where(IsClose).Take(1)
-                .Merge(p.TakeWhile(IsNotClose)));
+        static bool IsClose((OpCode o, byte[]) x) => x.o == OpCode.Close;
+        static bool IsNotClose((OpCode o, byte[]) x) => !IsClose(x);
+        public static IObservable<(OpCode opcode, byte[] appdata)> CompleteOnClose(
+            this IObservable<(OpCode opcode, IObservable<byte> appdata)> parsed) => parsed
+                .SelectMany(x => x.appdata.ToArray().Select(p => (x.opcode, p)))
+                .Publish(p => p
+                    .Where(IsClose).Take(1)
+                    .Merge(p.TakeWhile(IsNotClose)));
 
-        public static IObservable<byte[]> ToFrame((OpCode opcode, IObservable<byte> appdata) x) =>
-            x.appdata.ToArray().Select(p => Frame(x.opcode, p).ToArray());
         public static IObservable<byte[]> Serialize(
             this IObservable<(OpCode opcode, IObservable<byte> appdata)> data) => data
                     .CompleteOnClose()
-                    .SelectMany(ToFrame);
+                    .Select(x => Frame(x.opcode, x.appdata).ToArray());
 
         public static IEnumerable<byte> Frame(
             OpCode opc,

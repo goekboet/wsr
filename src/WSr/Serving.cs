@@ -5,15 +5,11 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 
 using static WSr.IO.ReadFunctions;
-using static WSr.IO.WriteFunctions;
-using static WSr.IntegersFromByteConverter;
-using static WSr.LogFunctions;
 using static WSr.Protocol.AppdataToByteBuffer;
 using static WSr.Protocol.Functional.Handshake;
 
 using WSr.Protocol;
 using WSr.Protocol.Functional;
-using System.Collections.Generic;
 using System.Text;
 using Ops = WSr.Protocol.Operations;
 
@@ -61,22 +57,19 @@ namespace WSr
                         })))
                 .Concat(Websocket(routes(r))(bs));
 
-        static Func<IObservable<(Control c, byte b)>, IObservable<byte>> Utf8Validation => x => 
-            x.Scan(Utf8FSM.Init(), (fsm, inp) => fsm.Next(inp)).Select(o => o.Current);
+        static Func<int, IObservable<(Control c, byte b)>, IObservable<byte>> Utf8Validation => (n, x) => 
+            x.Scan(Utf8FSM.Init(n), (fsm, inp) => fsm.Next(inp)).Select(o => o.Current);
 
         public static Func<IObservable<byte>, IObservable<byte[]>> Websocket(
                 Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> app) => incoming =>
             incoming
                 .Deserialize()
-                // .Materialize()
-                // .Do(x => Console.WriteLine(x))
-                // .Dematerialize()
                 .ToAppdata(Utf8Validation)
                 .SwitchOnOpcode(
                     dataframes: app,
                     ping: Operations.Pong(),
                     pong: Operations.NoPing(),
-                    close: Echo)
+                    close: Operations.CloseHandsake())
                 .Serialize()
                 .Do(onNext: x => {}, onError: e => Console.WriteLine(e.Message) )
                 .Catch(Ops.ServerSideCloseFrame);
@@ -85,7 +78,6 @@ namespace WSr
             this IObservable<byte> incoming) => incoming
                 .Scan(FrameByteState.Init(), (s, b) => s.Next(b))
                 .Select(x => x.Current)
-                //.Do(x => Console.WriteLine(x))
                 ;
 
         public static IObservable<Unit> Serve(
@@ -100,8 +92,7 @@ namespace WSr
                 .SelectMany(x => x.ToObservable())
                 .Publish(
                     bs => Handshake(bs)
-                    //.Do(x => Console.WriteLine(x))
-                    .SelectMany(x => Accept(x, bs, route)))
-                .Transmit(socket));
+                        .SelectMany(x => Accept(x, bs, route)))
+                .SelectMany(x => socket.Write(x)));
     }
 }

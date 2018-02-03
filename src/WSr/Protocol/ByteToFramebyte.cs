@@ -101,6 +101,8 @@ namespace WSr.Protocol
                         next: ReadLengthBytes(8, new byte[8])
                         );
                 default:
+                    if (s.Current.OpCode == OpCode.Close && l == 1)
+                        throw C.BadCloseLength;
                     return s.With(
                         current: s.Current.With(
                             @byte: b),

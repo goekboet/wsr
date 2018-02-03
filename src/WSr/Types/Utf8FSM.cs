@@ -6,9 +6,9 @@ namespace WSr
 {
     public sealed class Utf8FSM 
     {
-        public static Utf8FSM Init() => new Utf8FSM(
+        public static Utf8FSM Init(int n = 0) => new Utf8FSM(
             default(byte),
-            Boundry);
+            n == 0 ? Boundry : Skip(n));
 
         private Utf8FSM(
             byte current,

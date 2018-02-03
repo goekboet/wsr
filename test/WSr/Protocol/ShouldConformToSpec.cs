@@ -126,5 +126,33 @@ namespace WSr.Protocol.Tests
             var r = a.GetValues().Single();
             Assert.IsTrue(e.SequenceEqual(r) && T.Completed(a.Messages));
         }
+
+        Dictionary<string, (byte[] input, bool error, byte[] output)> CloseFrameCases = 
+            new Dictionary<string, (byte[] input, bool error, byte[] output)>()
+            {
+                ["NoPayload"] = (new byte[0], false, new byte[0]),
+                ["WrongCode"] = (new byte[] { 0x00, 0x00 }, true, null),
+                ["WithMessage"] = (new byte[] {0x03, 0xe8, 0x36, 0x36, 0x36}, false, new byte[] {0x03, 0xe8})
+            };
+
+        [TestMethod]
+        [DataRow("NoPayload")]
+        [DataRow("WrongCode")]
+        [DataRow("WithMessage")]
+        public void ProcessCloseCode(string label)
+        {
+            var s = new TestScheduler();
+            var c = CloseFrameCases[label];
+
+            var a = s.Start(() => Observable
+                .Return((o: OpCode.Close, p: c.input.ToObservable(s)), s)
+                .SelectMany(x => Ops.CloseHandsake().Invoke(x))
+                .SelectMany(x => x.p.ToArray()));
+
+            if (c.error)
+                Assert.IsTrue(T.Errored(a.Messages));
+            else
+                Assert.IsTrue(c.output.SequenceEqual(a.GetValues().First()));
+        }
     }
 }
