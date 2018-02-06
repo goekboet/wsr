@@ -17,8 +17,8 @@ namespace WSr.Protocol
         public static ProtocolException ExpectingContinuation(Control had, OpCode got) => 
             new ProtocolException($"Was expecting continuation on {had} but got {got}", 1002);
         
-        public static ProtocolException NotExpectionContinuation =>
-            new ProtocolException($"Was not expecting continuationframe", 1002);
+        public static ProtocolException NotExpectingContinuation(Control had, OpCode got) =>
+            new ProtocolException($"Was not expecting continuationframe. Had: {had} Got: {got}", 1002);
         public static IEnumerable<OpCode> ControlFrames { get; } = new[]
         {
           Close,

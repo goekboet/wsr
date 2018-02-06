@@ -64,6 +64,9 @@ namespace WSr
                 Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>> app) => incoming =>
             incoming
                 .Deserialize()
+                // .Materialize()
+                // .Do(x => Console.WriteLine(x))
+                // .Dematerialize()
                 .ToAppdata(Utf8Validation)
                 .SwitchOnOpcode(
                     dataframes: app,
@@ -88,8 +91,10 @@ namespace WSr
             IScheduler s = null) => Observable.Using(
                 resourceFactory: () => socket,
                 observableFactory: c => c
-                .Receive(buffersize, log)
+                .Receive(buffersize, log, s)
+                //.Do(x => Console.WriteLine(string.Join("-", x.Select(b => b.ToString("X2")))))
                 .SelectMany(x => x.ToObservable())
+                // .Do(x => Console.WriteLine(x.ToString("X2")))
                 .Publish(
                     bs => Handshake(bs)
                         .SelectMany(x => Accept(x, bs, route)))

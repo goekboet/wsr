@@ -12,7 +12,7 @@ namespace WSr.Protocol
         public static (Control c, OpCode b) ValidContinuation(Control c, OpCode b)
         {
             if (ContinuingOn(c) == 0 && b == OpCode.Continuation)
-                throw C.NotExpectionContinuation;
+                throw C.NotExpectingContinuation(c, b);
             
             if (ContinuingOn(c) != 0 && b != OpCode.Continuation)
                 throw C.ExpectingContinuation(c, b);
@@ -46,7 +46,7 @@ namespace WSr.Protocol
 
         public static OpCode MaskCode(OpCode o) => (OpCode)((byte)o & 0b0000_1111);
         public static bool IsDataframe(OpCode o) => !IsControlFrame(o);
-        public static byte ContinuationState(byte s) => (byte)(s & 0x0000_0011);
+        public static byte ContinuationState(byte s) => (byte)(s & 0b0000_0011);
         static Control MaskState(Control c) => (Control)ContinuationState((byte) c);
 
         static Control IsFinal(OpCode o) => (Control)(o & OpCode.Final); 
