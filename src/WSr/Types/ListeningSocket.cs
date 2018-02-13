@@ -33,8 +33,7 @@ namespace WSr
 
         public virtual IObservable<IConnectedSocket> Connect(IScheduler scheduler)
         {
-            return Defer(() =>
-                FromAsync(() => _listeningSocket.AcceptTcpClientAsync(), scheduler))
+            return FromAsync(() => _listeningSocket.AcceptTcpClientAsync(), scheduler)
                 .Select(c => new TcpConnection(c));
         }
     }

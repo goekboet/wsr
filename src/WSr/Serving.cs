@@ -74,7 +74,7 @@ namespace WSr
                     pong: Operations.NoPing(),
                     close: Operations.CloseHandsake())
                 .Serialize()
-                .Do(onNext: x => {}, onError: e => Console.WriteLine(e.Message) )
+                .Do(onNext: x => Console.WriteLine(x), onError: e => Console.WriteLine(e.Message) )
                 .Catch(Ops.ServerSideCloseFrame);
 
         public static IObservable<FrameByte> Deserialize(
@@ -91,9 +91,11 @@ namespace WSr
             IScheduler s = null) => Observable.Using(
                 resourceFactory: () => socket,
                 observableFactory: c => c
-                .Receive(buffersize, log, s)
-                //.Do(x => Console.WriteLine(string.Join("-", x.Select(b => b.ToString("X2")))))
-                .SelectMany(x => x.ToObservable())
+                .Receive(buffersize, log)
+                // .ReceiveUntilCompleted(buffersize)
+                // .Do(x => Console.WriteLine(string.Join("-", x.Select(b => b.ToString("X2")))))
+                .Select(x => x.ToObservable(s ?? Scheduler.Default))
+                .Concat()
                 // .Do(x => Console.WriteLine(x.ToString("X2")))
                 .Publish(
                     bs => Handshake(bs)

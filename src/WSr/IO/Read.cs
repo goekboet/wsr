@@ -47,33 +47,31 @@ namespace WSr.IO
                     return fs
                         .Do(e => received = e.BytesTransferred)
                         .Where(e => e.BytesTransferred > 0)
-                        .Select(_ =>
+                        .Select(e =>
                         {
-                            // var cpy = new byte[received];
-                            // Array.Copy(buffer, cpy, received);
-                            // return cpy;
-                            if (received < buffer.Length)
-                            {
-                                var cpy = new byte[received];
-                                Array.Copy(buffer, cpy, received);
-                                return cpy;
-                            }
-                            else
-                            {
-                                return buffer;
-                            }
+                            return e.Buffer.Take(received).ToArray();
+                            // if (received < buffer.Length)
+                            // {
+                            //     var cpy = new byte[received];
+                            //     Array.Copy(buffer, cpy, received);
+                            //     return cpy;
+                            // }
+                            // else
+                            // {
+                            //     return buffer;
+                            // }
                         });
                 }
             );
 
         static IObservable<SocketAsyncEventArgs> InvokeAsync(
             this SocketAsyncEventArgs ea,
-            Func<SocketAsyncEventArgs, bool> f)
+            Func<SocketAsyncEventArgs, bool> isPending)
         {
             var complete = ea.CompletedObservable();
             var connection = complete.Connect();
 
-            if (f(ea))
+            if (isPending(ea)) 
             {
                 return complete.AsObservable();
             }
