@@ -7,14 +7,16 @@ namespace WSr
 {
     public sealed class Request : IEquatable<Request>
     {
-        public static ImmutableDictionary<string, string> NoHeaders { get; } = new Dictionary<string, string>()
+        public static ImmutableDictionary<string, string> NoHeaders { get; } = 
+            new Dictionary<string, string>()
             .ToImmutableDictionary();
 
         public static Request Init => new Request("", NoHeaders);
 
         public Request With(
             string url = null,
-            ImmutableDictionary<string, string> headers = null) => new Request(url ?? Url, headers ?? Headers);
+            ImmutableDictionary<string, string> headers = null) => 
+                new Request(url ?? Url, headers ?? Headers);
 
         private Request(
             string url,

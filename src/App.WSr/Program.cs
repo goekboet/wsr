@@ -17,7 +17,7 @@ namespace App.WSr
 {
     class Program
     {
-        static Func<Request, Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>>> Routing => r => f => Observable.Return(f);
+        static Func<Request, Func<WSFrame, IObservable<WSFrame>>> Routing => r => f => Observable.Return(f);
 
         static string Logfile = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "log.txt";
 

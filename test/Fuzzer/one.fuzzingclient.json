@@ -7,7 +7,7 @@
         }
     ],
     "cases": [
-        "9.2.6"
+        "7.*"
             ],
     "exclude-cases": [],
     "exclude-agent-cases": {}

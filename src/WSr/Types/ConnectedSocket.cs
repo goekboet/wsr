@@ -25,8 +25,6 @@ namespace WSr
         IObservable<int> Read(
             byte[] buffer,
             IScheduler scheduler = null);
-
-        bool ReceiveAsync(SocketAsyncEventArgs ea);
     }
 
     public class TcpConnection : IConnectedSocket
@@ -62,15 +60,12 @@ namespace WSr
         }
 
         public IObservable<int> Read(
-            byte[] buffer, 
+            byte[] buffer,
             IScheduler s)
         {
             return Observable
                 .FromAsync(t => Stream.ReadAsync(buffer, 0, buffer.Length, t), s)
                 ;
         }
-
-        public bool ReceiveAsync(SocketAsyncEventArgs ea) => _socket.Client.ReceiveAsync(ea);
     }
-
 }

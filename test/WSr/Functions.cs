@@ -11,6 +11,18 @@ using static Microsoft.Reactive.Testing.ReactiveTest;
 
 namespace WSr.Tests
 {
+    public class TestCase<T>
+    {
+        public T[] Input { get; set; }
+        public T[] Output { get; set; }
+    }
+
+    public class TestCase<Tgiven, Texpected>
+    {
+        public Tgiven Input { get; set; }
+        public Texpected Output { get; set; }
+    }
+
     public static class Debug
     {
         public static string debugElementsEqual<T>(IList<Recorded<Notification<T>>> expected, IList<Recorded<Notification<T>>> actual)
@@ -124,14 +136,14 @@ namespace WSr.Tests
                     second: Observable.Interval(t, s),
                     resultSelector: (x, i) => x);
 
-        public static ITestableObserver<T> Start<T>(
+        public static ITestableObserver<T> LetRun<T>(
             this TestScheduler s,
             Func<IObservable<T>> es
         ) => s.Start(es, 0, 0, long.MaxValue);
 
-        public static IEnumerable<string> Show<T>(
-            this IList<Recorded<Notification<T>>> ns) => ns.Select(x => x.ToString());
-    
+        public static string Show<T>(ITestableObserver<T> es) =>
+            string.Join(Environment.NewLine, es.Messages.Select(x => x.ToString()));
+
         public static string Column<T>(this IEnumerable<T> es) => string.Join(Environment.NewLine, es);
     }
 }

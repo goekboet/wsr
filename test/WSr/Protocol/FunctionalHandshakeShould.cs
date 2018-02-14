@@ -13,12 +13,14 @@ using WSr.Tests;
 using static Microsoft.Reactive.Testing.ReactiveTest;
 using static WSr.Tests.Debug;
 using static WSr.Protocol.Functional.Handshake;
-using static WSr.Protocol.AppdataToByteBuffer;
+using static WSr.Protocol.CompleteFrameObservable;
 using static WSr.Serving;
+using Op = WSr.Protocol.ServerConstants;
 
 namespace WSr.Protocol.Tests
 {
     [TestClass]
+    //[Ignore]
     public class FunctionalHandshakeShould
     {
         static byte[] Bytes { get; } = new byte[] {
@@ -38,6 +40,7 @@ namespace WSr.Protocol.Tests
         };
 
         [TestMethod]
+        //[Ignore]
         public void LinesShould()
         {
             var s = new TestScheduler();
@@ -57,6 +60,7 @@ namespace WSr.Protocol.Tests
         }
 
         [TestMethod]
+        //[Ignore]
         public void ParseFirstLine()
         {
             var i = Encoding.ASCII.GetBytes("GET /chat HTTP/1.1");
@@ -74,6 +78,7 @@ namespace WSr.Protocol.Tests
 
         [DataRow("aa: bb")]
         [DataRow("Origin: http://example.com")]
+        //[Ignore]
         [TestMethod]
         public void ParseHeader(string input)
         {
@@ -111,6 +116,7 @@ namespace WSr.Protocol.Tests
             );
 
         [TestMethod]
+        //[Ignore]
         public void MakeRequest()
         {
             var s = new TestScheduler();
@@ -132,10 +138,12 @@ namespace WSr.Protocol.Tests
             AssertAsExpected(e, a);
         }
 
-        public static IObservable<byte> EmptyBytes => Observable.Empty<byte>();
+        public static IEnumerable<byte> JustClose => new byte[] {0x88, 0x80, 0x00, 0x00, 0x00, 0x00};
+        public static IObservable<byte> Silence => Observable.Empty<byte>(); 
+        public static Func<WSFrame, IObservable<WSFrame>> Hangup => _ => Observable.Empty<WSFrame>();
 
-        public static Func<Request, Func<(OpCode, IObservable<byte>), IObservable<(OpCode, IObservable<byte>)>>> DummyRoute => _ =>
-            b => Observable.Empty<(OpCode, IObservable<byte>)>();
+        public static Func<Request, Func<WSFrame, IObservable<WSFrame>>> DummyRoute => _ =>
+            b => Observable.Return(new WSFrame(Op.Close, new byte[0]));
 
         public static byte[] Expectedaccept => Encoding.ASCII.GetBytes(
                 "HTTP/1.1 101 Switching Protocols\r\n" +
@@ -144,6 +152,7 @@ namespace WSr.Protocol.Tests
                 "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n");
 
         [TestMethod]
+        //[Ignore]
         public void AcceptHandshakeRequest()
         {
             var s = new TestScheduler();
@@ -151,12 +160,12 @@ namespace WSr.Protocol.Tests
             var i = Observable.Return(ExpectedRequest, s);
 
             var r = s.Start(
-                create: () => i.SelectMany(x => Accept(x, EmptyBytes, DummyRoute)),
+                create: () => i.SelectMany(x => Accept(x, JustClose.ToObservable(s), req => Hangup)),
                 created: 0,
                 subscribed: 0,
                 disposed: long.MaxValue
             );
-            var result = r.GetValues().Single();
+            var result = r.GetValues().Take(1).Single();
 
             Assert.IsTrue(Expectedaccept.SequenceEqual(result));
         }

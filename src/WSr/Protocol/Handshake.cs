@@ -71,6 +71,6 @@ namespace WSr.Protocol.Functional
 
         public static string ResponseKey(string requestKey) => Convert.ToBase64String(hash(requestKey + Ws));
 
-        
+
     }
 }
